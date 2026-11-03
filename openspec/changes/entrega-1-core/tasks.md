@@ -2,12 +2,12 @@
 
 ## 1. Fundaciones, contrato y gateway
 
-- [ ] 1.1 Configurar el repositorio GitHub del grupo (cuenta `Pabloaguirre23`), `main` protegida, `.gitignore`, plantilla de PR y convención de ramas `feat/*`; verificar con un clone limpio y un PR de prueba.
-- [ ] 1.2 Crear los cuatro proyectos Spring Boot independientes (`catalog-service`, `inventory-service`, `orders-service`, `api-gateway`) con Java 21, Maven y Actuator; verificar `mvn -q -DskipTests package` y `/actuator/health` en cada uno.
-- [ ] 1.3 Congelar el contrato REST v1 en `docs/api-contract.md` (método, ruta, parámetros, códigos y ejemplos JSON); verificar que cada US-01 a US-24 tenga endpoint y códigos definidos.
+- [ ] 1.1 Configurar el repositorio privado `Francogp131/TicketYa`, `main` protegida, `.gitignore`, plantilla de PR y convención de ramas `feat/*`; verificar con un clone limpio y un PR de prueba. _(repo creado; falta agregar colaboradores y activar branch protection)_
+- [x] 1.2 Crear los cuatro proyectos Spring Boot independientes (`catalog-service`, `inventory-service`, `orders-service`, `api-gateway`) con Java 21, Maven y Actuator; verificar `mvn -q -DskipTests package` y `/actuator/health` en cada uno.
+- [x] 1.3 Congelar el contrato REST v1 en `docs/api-contract.md` (método, ruta, parámetros, códigos y ejemplos JSON); verificar que cada US-01 a US-24 tenga endpoint y códigos definidos.
 - [ ] 1.4 Implementar el manejo global de errores RFC 7807 (`application/problem+json`) y las validaciones comunes; verificar con tests que 400/401/403/404/409 devuelvan el formato acordado.
-- [ ] 1.5 Crear `docker-compose.dev.yml` con una base PostgreSQL por servicio y migraciones Flyway; verificar que `docker compose up -d` levante las tres bases y que las tablas existan.
-- [ ] 1.6 Configurar el gateway con rutas `/api/catalog/**`, `/api/inventory/**` y `/api/orders/**`, y propagación de `X-User-Id`/`X-User-Role`; verificar con `curl` que llegue a los tres servicios.
+- [x] 1.5 Crear `docker-compose.dev.yml` con una base PostgreSQL por servicio y migraciones Flyway; verificar que `docker compose up -d` levante las tres bases y que las tablas existan.
+- [x] 1.6 Configurar el gateway con rutas `/api/catalog/**`, `/api/inventory/**` y `/api/orders/**`, y propagación de `X-User-Id`/`X-User-Role`; verificar con `curl` que llegue a los tres servicios.
 - [ ] 1.7 Configurar CI con GitHub Actions (build + tests por servicio) y validación de PR; verificar que el workflow quede verde en un PR de prueba.
 - [ ] 1.8 Revisar `docs/features-y-user-stories.md` contra los 12 ítems del enunciado y las 38 user stories; verificar que cada US tenga criterios de aceptación y esté referenciada en `docs/checklist-entrega-1.md`.
 

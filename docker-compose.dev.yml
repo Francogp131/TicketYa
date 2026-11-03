@@ -1,0 +1,58 @@
+name: ticketya
+
+services:
+  catalog-db:
+    image: postgres:16-alpine
+    container_name: ticketya-catalog-db
+    environment:
+      POSTGRES_DB: catalog_db
+      POSTGRES_USER: ticketya
+      POSTGRES_PASSWORD: ticketya
+    ports:
+      - "5433:5432"
+    volumes:
+      - catalog_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ticketya -d catalog_db"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  inventory-db:
+    image: postgres:16-alpine
+    container_name: ticketya-inventory-db
+    environment:
+      POSTGRES_DB: inventory_db
+      POSTGRES_USER: ticketya
+      POSTGRES_PASSWORD: ticketya
+    ports:
+      - "5434:5432"
+    volumes:
+      - inventory_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ticketya -d inventory_db"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  orders-db:
+    image: postgres:16-alpine
+    container_name: ticketya-orders-db
+    environment:
+      POSTGRES_DB: orders_db
+      POSTGRES_USER: ticketya
+      POSTGRES_PASSWORD: ticketya
+    ports:
+      - "5435:5432"
+    volumes:
+      - orders_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ticketya -d orders_db"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  catalog_data:
+  inventory_data:
+  orders_data:

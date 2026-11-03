@@ -6,14 +6,14 @@ Plan día por día para llegar a la Entrega 1 del TP TicketYa. El alcance funcio
 
 - **Entrega 1:** core del sistema (publicación, búsqueda, compra con reserva temporal, no doble venta, devoluciones y cancelación).
 - **Fecha límite:** martes 10 de noviembre de 2026.
-- **Equipo:** 4 personas, una por servicio (ver `CONTRIBUTING.md`).
+- **Equipo:** 5 personas (una por servicio + calidad/integración), ver `CONTRIBUTING.md` y `docs/equipo/`.
 - **Estrategia:** congelar contratos el Día 0, implementar en paralelo por servicio, integrar todos los días y congelar funcionalidad el domingo 8 para dedicar los últimos dos días a verificación y entrega.
 - **Regla de oro:** ninguna tarea se marca como terminada sin la verificación que figura en `tasks.md`; ninguna funcionalidad entra después del domingo 8 a las 18:00.
 
 ## 2. Supuestos
 
 - Dedicación intensiva durante los 9 días (el cronograma asume jornadas completas; si el equipo tiene menos horas, aplicar el plan de contingencia de la sección 8).
-- El repositorio vive en GitHub bajo la cuenta/organización `Pabloaguirre23` (confirmar nombre exacto del repo el Día 0).
+- El repositorio es privado: `https://github.com/Francogp131/TicketYa` (rama `main`).
 - Se trabaja en local; las bases se levantan con Docker y los servicios se ejecutan con Maven/IDE.
 - La interfaz gráfica y todo lo marcado como Entrega 2 queda fuera de alcance.
 - El equipo usa OpenSpec como fuente de verdad: primero se ajusta el spec, después el código.
@@ -25,9 +25,10 @@ Plan día por día para llegar a la Entrega 1 del TP TicketYa. El alcance funcio
 | P1 | Catalog | Lugares, eventos, publicación, estados y búsqueda | 2.1 a 2.6 |
 | P2 | Inventory | Reservas, vencimiento, límite y no doble venta | 3.1 a 3.8 |
 | P3 | Orders | Órdenes, pagos, QR, idempotencia, devoluciones y cancelación | 4.1 a 4.11 |
-| P4 | Gateway + infraestructura | Gateway, CI, Docker, datos, Postman, diagramas, README y coordinación de integración | 1.1, 1.4 a 1.7, 5.1 a 5.11 |
+| P4 | Gateway + infraestructura | Gateway, Docker, CI, diagramas de módulos/secuencia, README raíz | 1.1, 1.4 a 1.7, 5.3, 5.4, 5.6, 5.8, 5.9 |
+| P5 | Calidad e integración | Datos de prueba, Postman, E2E, evidencia, índice y checklist | 5.1, 5.2, 5.11, 6.2, 6.3 |
 
-P4 no es “el que documenta al final”: arranca el Día 0 con el gateway y el CI, y desde el Día 2 prepara datos y Postman para que los demás prueben contra un entorno real. Todos revisan los PR de todos.
+P4 no es “el que documenta al final”: arranca el Día 0 con el gateway y el CI, y desde el Día 2 prepara el entorno para que los demás prueben. P5 es el dueño de la verificación: no implementa features, pero corre los flujos, mantiene Postman y exige evidencia antes de cerrar cada tarea. Todos revisan los PR de todos.
 
 ## 4. Cómo se usa OpenSpec
 
@@ -70,11 +71,12 @@ Si se atrasa un eslabón, se prioriza terminar la ruta crítica antes que cualqu
 
 ### Día 0 — Lunes 2 de noviembre: fundaciones y contrato
 
-**Objetivo:** que los cuatro puedan trabajar en paralelo el martes sin bloquearse.
+**Objetivo:** que los cinco puedan trabajar en paralelo el martes sin bloquearse.
 
 | Persona | Tareas | Entregable |
 |---|---|---|
-| Todos | Leer `design.md`, specs y `docs/features-y-user-stories.md`; resolver dudas en el sync y completar 1.8 | Alcance y contrato entendidos |
+| Todos | Leer `design.md`, specs y `docs/features-y-user-stories.md`; resolver dudas en el sync | Alcance y contrato entendidos |
+| P5 | 1.8 revisión de features/US, estrategia de pruebas y esqueleto de Postman | Cobertura verificada y plan de pruebas |
 | P4 | 1.1 repo, 1.4 errores, 1.5 Docker/Postgres, 1.6 gateway, 1.7 CI (inicio) | Repo con PR de prueba y gateway ruteando |
 | P1/P2/P3 | 1.2 esqueletos de sus servicios, 1.3 contrato REST, 1.8 revisión de features/US | Cuatro servicios con `/actuator/health` y contrato v1 |
 
@@ -91,7 +93,8 @@ Si se atrasa un eslabón, se prioriza terminar la ruta crítica antes que cualqu
 | P1 | 2.1, 2.2 | Lugares, sectores, asientos, eventos y precios funcionando con tests |
 | P2 | 3.1, 3.2 | Modelo de inventario y reserva numerada atómica |
 | P3 | 4.1, 4.2 | Modelo de órdenes y creación de orden desde reserva |
-| P4 | 1.7 (cierre), 5.1 (inicio) y revisión de PRs | Errores comunes, CI estable y primer seed |
+| P4 | 1.7 (cierre), 5.6 (inicio) y revisión de PRs | CI estable y README inicial |
+| P5 | 5.1 (inicio), 5.2 (inicio) | Datos de prueba y colección Postman base |
 
 **Verificación del día:** tests de 2.1/2.2 en verde; reserva de un asiento y de varios con rollback; orden `PENDIENTE_PAGO` con total correcto; PRs mergeados.
 
@@ -106,7 +109,8 @@ Si se atrasa un eslabón, se prioriza terminar la ruta crítica antes que cualqu
 | P1 | 2.3, 2.5 | Estados del evento y búsqueda multi-criterio con orden/paginación |
 | P2 | 3.3, 3.4, 3.5 | Zonas, límite por cliente y vencimiento de reservas |
 | P3 | 4.3, 4.4 | Pasarela mock y pago aprobado con QR |
-| P4 | 2.4 (soporte), 5.1, 5.2 (inicio) | Publicación→inventario integrada y Postman inicial |
+| P4 | 2.4 (soporte), 5.3 (inicio) | Publicación→inventario integrada y diagrama de módulos |
+| P5 | 5.1 (cierre), 5.2 | Seed completo y Postman de endpoints de catálogo |
 
 **Verificación del día:** búsqueda combinada con orden y total; zona que descuenta N y rechaza sin disponibilidad; límite 422; reserva vencida libera; pago aprobado emite entradas; PRs mergeados.
 
@@ -122,6 +126,7 @@ Si se atrasa un eslabón, se prioriza terminar la ruta crítica antes que cualqu
 | P2 | 3.6, 3.7 | Confirmación/liberación y prueba de concurrencia de 100 hilos |
 | P3 | 4.5, 4.6, 4.7 | Pago rechazado/vencido, idempotencia y compensaciones |
 | P4 | 5.3, 5.4 (borradores) y soporte de integración | Diagramas de módulos y secuencia |
+| P5 | 5.2 (compra), 5.11 (inicio) | Postman del flujo de compra y primeras pruebas E2E |
 
 **Verificación del día:** flujo reservar→orden→pagar aprobado→QR y reservar→pagar rechazado→liberar; `Idempotency-Key` repetida devuelve la misma orden; la prueba de concurrencia da exactamente 1 éxito; PRs mergeados.
 
@@ -136,7 +141,8 @@ Si se atrasa un eslabón, se prioriza terminar la ruta crítica antes que cualqu
 | P1 | 2.6 (cierre) y soporte de devoluciones | OpenAPI de catalog revisado |
 | P2 | 3.8 y soporte de 4.8 | OpenAPI de inventory y liberación por devolución probada |
 | P3 | 4.8, 4.9, 4.10, 4.11 | Devoluciones, cancelación, consulta propia y OpenAPI de orders |
-| P4 | 5.2 (cierre), 5.8, 5.9 (inicio) | Postman completo, Swagger revisado e índice de documentación iniciado |
+| P4 | 5.8, 5.9 (inicio) | Swagger revisado e índice de documentación iniciado |
+| P5 | 5.2 (cierre), 5.11 | Postman completo y evidencia de pruebas |
 
 **Verificación del día:** devolución dentro/fuera de plazo (422), aprobación que libera e invalida, rechazo que mantiene válida, cancelación con todas las entradas `EN_REINTEGRO`, consulta propia con 403 para ajenas; PRs mergeados.
 
@@ -150,6 +156,7 @@ Si se atrasa un eslabón, se prioriza terminar la ruta crítica antes que cualqu
 |---|---|---|
 | Todos | 5.5, 5.6, 5.7, 5.9, 5.10, 5.11, 6.1 | ER por servicio, README raíz, arquitectura, índice/ADR, READMEs por servicio, evidencia y suite completa |
 | P4 | Coordina 5.3/5.4/5.8/5.9 y revisa enlaces | Diagramas e índice definitivos |
+| P5 | Lidera 5.11, 5.9 y 6.1; revisa 5.5 y corre la suite | `docs/pruebas.md` y checklist actualizado |
 | P1/P2/P3 | Revisan el ER de su servicio y corrigen bugs de integración | ER validado contra Flyway |
 
 **Verificación del día:** `mvn test` verde en los cuatro proyectos; README probado en un clone limpio; diagramas revisados por otra persona; ningún bug crítico abierto.
@@ -164,6 +171,7 @@ Si se atrasa un eslabón, se prioriza terminar la ruta crítica antes que cualqu
 |---|---|---|
 | Todos | 6.2, 6.3 | E2E por gateway de los seis flujos y checklist al 100 % |
 | P4 | Coordina la corrida y guarda evidencias | Salida de Postman/Newman y checklist completo |
+| P5 | 6.2, 6.3: corre E2E y completa el checklist | Evidencia de los seis flujos |
 
 **Verificación del día:** los seis flujos E2E pasan por el gateway; cada ítem de `docs/checklist-entrega-1.md` tiene evidencia; **congelamiento de funcionalidad a las 18:00**.
 
@@ -177,6 +185,7 @@ Si se atrasa un eslabón, se prioriza terminar la ruta crítica antes que cualqu
 |---|---|---|
 | Todos | 6.4 (RC), revisión final de PRs y ensayo de demo | Tag `entrega-1-rc`, clone limpio verificado y demo ensayada |
 | P4 | Verifica accesos, README y enlace del repo | Entrega lista para subir |
+| P5 | Re-ejecuta E2E en clone limpio y valida documentación | Evidencia final adjunta |
 
 **Verificación del día:** clone limpio + instrucciones del README funcionan; tag `entrega-1-rc` creado; demo de 5 minutos sin errores; checklist sin pendientes.
 
@@ -189,6 +198,8 @@ Si se atrasa un eslabón, se prioriza terminar la ruta crítica antes que cualqu
 | Persona | Tareas | Entregable |
 |---|---|---|
 | Todos | 6.4 (cierre), tag `entrega-1` y submit | Repositorio entregado con el tag y el enlace |
+| P4 | Crea el tag y verifica accesos | Enlace del repo listo |
+| P5 | Cierra el checklist y adjunta evidencia | Checklist 100 % |
 
 **Verificación del día:** el tag `entrega-1` apunta al commit entregado; el repo es accesible; el enlace se sube antes del cierre. **No se toca código este día salvo un blocker de último minuto.**
 
