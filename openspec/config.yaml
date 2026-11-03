@@ -1,0 +1,37 @@
+schema: spec-driven
+
+context: |
+  Language: es
+  All artifacts must be written in es.
+  Keep OpenSpec structural headings and SHALL/MUST keywords in English.
+
+  Proyecto: TicketYa (TP grupal Arquitectura Web, TUDAI 2026). Enunciado en docs/TPE-ArqWeb-TicketYa-2026.pdf.
+  Plataforma de venta de entradas (ticketera virtual). Foco en el backend.
+  Roles: cliente, organizador, administrador, personal de acceso.
+  Stack: microservicios Spring Boot (Java 21, Maven), cada uno proyecto independiente;
+  API Gateway como punto de entrada único; REST mayormente síncrono;
+  una base de datos por microservicio (relacional) + al menos una NoSQL (MongoDB) en Entrega 2;
+  Redis opcional (reservas temporales, fila virtual); JWT con roles (Entrega 2);
+  Docker + docker-compose (Entrega 2); pasarela de pagos simulada (mock).
+  Requisito crítico: una misma entrada NUNCA se vende dos veces, aun con varias
+  instancias del servicio y reintentos de pago (idempotencia).
+  Entrega 1: eventos y lugares (1,2), publicación (3), compra con reserva temporal y QR (4),
+  no doble venta (5), devoluciones y cancelación (7), búsqueda multi-criterio (9).
+  Entrega 2: fila virtual (6), control de acceso QR (8), recomendaciones (10),
+  notificaciones (11), reportes (12), JWT, NoSQL, saga/compensaciones, resiliencia,
+  cache, log centralizado, Docker, pruebas de integración y de carga.
+
+rules:
+  proposal:
+    - Indicar a qué entrega (1 o 2) y a qué ítems de FUNCIONALIDAD corresponde el cambio
+    - Declarar explícitamente qué queda fuera de alcance
+  specs:
+    - Cada requisito debe tener al menos un escenario Given/When/Then verificable
+  tasks:
+    - Incluir tareas de pruebas (unitarias y de no doble venta cuando aplique)
+
+operations:
+  apply:
+    guidance:
+      - Un microservicio = un proyecto Maven independiente en su propia carpeta
+      - Hacer commits pequeños por tarea completada

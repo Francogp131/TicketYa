@@ -1,0 +1,72 @@
+# Tasks
+
+## 1. Fundaciones, contrato y gateway
+
+- [ ] 1.1 Configurar el repositorio GitHub del grupo (cuenta `Pabloaguirre23`), `main` protegida, `.gitignore`, plantilla de PR y convención de ramas `feat/*`; verificar con un clone limpio y un PR de prueba.
+- [ ] 1.2 Crear los cuatro proyectos Spring Boot independientes (`catalog-service`, `inventory-service`, `orders-service`, `api-gateway`) con Java 21, Maven y Actuator; verificar `mvn -q -DskipTests package` y `/actuator/health` en cada uno.
+- [ ] 1.3 Congelar el contrato REST v1 en `docs/api-contract.md` (método, ruta, parámetros, códigos y ejemplos JSON); verificar que cada US-01 a US-24 tenga endpoint y códigos definidos.
+- [ ] 1.4 Implementar el manejo global de errores RFC 7807 (`application/problem+json`) y las validaciones comunes; verificar con tests que 400/401/403/404/409 devuelvan el formato acordado.
+- [ ] 1.5 Crear `docker-compose.dev.yml` con una base PostgreSQL por servicio y migraciones Flyway; verificar que `docker compose up -d` levante las tres bases y que las tablas existan.
+- [ ] 1.6 Configurar el gateway con rutas `/api/catalog/**`, `/api/inventory/**` y `/api/orders/**`, y propagación de `X-User-Id`/`X-User-Role`; verificar con `curl` que llegue a los tres servicios.
+- [ ] 1.7 Configurar CI con GitHub Actions (build + tests por servicio) y validación de PR; verificar que el workflow quede verde en un PR de prueba.
+- [ ] 1.8 Revisar `docs/features-y-user-stories.md` contra los 12 ítems del enunciado y las 38 user stories; verificar que cada US tenga criterios de aceptación y esté referenciada en `docs/checklist-entrega-1.md`.
+
+## 2. catalog-service: lugares, eventos, publicación y búsqueda
+
+- [ ] 2.1 Implementar el modelo y los endpoints de lugares, sectores y asientos (US-01 a US-03); verificar con tests 201/400/403/404 y la generación de asientos de sectores numerados.
+- [ ] 2.2 Implementar el modelo y los endpoints de eventos, precios y publicación (US-04 a US-06); verificar con tests fecha pasada, tipo inválido, sector ajeno, evento de otro organizador y publicación incompleta.
+- [ ] 2.3 Implementar las transiciones de estado y el scheduler de finalización (US-07 y US-08); verificar con tests `AGOTADO`, `PUBLICADO`, `CANCELADO`, `FINALIZADO` y transición inválida 409.
+- [ ] 2.4 Integrar la publicación con inventory-service mediante un cliente REST idempotente con reintentos, y el callback de disponibilidad (`AGOTADO`/`PUBLICADO`); verificar con WireMock/Testcontainers y republicar el mismo evento sin duplicar inventario.
+- [ ] 2.5 Implementar la búsqueda multi-criterio con orden y paginación y el detalle del evento (US-09 a US-11); verificar con tests de filtros combinados, lista vacía, rango inválido, orden por fecha/precio/relevancia, total de páginas y borrador 404.
+- [ ] 2.6 Documentar el OpenAPI de catalog-service con descripciones, ejemplos y errores; verificar Swagger UI y que `openapi.json` incluya todos los endpoints y códigos.
+
+## 3. inventory-service: reservas y no doble venta
+
+- [ ] 3.1 Implementar el modelo de inventario y reservas con Flyway y el endpoint interno de alta de inventario; verificar que dos llamadas con la misma clave no dupliquen filas.
+- [ ] 3.2 Implementar la reserva atómica de asientos numerados, todo o nada; verificar con tests de asiento libre, asiento ocupado y reserva múltiple parcialmente no disponible (409 sin cambios).
+- [ ] 3.3 Implementar la reserva atómica de zonas no numeradas; verificar con tests de disponibilidad suficiente (descuenta N) e insuficiente (409 sin cambios).
+- [ ] 3.4 Implementar el límite de entradas por cliente contando vendidas y reservas vigentes; verificar con tests 422 al superar el límite y éxito dentro del límite.
+- [ ] 3.5 Implementar el vencimiento de reservas (scheduler + validación perezosa) y la liberación de lugares; verificar con tests de liberación y de pago sobre reserva vencida (410).
+- [ ] 3.6 Implementar la confirmación de venta, la liberación por pago rechazado y la liberación por devolución; verificar que confirmar o liberar dos veces sea idempotente.
+- [ ] 3.7 Escribir la prueba de concurrencia con PostgreSQL real (Testcontainers): 100 hilos sobre el mismo asiento y varios sobre el último lugar de una zona; verificar que exactamente uno tenga éxito y la base registre una sola reserva/venta.
+- [ ] 3.8 Documentar el OpenAPI de inventory-service con ejemplos y errores; verificar Swagger UI y los códigos 409/410/422.
+
+## 4. orders-service: compra, pago, entradas y devoluciones
+
+- [ ] 4.1 Implementar el modelo de órdenes, ítems, pagos, entradas, devoluciones e idempotencia con Flyway; verificar que las migraciones creen todas las tablas y constraints.
+- [ ] 4.2 Implementar la creación de orden desde una reserva vigente con total calculado en el servidor; verificar con tests 201, reserva inexistente 404, reserva ajena 403 y reserva vencida 410.
+- [ ] 4.3 Implementar la pasarela de pagos mock (aprobado, rechazado y lento) detrás de una interfaz reemplazable; verificar con tests cada resultado y el timeout.
+- [ ] 4.4 Implementar el pago aprobado: confirmar inventario, pasar la orden a `PAGADA`, registrar medio de pago y emitir una entrada con QR único por lugar; verificar con tests que haya una entrada por asiento y QR únicos.
+- [ ] 4.5 Implementar el pago rechazado y la reserva vencida: liberar lugares, orden `RECHAZADA` y ninguna entrada emitida; verificar con tests de estado y disponibilidad.
+- [ ] 4.6 Implementar la idempotencia con `Idempotency-Key` (misma respuesta, 422 con cuerpo distinto y una sola orden ante reintentos concurrentes); verificar con tests contra la tabla de idempotencia.
+- [ ] 4.7 Implementar la compensación cuando falla la confirmación de inventario o la emisión de entradas después del pago; verificar con tests que la orden no quede `PAGADA` y que se solicite el reintegro.
+- [ ] 4.8 Implementar las devoluciones (US-22 y US-23): solicitud, aprobación y rechazo; verificar con tests 422 fuera de plazo, 409 ya resuelta, 403 entrada ajena, liberación + invalidación + refund al aprobar y entrada válida al rechazar.
+- [ ] 4.9 Implementar la cancelación de evento (US-24): pasar todas las entradas vendidas a `EN_REINTEGRO` y solicitar el reintegro; verificar con tests de evento con y sin entradas y que el endpoint sea idempotente.
+- [ ] 4.10 Implementar la consulta de entradas y órdenes propias (US-19); verificar con tests que el cliente solo vea las suyas y que una entrada ajena devuelva 403.
+- [ ] 4.11 Documentar el OpenAPI de orders-service con ejemplos y errores; verificar Swagger UI y los códigos 201/403/404/409/410/422.
+
+## 5. Integración, datos y documentación
+
+- [ ] 5.1 Crear los datos de prueba con Flyway (lugares, eventos publicados, precios e inventario); verificar que se puedan consultar por API después de levantar el entorno.
+- [ ] 5.2 Crear la colección Postman con los flujos de compra aprobada, rechazada, vencida, devolución y cancelación, con assertions; verificar que se ejecute completa contra el entorno local.
+- [ ] 5.3 Crear el diagrama de módulos en Mermaid; verificar que muestre gateway, los tres servicios, sus bases, el mock de pagos y las dependencias.
+- [ ] 5.4 Crear el diagrama de secuencia de compra de una entrada numerada, incluyendo pago aprobado, pago rechazado y reserva vencida; verificar que coincida con los estados y llamadas del diseño.
+- [ ] 5.5 Crear el ER por microservicio, con claves, relaciones y entidades solapadas entre bases; verificar que coincida con las migraciones Flyway.
+- [ ] 5.6 Escribir el README raíz con requisitos, cómo levantar bases y servicios, variables, URLs y datos de prueba; verificar siguiéndolo en un clone limpio.
+- [ ] 5.7 Escribir `docs/arquitectura.md` con decisiones, límites de servicio, estrategia de consistencia y compensaciones, enlazando `design.md`, contrato y diagramas; verificar la revisión cruzada del grupo.
+- [ ] 5.8 Revisar el OpenAPI agregado de los tres servicios (descripciones, ejemplos y códigos de error); verificar que Swagger UI de cada servicio muestre todos los endpoints del contrato.
+- [ ] 5.9 Crear `docs/README.md` como índice de documentación y `docs/decisiones.md` con las ADR cortas (decisión, alternativas y consecuencias); verificar que todos los enlaces resuelvan y que el índice refleje el estado real.
+- [ ] 5.10 Documentar cada servicio en su `README.md` (responsabilidad, endpoints, modelo, variables y comandos de test); verificar que otra persona pueda levantarlo siguiendo solo ese README.
+- [ ] 5.11 Crear `docs/pruebas.md` con la estrategia, los comandos y la evidencia de la prueba de concurrencia y del E2E; verificar que los comandos documentados se ejecuten tal cual.
+
+## 6. Verificación y entrega
+
+- [ ] 6.1 Ejecutar la suite completa (`mvn test`) de los cuatro proyectos y el CI sobre `main`; verificar todo verde y sin tests omitidos.
+- [ ] 6.2 Ejecutar el E2E por el gateway de los seis flujos críticos (publicar, buscar, reservar, comprar, devolver y cancelar); verificar con Postman/Newman y dejar la salida como evidencia.
+- [ ] 6.3 Completar `docs/checklist-entrega-1.md` al 100 %; verificar que no quede ningún ítem sin evidencia.
+- [ ] 6.4 Probar un clone limpio, crear el tag `entrega-1`, verificar el acceso al repositorio y entregar el enlace; verificar que el tag apunte al commit entregado.
+
+## Workflow follow-up
+
+- Archivar el change con `openspec archive entrega-1-core` una vez entregada y revisada la Entrega 1.
+- Sincronizar los specs principales y verificar con `openspec validate --all`.
