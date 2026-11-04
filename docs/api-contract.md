@@ -424,6 +424,8 @@ Reglas:
 {
   "id": "b1c2d3e4-f5a6-4b7c-8d9e-0f1a2b3c4d5e",
   "eventoId": "1f2e3d4c-5b6a-4978-8a9b-0c1d2e3f4a5b",
+  "eventoNombre": "Festival de Verano",
+  "eventoFecha": "2027-01-15T21:00:00-03:00",
   "clienteId": "2b3c4d5e-6f7a-4b8c-9d0e-1f2a3b4c5d6e",
   "estado": "VIGENTE",
   "expiresAt": "2026-11-02T18:10:00-03:00",
@@ -495,6 +497,22 @@ Idempotente por `eventoId` + `version`: reintentar no duplica filas ni reinicia 
 ### 4.7 Interno — consultar reserva para orders
 
 `GET /internal/reservations/{reservaId}` → **200** `ReservationResponse`; `404 RESERVATION_NOT_FOUND`.
+
+Además de los campos de la consulta pública (4.4), `ReservationResponse` incluye `eventoNombre` y `eventoFecha` para que orders pueda guardar el snapshot del evento sin volver a llamar a catalog:
+
+```json
+{
+  "id": "b1c2d3e4-f5a6-4b7c-8d9e-0f1a2b3c4d5e",
+  "eventoId": "1f2e3d4c-5b6a-4978-8a9b-0c1d2e3f4a5b",
+  "eventoNombre": "Festival de Verano",
+  "eventoFecha": "2027-01-15T21:00:00-03:00",
+  "clienteId": "2b3c4d5e-6f7a-4b8c-9d0e-1f2a3b4c5d6e",
+  "estado": "VIGENTE",
+  "expiresAt": "2026-11-02T18:10:00-03:00",
+  "items": [],
+  "total": 0.00
+}
+```
 
 ### 4.8 Interno — confirmar venta
 
