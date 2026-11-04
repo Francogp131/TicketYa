@@ -20,13 +20,13 @@ Plan día por día para llegar a la Entrega 1 del TP TicketYa. El alcance funcio
 
 ## 3. Equipo y responsabilidades
 
-| Persona | Rol | Servicio / foco | Tareas OpenSpec |
-|---|---|---|---|
-| P1 | Catalog | Lugares, eventos, publicación, estados y búsqueda | 2.1 a 2.6 |
-| P2 | Inventory | Reservas, vencimiento, límite y no doble venta | 3.1 a 3.8 |
-| P3 | Orders | Órdenes, pagos, QR, idempotencia, devoluciones y cancelación | 4.1 a 4.11 |
-| P4 | Gateway + infraestructura | Gateway, Docker, CI, diagramas de módulos/secuencia, README raíz | 1.1, 1.4 a 1.7, 5.3, 5.4, 5.6, 5.8, 5.9 |
-| P5 | Calidad e integración | Datos de prueba, Postman, E2E, evidencia, índice y checklist | 5.1, 5.2, 5.11, 6.2, 6.3 |
+| Persona | Nombre | Rol | Servicio / foco | Tareas OpenSpec |
+|---|---|---|---|---|
+| P1 | Iván | Catalog | Lugares, eventos, publicación, estados y búsqueda | 2.1 a 2.6 |
+| P2 | Pablo | Inventory | Reservas, vencimiento, límite y no doble venta | 3.1 a 3.8 |
+| P3 | Caro | Orders | Órdenes, pagos, QR, idempotencia, devoluciones y cancelación | 4.1 a 4.11 |
+| P4 | Thiago | Gateway + infraestructura | Gateway, Docker, CI, diagramas de módulos/secuencia, README raíz | 1.1, 1.4 a 1.7, 5.3, 5.4, 5.6, 5.8, 5.9 |
+| P5 | Franco | Calidad e integración | Datos de prueba, Postman, E2E, evidencia, índice y checklist | 5.1, 5.2, 5.11, 6.2, 6.3 |
 
 P4 no es “el que documenta al final”: arranca el Día 0 con el gateway y el CI, y desde el Día 2 prepara el entorno para que los demás prueben. P5 es el dueño de la verificación: no implementa features, pero corre los flujos, mantiene Postman y exige evidencia antes de cerrar cada tarea. Todos revisan los PR de todos.
 

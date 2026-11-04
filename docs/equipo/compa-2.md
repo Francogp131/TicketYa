@@ -1,9 +1,9 @@
-# P2 — Inventory
+# P2 — Inventory (Pablo)
 
 **Servicio:** `inventory-service` (puerto **8082**, base `inventory_db` en **5434**)
 **Rama base:** `main`
 **Tareas OpenSpec:** 3.1 a 3.8
-**Depende de:** contrato v1 y migración `V1__init.sql` (ya están en `main`).
+**Estado al 4/11:** 3.1 y 3.2 cerradas en el PR #1; la reserva de zonas (3.3) ya está implementada y solo falta ampliar tests. Arrancás con **3.4 (límite)** y **3.5 (vencimiento)**.
 
 ## 1. Antes de empezar
 

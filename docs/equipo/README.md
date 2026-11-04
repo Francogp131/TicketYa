@@ -2,18 +2,18 @@
 
 Esta carpeta tiene un brief por integrante. La idea es que cada uno pueda clonar el repo, leer **su** archivo y arrancar sin depender de una explicación en el chat.
 
-| Persona | Rol | Brief |
-|---|---|---|
-| P1 | Catalog | [`compa-1.md`](compa-1.md) |
-| P2 | Inventory | [`compa-2.md`](compa-2.md) |
-| P3 | Orders | [`compa-3.md`](compa-3.md) |
-| P4 | Gateway + infraestructura | [`compa-4.md`](compa-4.md) |
-| P5 | Calidad, integración y documentación (Franco) | [`franco-p5.md`](franco-p5.md) |
+| Persona | Nombre | Rol | Brief |
+|---|---|---|---|
+| P1 | Iván | Catalog | [`compa-1.md`](compa-1.md) |
+| P2 | Pablo | Inventory | [`compa-2.md`](compa-2.md) |
+| P3 | Caro | Orders | [`compa-3.md`](compa-3.md) |
+| P4 | Thiago | Gateway + infraestructura | [`compa-4.md`](compa-4.md) |
+| P5 | Franco | Calidad, integración y documentación | [`franco-p5.md`](franco-p5.md) |
 
 ## 1. Acceso al repositorio
 
-- Repo privado: <https://github.com/Francogp131/TicketYa>
-- El dueño (`Francogp131`) agrega a cada integrante como colaborador con permiso **Write**.
+**De:** <https://github.com/Francogp131/TicketYa> (público para lectura).
+**Para pushear:** el dueño (`Francogp131`) agrega a cada integrante como colaborador con permiso **Write**.
 - Se trabaja con SSH o HTTPS; el dueño no necesita dar tokens a nadie.
 - Si no llega la invitación, avisar en el grupo antes de crear un fork.
 

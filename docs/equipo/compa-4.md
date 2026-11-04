@@ -1,9 +1,9 @@
-# P4 — Gateway + infraestructura
+# P4 — Gateway + infraestructura (Thiago)
 
 **Servicio:** `api-gateway` (puerto **8080**)
 **Rama base:** `main`
-**Tareas OpenSpec:** 1.4 a 1.7, 5.3, 5.4, 5.6, 5.8, 5.9
-**Depende de:** contrato v1, Docker y CI (la base ya está en `main`).
+**Tareas OpenSpec:** 1.1, 1.4 a 1.7, 5.3, 5.4, 5.6, 5.8, 5.9
+**Estado al 4/11:** 1.4 y 1.7 cerradas en el PR #1 (handlers RFC 7807 y CI verde). Quedan **1.1** (colaboradores y branch protection) y arrancás con **5.3 (diagrama de módulos)** + apoyo en **2.4**.
 
 ## 1. Antes de empezar
 

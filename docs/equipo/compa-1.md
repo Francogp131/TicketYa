@@ -1,9 +1,9 @@
-# P1 — Catalog
+# P1 — Catalog (Iván)
 
 **Servicio:** `catalog-service` (puerto **8081**, base `catalog_db` en **5433**)
 **Rama base:** `main`
 **Tareas OpenSpec:** 2.1 a 2.6
-**Depende de:** contrato v1 y migración `V1__init.sql` (ya están en `main`).
+**Estado al 4/11:** 2.1 y 2.2 cerradas en el PR #1. Arrancás con **2.3 (estados)** y **2.5 (búsqueda)**.
 
 ## 1. Antes de empezar
 

@@ -1,9 +1,9 @@
-# P3 — Orders
+# P3 — Orders (Caro)
 
 **Servicio:** `orders-service` (puerto **8083**, base `orders_db` en **5435**)
 **Rama base:** `main`
 **Tareas OpenSpec:** 4.1 a 4.11
-**Depende de:** contrato v1 y migración `V1__init.sql` (ya están en `main`).
+**Estado al 4/11:** 4.1 y 4.2 cerradas en el PR #1. Arrancás con **4.3 (pasarela mock)** y **4.4 (pago aprobado + QR)**.
 
 ## 1. Antes de empezar
 
