@@ -176,4 +176,28 @@ openspec status --change entrega-1-core
 
 ## Estado
 
-Día 0 completado: proyecto base, bases, gateway, errores, CI y contrato. Los servicios se implementan por tarea en [`tasks.md`](openspec/changes/entrega-1-core/tasks.md).
+**Día 1 completado (3/11):** CRUD de catálogo con publicación, inventario base con reserva atómica numerada y de zonas, y creación de orden `PENDIENTE_PAGO` desde una reserva. Seeds de catálogo/inventario y colección Postman base incluidos. Siguen el Día 2 (estados y búsqueda, vencimiento y límite, pago aprobado) y las tareas de integración/entrega.
+
+El avance verificable está en [`tasks.md`](openspec/changes/entrega-1-core/tasks.md).
+
+## Datos de prueba
+
+Los seeds de Flyway (`V2__seed.sql` en catalog e inventory) crean:
+
+| Dato | ID | Detalle |
+|---|---|---|
+| Lugar | `a0000000-0000-4000-8000-000000000001` | Estadio Municipal de Tandil |
+| Lugar | `a0000000-0000-4000-8000-000000000002` | Complejo Cultural Universitario |
+| Evento | `d0000000-0000-4000-8000-000000000001` | Festival de Rock Tandil 2027, 14/03/2027 |
+| Evento | `d0000000-0000-4000-8000-000000000002` | El Avaro — Teatro Universitario, 18/04/2027 |
+| Evento | `d0000000-0000-4000-8000-000000000003` | Arquitectura Web 2027 — Charla abierta, 20/05/2027 |
+
+Identidades de la Entrega 1 (el gateway las propaga como headers):
+
+| Rol | `X-User-Id` |
+|---|---|
+| ADMIN | `11111111-1111-4111-8111-111111111111` |
+| ORGANIZER | `22222222-2222-4222-8222-222222222222` |
+| CLIENT | `33333333-3333-4333-8333-333333333333` |
+
+Los asientos numerados usan IDs determinísticos: `c0000000-0000-4000-8000-[sector][fila][numero]000000`. La colección [`postman/TicketYa.postman_collection.json`](postman/TicketYa.postman_collection.json) recorre el flujo base del Día 1 y guarda los IDs que crea.

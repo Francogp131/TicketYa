@@ -22,11 +22,11 @@
 | `decisiones.md` | ADR cortas: decisión, alternativas y consecuencias | P4 | Día 5 | Pendiente (5.9) |
 | `pruebas.md` | Estrategia, comandos y evidencia de concurrencia y E2E | P5 | Día 5 y 6 | Pendiente (5.11) |
 | `../openspec/changes/entrega-1-core/` | Propuesta, specs, diseño y tareas del cambio | Todos | Día 0 | Listo |
-| `../catalog-service/README.md` | Responsabilidad, endpoints, modelo y comandos del servicio | P1 | Día 1 a 4 | Esqueleto |
-| `../inventory-service/README.md` | Responsabilidad, endpoints, modelo y comandos del servicio | P2 | Día 1 a 4 | Esqueleto |
-| `../orders-service/README.md` | Responsabilidad, endpoints, modelo y comandos del servicio | P3 | Día 1 a 4 | Esqueleto |
-| `../api-gateway/README.md` | Rutas, headers, variables y ejecución | P4 | Día 1 a 4 | Esqueleto |
-| `../postman/TicketYa.postman_collection.json` | Colección de requests con assertions | P5 | Día 5 | Pendiente (5.2) |
+| `../catalog-service/README.md` | Responsabilidad, endpoints, modelo y comandos del servicio | P1 | Día 1 a 4 | Día 1 |
+| `../inventory-service/README.md` | Responsabilidad, endpoints, modelo y comandos del servicio | P2 | Día 1 a 4 | Día 1 |
+| `../orders-service/README.md` | Responsabilidad, endpoints, modelo y comandos del servicio | P3 | Día 1 a 4 | Día 1 |
+| `../api-gateway/README.md` | Rutas, headers, variables y ejecución | P4 | Día 1 a 4 | Día 1 |
+| `../postman/TicketYa.postman_collection.json` | Colección de requests con assertions | P5 | Día 5 | Base (Día 1) |
 | `../openapi/*.json` | OpenAPI exportado de cada servicio | Cada dueño | Día 4 | Pendiente (2.6, 3.8, 4.11) |
 
 ## 2. Estándares

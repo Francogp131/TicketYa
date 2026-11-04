@@ -32,3 +32,6 @@ management:
 springdoc:
   swagger-ui:
     path: /swagger-ui.html
+
+inventory:
+  url: ${INVENTORY_URL:http://localhost:8082}
