@@ -12,6 +12,8 @@ Esta carpeta tiene un brief por integrante. La idea es que cada uno pueda clonar
 
 ## 1. Acceso al repositorio
 
+**¿Es tu primer PR?** Empezá por [`primer-pr.md`](primer-pr.md): explica rama, commit, push y PR paso a paso, con GitHub Desktop y con terminal.
+
 **De:** <https://github.com/Francogp131/TicketYa> (público para lectura).
 **Para pushear:** el dueño (`Francogp131`) agrega a cada integrante como colaborador con permiso **Write**.
 - Se trabaja con SSH o HTTPS; el dueño no necesita dar tokens a nadie.

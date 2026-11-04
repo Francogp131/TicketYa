@@ -8,6 +8,7 @@
 |---|---|---|---|---|
 | [`../README.md`](../README.md) | Presentación, requisitos, cómo ejecutar y datos de prueba | P4 | Día 0 a 5 | En progreso |
 | [`equipo/README.md`](equipo/README.md) | Briefs por integrante, setup común, flujo de ramas y definición de terminado | P5 | Día 0 | Listo |
+| [`equipo/primer-pr.md`](equipo/primer-pr.md) | Guía paso a paso para el primer PR (GitHub Desktop, terminal y web) | P5 | Día 1 | Listo |
 | [`equipo/compa-1.md`](equipo/compa-1.md) | Brief de catalog (P1) | P5 | Día 0 | Listo |
 | [`equipo/compa-2.md`](equipo/compa-2.md) | Brief de inventory (P2) | P5 | Día 0 | Listo |
 | [`equipo/compa-3.md`](equipo/compa-3.md) | Brief de orders (P3) | P5 | Día 0 | Listo |
