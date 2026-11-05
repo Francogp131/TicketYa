@@ -147,7 +147,7 @@ cd orders-service && mvn test
 cd api-gateway && mvn test
 ```
 
-La prueba de concurrencia de inventory usa Testcontainers y requiere Docker.
+La prueba de integración de catalog y la de concurrencia de inventory usan Testcontainers y requieren Docker.
 
 ## Equipo y flujo de trabajo
 

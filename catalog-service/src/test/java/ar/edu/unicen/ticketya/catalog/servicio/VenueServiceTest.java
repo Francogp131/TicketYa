@@ -68,6 +68,36 @@ class VenueServiceTest {
     }
 
     @Test
+    void unSectorNumeradoConDimensionesInvalidasEsInvalido() {
+        UUID lugarId = UUID.randomUUID();
+        Lugar lugar = new Lugar();
+        lugar.setId(lugarId);
+        when(lugarRepository.findById(lugarId)).thenReturn(Optional.of(lugar));
+
+        assertThatThrownBy(() -> venueService.crearSector(lugarId,
+                new CrearSectorRequest("Platea", TipoSector.NUMERADO, null, 0, 3)))
+                .isInstanceOfSatisfying(ApiException.class, ex -> {
+                    assertThat(ex.getStatus().value()).isEqualTo(400);
+                    assertThat(ex.getCode()).isEqualTo("VALIDATION_ERROR");
+                });
+    }
+
+    @Test
+    void unSectorNoNumeradoConCapacidadCeroEsInvalido() {
+        UUID lugarId = UUID.randomUUID();
+        Lugar lugar = new Lugar();
+        lugar.setId(lugarId);
+        when(lugarRepository.findById(lugarId)).thenReturn(Optional.of(lugar));
+
+        assertThatThrownBy(() -> venueService.crearSector(lugarId,
+                new CrearSectorRequest("Campo", TipoSector.NO_NUMERADO, 0, null, null)))
+                .isInstanceOfSatisfying(ApiException.class, ex -> {
+                    assertThat(ex.getStatus().value()).isEqualTo(400);
+                    assertThat(ex.getCode()).isEqualTo("VALIDATION_ERROR");
+                });
+    }
+
+    @Test
     void unSectorNoNumeradoSinCapacidadEsInvalido() {
         UUID lugarId = UUID.randomUUID();
         Lugar lugar = new Lugar();

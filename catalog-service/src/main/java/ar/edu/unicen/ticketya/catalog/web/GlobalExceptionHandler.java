@@ -1,10 +1,14 @@
 package ar.edu.unicen.ticketya.catalog.web;
 
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -52,6 +56,17 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<ProblemDetail> handleUnreadable(HttpMessageNotReadableException ex, HttpServletRequest request) {
+        if (ex.getCause() instanceof InvalidFormatException invalidFormat && !invalidFormat.getPath().isEmpty()) {
+            String field = invalidFormat.getPath().stream()
+                    .map(JsonMappingException.Reference::getFieldName)
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.joining("."));
+            if (!field.isBlank()) {
+                List<Map<String, Object>> errors = List.of(Map.of("field", field, "message", "valor inválido"));
+                return build(HttpStatus.BAD_REQUEST, "VALIDATION_ERROR",
+                        "La solicitud tiene campos inválidos", errors, request);
+            }
+        }
         return build(HttpStatus.BAD_REQUEST, "MALFORMED_JSON", "El cuerpo de la solicitud no es JSON válido", List.of(), request);
     }
 

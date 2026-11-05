@@ -56,4 +56,6 @@ curl http://localhost:8081/actuator/health
 
 Swagger UI: <http://localhost:8081/swagger-ui.html> · OpenAPI: <http://localhost:8081/v3/api-docs>
 
-Los tests unitarios y de controller no necesitan Docker. La validación de integración con PostgreSQL se corre levantando la base y los servicios (ver `docs/pruebas.md`).
+`mvn test` corre los tests unitarios y de controller sin Docker. `VenueServiceIntegrationTest`
+valida la generación de asientos contra PostgreSQL 16 real con Testcontainers; si Docker no está
+disponible el test se omite, y en CI se ejecuta siempre porque el runner lo tiene.

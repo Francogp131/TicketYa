@@ -69,6 +69,9 @@ public class EventService {
         if (!request.fecha().isAfter(OffsetDateTime.now(clock))) {
             throw validacion("fecha", "debe ser una fecha futura");
         }
+        if (request.limitePorCliente() != null && request.limitePorCliente() < 1) {
+            throw validacion("limitePorCliente", "debe ser mayor a 0");
+        }
         Lugar lugar = lugarRepository.findById(request.lugarId())
                 .orElseThrow(() -> ApiException.notFound("VENUE_NOT_FOUND", "No existe el lugar " + request.lugarId()));
 
