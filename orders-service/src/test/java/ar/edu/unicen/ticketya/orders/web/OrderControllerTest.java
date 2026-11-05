@@ -3,6 +3,7 @@ package ar.edu.unicen.ticketya.orders.web;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -45,6 +46,19 @@ class OrderControllerTest {
                                 """))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.code").value("UNAUTHORIZED"));
+    }
+
+    @Test
+    void obtenerOrdenInexistenteDevuelve404() throws Exception {
+        UUID ordenId = UUID.randomUUID();
+        when(orderService.obtener(ordenId, UUID.fromString(CLIENTE)))
+                .thenThrow(ApiException.notFound("ORDER_NOT_FOUND", "No existe la orden " + ordenId));
+
+        mockMvc.perform(get("/api/orders/{ordenId}", ordenId)
+                        .header("X-User-Id", CLIENTE)
+                        .header("X-User-Role", "CLIENT"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("ORDER_NOT_FOUND"));
     }
 
     @Test
