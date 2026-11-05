@@ -21,7 +21,7 @@ Servicio de disponibilidad, reservas temporales y no doble venta de TicketYa.
 | POST | `/internal/reservations/{reservaId}/release` | interno | Libera la reserva si el pago se rechazó. Idempotente, 204 |
 | POST | `/internal/returns` | interno | Devuelve un asiento vendido o repone una zona. Idempotente con `Idempotency-Key`, 204 |
 
-Límite por cliente, vencimiento, confirmación/liberación y devolución corresponden a las tareas 3.4–3.8. La prueba de concurrencia corre con `mvn test` contra PostgreSQL real (Testcontainers): 100 hilos sobre el mismo asiento y varios sobre el último lugar de una zona.
+Límite por cliente, vencimiento, confirmación/liberación y devolución corresponden a las tareas 3.4–3.8. La prueba de concurrencia corre con `mvn test` contra PostgreSQL real (Testcontainers): 100 hilos sobre el mismo asiento y varios sobre el último lugar de una zona. El OpenAPI exportado está en [`../openapi/inventory-openapi.json`](../openapi/inventory-openapi.json) e incluye ejemplos y los códigos 201, 400, 404, 409, 410 y 422.
 
 ## Reserva y no doble venta
 
@@ -58,4 +58,6 @@ mvn spring-boot:run
 curl http://localhost:8082/actuator/health
 ```
 
-Swagger UI: <http://localhost:8082/swagger-ui.html> · OpenAPI: <http://localhost:8082/v3/api-docs>
+Swagger UI: <http://localhost:8082/swagger-ui.html> · OpenAPI en vivo: <http://localhost:8082/v3/api-docs>
+
+El archivo versionado se regenera con `mvn test -Dexport.openapi=true` (lo escribe `OpenApiDocumentoTest`).
