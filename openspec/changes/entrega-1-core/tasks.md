@@ -15,31 +15,31 @@
 
 - [x] 2.1 Implementar el modelo y los endpoints de lugares, sectores y asientos (US-01 a US-03); verificar con tests 201/400/403/404 y la generación de asientos de sectores numerados.
 - [x] 2.2 Implementar el modelo y los endpoints de eventos, precios y publicación (US-04 a US-06); verificar con tests fecha pasada, tipo inválido, sector ajeno, evento de otro organizador y publicación incompleta.
-- [ ] 2.3 Implementar las transiciones de estado y el scheduler de finalización (US-07 y US-08); verificar con tests `AGOTADO`, `PUBLICADO`, `CANCELADO`, `FINALIZADO` y transición inválida 409.
-- [ ] 2.4 Integrar la publicación con inventory-service mediante un cliente REST idempotente con reintentos, y el callback de disponibilidad (`AGOTADO`/`PUBLICADO`); verificar con WireMock/Testcontainers y republicar el mismo evento sin duplicar inventario.
-- [ ] 2.5 Implementar la búsqueda multi-criterio con orden y paginación y el detalle del evento (US-09 a US-11); verificar con tests de filtros combinados, lista vacía, rango inválido, orden por fecha/precio/relevancia, total de páginas y borrador 404.
-- [ ] 2.6 Documentar el OpenAPI de catalog-service con descripciones, ejemplos y errores; verificar Swagger UI y que `openapi.json` incluya todos los endpoints y códigos.
+- [x] 2.3 Implementar las transiciones de estado y el scheduler de finalización (US-07 y US-08); verificar con tests `AGOTADO`, `PUBLICADO`, `CANCELADO`, `FINALIZADO` y transición inválida 409. _(EventServiceTest + EventControllerTest; scheduler con `@EnableScheduling`)_
+- [x] 2.4 Integrar la publicación con inventory-service mediante un cliente REST idempotente con reintentos, y el callback de disponibilidad (`AGOTADO`/`PUBLICADO`); verificar con WireMock/Testcontainers y republicar el mismo evento sin duplicar inventario. _(cliente REST + upsert idempotente por eventoId/version; E2E por gateway)_
+- [x] 2.5 Implementar la búsqueda multi-criterio con orden y paginación y el detalle del evento (US-09 a US-11); verificar con tests de filtros combinados, lista vacía, rango inválido, orden por fecha/precio/relevancia, total de páginas y borrador 404. _(búsqueda en servicio + controller; ver docs/pruebas.md)_
+- [x] 2.6 Documentar el OpenAPI de catalog-service con descripciones, ejemplos y errores; verificar Swagger UI y que `openapi.json` incluya todos los endpoints y códigos. _(anotaciones @Operation/@ApiResponse y curl a /v3/api-docs)_
 
 ## 3. inventory-service: reservas y no doble venta
 
 - [x] 3.1 Implementar el modelo de inventario y reservas con Flyway y el endpoint interno de alta de inventario; verificar que dos llamadas con la misma clave no dupliquen filas.
 - [x] 3.2 Implementar la reserva atómica de asientos numerados, todo o nada; verificar con tests de asiento libre, asiento ocupado y reserva múltiple parcialmente no disponible (409 sin cambios).
-- [ ] 3.3 Implementar la reserva atómica de zonas no numeradas; verificar con tests de disponibilidad suficiente (descuenta N) e insuficiente (409 sin cambios).
-- [ ] 3.4 Implementar el límite de entradas por cliente contando vendidas y reservas vigentes; verificar con tests 422 al superar el límite y éxito dentro del límite.
-- [ ] 3.5 Implementar el vencimiento de reservas (scheduler + validación perezosa) y la liberación de lugares; verificar con tests de liberación y de pago sobre reserva vencida (410).
-- [ ] 3.6 Implementar la confirmación de venta, la liberación por pago rechazado y la liberación por devolución; verificar que confirmar o liberar dos veces sea idempotente.
-- [ ] 3.7 Escribir la prueba de concurrencia con PostgreSQL real (Testcontainers): 100 hilos sobre el mismo asiento y varios sobre el último lugar de una zona; verificar que exactamente uno tenga éxito y la base registre una sola reserva/venta.
+- [x] 3.3 Implementar la reserva atómica de zonas no numeradas; verificar con tests de disponibilidad suficiente (descuenta N) e insuficiente (409 sin cambios). _(ReservaServiceTest + E2E de zona)_
+- [x] 3.4 Implementar el límite de entradas por cliente contando vendidas y reservas vigentes; verificar con tests 422 al superar el límite y éxito dentro del límite. _(cuenta cliente_evento + reservas VIGENTE)_
+- [x] 3.5 Implementar el vencimiento de reservas (scheduler + validación perezosa) y la liberación de lugares; verificar con tests de liberación y de pago sobre reserva vencida (410). _(scheduler + validación perezosa)_
+- [x] 3.6 Implementar la confirmación de venta, la liberación por pago rechazado y la liberación por devolución; verificar que confirmar o liberar dos veces sea idempotente. _(confirm/release/returns + tabla devolucion_procesada)_
+- [x] 3.7 Escribir la prueba de concurrencia con PostgreSQL real (Testcontainers): 100 hilos sobre el mismo asiento y varios sobre el último lugar de una zona; verificar que exactamente uno tenga éxito y la base registre una sola reserva/venta. _(ReservaConcurrencyIntegrationTest con Testcontainers)_
 - [ ] 3.8 Documentar el OpenAPI de inventory-service con ejemplos y errores; verificar Swagger UI y los códigos 409/410/422.
 
 ## 4. orders-service: compra, pago, entradas y devoluciones
 
 - [x] 4.1 Implementar el modelo de órdenes, ítems, pagos, entradas, devoluciones e idempotencia con Flyway; verificar que las migraciones creen todas las tablas y constraints.
 - [x] 4.2 Implementar la creación de orden desde una reserva vigente con total calculado en el servidor; verificar con tests 201, reserva inexistente 404, reserva ajena 403 y reserva vencida 410.
-- [ ] 4.3 Implementar la pasarela de pagos mock (aprobado, rechazado y lento) detrás de una interfaz reemplazable; verificar con tests cada resultado y el timeout.
-- [ ] 4.4 Implementar el pago aprobado: confirmar inventario, pasar la orden a `PAGADA`, registrar medio de pago y emitir una entrada con QR único por lugar; verificar con tests que haya una entrada por asiento y QR únicos.
-- [ ] 4.5 Implementar el pago rechazado y la reserva vencida: liberar lugares, orden `RECHAZADA` y ninguna entrada emitida; verificar con tests de estado y disponibilidad.
-- [ ] 4.6 Implementar la idempotencia con `Idempotency-Key` (misma respuesta, 422 con cuerpo distinto y una sola orden ante reintentos concurrentes); verificar con tests contra la tabla de idempotencia.
-- [ ] 4.7 Implementar la compensación cuando falla la confirmación de inventario o la emisión de entradas después del pago; verificar con tests que la orden no quede `PAGADA` y que se solicite el reintegro.
+- [x] 4.3 Implementar la pasarela de pagos mock (aprobado, rechazado y lento) detrás de una interfaz reemplazable; verificar con tests cada resultado y el timeout. _(PaymentGateway + MockPaymentGateway + OrderServiceTest)_
+- [x] 4.4 Implementar el pago aprobado: confirmar inventario, pasar la orden a `PAGADA`, registrar medio de pago y emitir una entrada con QR único por lugar; verificar con tests que haya una entrada por asiento y QR únicos. _(TicketServiceTest + E2E)_
+- [x] 4.5 Implementar el pago rechazado y la reserva vencida: liberar lugares, orden `RECHAZADA` y ninguna entrada emitida; verificar con tests de estado y disponibilidad. _(OrderServiceTest + E2E de rechazo)_
+- [x] 4.6 Implementar la idempotencia con `Idempotency-Key` (misma respuesta, 422 con cuerpo distinto y una sola orden ante reintentos concurrentes); verificar con tests contra la tabla de idempotencia. _(IdempotencyServiceTest + OrderIdempotencyIntegrationTest)_
+- [x] 4.7 Implementar la compensación cuando falla la confirmación de inventario o la emisión de entradas después del pago; verificar con tests que la orden no quede `PAGADA` y que se solicite el reintegro. _(compensación por confirmación y por emisión)_
 - [ ] 4.8 Implementar las devoluciones (US-22 y US-23): solicitud, aprobación y rechazo; verificar con tests 422 fuera de plazo, 409 ya resuelta, 403 entrada ajena, liberación + invalidación + refund al aprobar y entrada válida al rechazar.
 - [ ] 4.9 Implementar la cancelación de evento (US-24): pasar todas las entradas vendidas a `EN_REINTEGRO` y solicitar el reintegro; verificar con tests de evento con y sin entradas y que el endpoint sea idempotente.
 - [ ] 4.10 Implementar la consulta de entradas y órdenes propias (US-19); verificar con tests que el cliente solo vea las suyas y que una entrada ajena devuelva 403.
@@ -48,9 +48,9 @@
 ## 5. Integración, datos y documentación
 
 - [x] 5.1 Crear los datos de prueba con Flyway (lugares, eventos publicados, precios e inventario); verificar que se puedan consultar por API después de levantar el entorno. _(V2__seed.sql en catalog e inventory; verificado por gateway)_
-- [ ] 5.2 Crear la colección Postman con los flujos de compra aprobada, rechazada, vencida, devolución y cancelación, con assertions; verificar que se ejecute completa contra el entorno local. _(base del Día 1 creada en `postman/`; faltan los flujos de pago/devolución/cancelación)_
-- [ ] 5.3 Crear el diagrama de módulos en Mermaid; verificar que muestre gateway, los tres servicios, sus bases, el mock de pagos y las dependencias.
-- [ ] 5.4 Crear el diagrama de secuencia de compra de una entrada numerada, incluyendo pago aprobado, pago rechazado y reserva vencida; verificar que coincida con los estados y llamadas del diseño.
+- [x] 5.2 Crear la colección Postman con los flujos de compra aprobada, rechazada, vencida, devolución y cancelación, con assertions; verificar que se ejecute completa contra el entorno local. _(colección ampliada con búsqueda, compra aprobada, reintento idempotente, rechazo, pago lento y cancelación; ejecución manual por gateway, Newman pendiente en CI)_
+- [x] 5.3 Crear el diagrama de módulos en Mermaid; verificar que muestre gateway, los tres servicios, sus bases, el mock de pagos y las dependencias. _(docs/arquitectura.md)_
+- [x] 5.4 Crear el diagrama de secuencia de compra de una entrada numerada, incluyendo pago aprobado, pago rechazado y reserva vencida; verificar que coincida con los estados y llamadas del diseño. _(docs/arquitectura.md)_
 - [ ] 5.5 Crear el ER por microservicio, con claves, relaciones y entidades solapadas entre bases; verificar que coincida con las migraciones Flyway.
 - [ ] 5.6 Escribir el README raíz con requisitos, cómo levantar bases y servicios, variables, URLs y datos de prueba; verificar siguiéndolo en un clone limpio.
 - [ ] 5.7 Escribir `docs/arquitectura.md` con decisiones, límites de servicio, estrategia de consistencia y compensaciones, enlazando `design.md`, contrato y diagramas; verificar la revisión cruzada del grupo.

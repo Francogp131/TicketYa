@@ -18,16 +18,16 @@
 | [`checklist-entrega-1.md`](checklist-entrega-1.md) | Verificación de todo lo pedido para la Entrega 1 | P4 | Día 0 | Listo |
 | [`features-y-user-stories.md`](features-y-user-stories.md) | Features y US-01 a US-38 con criterios de aceptación | P1/P2/P3 | Día 0 | Listo |
 | [`api-contract.md`](api-contract.md) | Contrato REST: método, ruta, parámetros, códigos y ejemplos JSON | P1/P2/P3 | Día 0 | Listo (1.3) |
-| `arquitectura.md` | Diagrama de módulos y secuencia de compra (aprobado/rechazado/vencido) | P4 | Día 3 a 5 | Pendiente (5.3, 5.4) |
+| [`arquitectura.md`](arquitectura.md) | Diagrama de módulos y secuencia de compra (aprobado/rechazado/vencido) | P4 | Día 3 a 5 | Listo (5.3, 5.4) |
 | `modelo-datos.md` | ER por microservicio, claves, relaciones y entidades solapadas | P1/P2/P3 | Día 5 | Pendiente (5.5) |
 | `decisiones.md` | ADR cortas: decisión, alternativas y consecuencias | P4 | Día 5 | Pendiente (5.9) |
-| `pruebas.md` | Estrategia, comandos y evidencia de concurrencia y E2E | P5 | Día 5 y 6 | Pendiente (5.11) |
+| [`pruebas.md`](pruebas.md) | Estrategia, comandos y evidencia de concurrencia y E2E | P5 | Día 5 y 6 | En progreso (5.11) |
 | `../openspec/changes/entrega-1-core/` | Propuesta, specs, diseño y tareas del cambio | Todos | Día 0 | Listo |
 | `../catalog-service/README.md` | Responsabilidad, endpoints, modelo y comandos del servicio | P1 | Día 1 a 4 | Día 1 |
 | `../inventory-service/README.md` | Responsabilidad, endpoints, modelo y comandos del servicio | P2 | Día 1 a 4 | Día 1 |
 | `../orders-service/README.md` | Responsabilidad, endpoints, modelo y comandos del servicio | P3 | Día 1 a 4 | Día 1 |
 | `../api-gateway/README.md` | Rutas, headers, variables y ejecución | P4 | Día 1 a 4 | Día 1 |
-| `../postman/TicketYa.postman_collection.json` | Colección de requests con assertions | P5 | Día 5 | Base (Día 1) |
+| `../postman/TicketYa.postman_collection.json` | Colección de requests con assertions | P5 | Día 5 | Flujos de compra, rechazo, vencimiento y cancelación |
 | `../openapi/*.json` | OpenAPI exportado de cada servicio | Cada dueño | Día 4 | Pendiente (2.6, 3.8, 4.11) |
 
 ## 2. Estándares
