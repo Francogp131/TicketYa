@@ -11,6 +11,7 @@ import java.net.URI;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -65,5 +66,15 @@ public class InventoryController {
             @RequestHeader(value = "X-User-Role", required = false) String userRole) {
         RequestIdentity identity = RequestIdentity.require(userId, userRole);
         return reservaService.obtener(reservaId, identity.userId());
+    }
+
+    @DeleteMapping("/reservations/{reservaId}")
+    public ResponseEntity<Void> cancelar(
+            @PathVariable UUID reservaId,
+            @RequestHeader(value = "X-User-Id", required = false) String userId,
+            @RequestHeader(value = "X-User-Role", required = false) String userRole) {
+        RequestIdentity identity = RequestIdentity.require(userId, userRole);
+        reservaService.cancelar(reservaId, identity.userId());
+        return ResponseEntity.noContent().build();
     }
 }

@@ -29,4 +29,11 @@ public interface AsientoInventarioRepository extends JpaRepository<AsientoInvent
     long countByEventoIdAndSectorIdAndEstado(UUID eventoId, UUID sectorId, EstadoAsiento estado);
 
     List<AsientoInventario> findByEventoIdAndSectorIdOrderByFilaAscNumeroAsc(UUID eventoId, UUID sectorId);
+
+    @Query("""
+            select a from AsientoInventario a
+            where a.eventoId = :eventoId and a.asientoId in :asientoIds
+            """)
+    List<AsientoInventario> buscarPorAsientos(@Param("eventoId") UUID eventoId,
+                                              @Param("asientoIds") Collection<UUID> asientoIds);
 }

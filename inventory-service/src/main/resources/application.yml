@@ -32,3 +32,7 @@ management:
 springdoc:
   swagger-ui:
     path: /swagger-ui.html
+
+inventory:
+  scheduler:
+    vencimiento-ms: ${INVENTORY_VENCIMIENTO_MS:30000}
