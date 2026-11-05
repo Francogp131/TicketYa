@@ -63,6 +63,7 @@ class ReservaServiceTest {
     private JdbcTemplate jdbcTemplate;
     @Mock
     private LimitePorCliente limitePorCliente;
+    private VencimientoService vencimientoService;
 
     private ReservaService reservaService;
     private final Clock clock = Clock.fixed(Instant.parse("2026-11-03T12:00:00Z"), ZONA);
@@ -70,7 +71,8 @@ class ReservaServiceTest {
     @BeforeEach
     void setUp() {
         reservaService = new ReservaService(eventoRepository, sectorRepository, asientoRepository,
-                reservaRepository, reservaItemRepository, jdbcTemplate, limitePorCliente, clock);
+                reservaRepository, reservaItemRepository, jdbcTemplate, limitePorCliente,
+                vencimientoService, clock);
     }
 
     @Test
