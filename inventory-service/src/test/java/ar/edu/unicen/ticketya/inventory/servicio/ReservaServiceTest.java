@@ -6,6 +6,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyCollection;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -60,6 +61,8 @@ class ReservaServiceTest {
     private ReservaItemRepository reservaItemRepository;
     @Mock
     private JdbcTemplate jdbcTemplate;
+    @Mock
+    private LimitePorCliente limitePorCliente;
 
     private ReservaService reservaService;
     private final Clock clock = Clock.fixed(Instant.parse("2026-11-03T12:00:00Z"), ZONA);
@@ -67,7 +70,7 @@ class ReservaServiceTest {
     @BeforeEach
     void setUp() {
         reservaService = new ReservaService(eventoRepository, sectorRepository, asientoRepository,
-                reservaRepository, reservaItemRepository, jdbcTemplate, clock);
+                reservaRepository, reservaItemRepository, jdbcTemplate, limitePorCliente, clock);
     }
 
     @Test
@@ -86,12 +89,14 @@ class ReservaServiceTest {
         when(asientoRepository.bloquearAsientos(eq(evento.getEventoId()), anyCollection()))
                 .thenReturn(List.of(asiento));
 
+        UUID clienteId = UUID.randomUUID();
         ReservationResponse response = reservaService.reservar(
                 new ReservaRequest(evento.getEventoId(), List.of(
                         new ReservaRequest.Item(sector.getSectorId(), List.of(asiento.getAsientoId()), null))),
-                UUID.randomUUID());
+                clienteId);
 
         assertThat(response.estado()).isEqualTo(EstadoReserva.VIGENTE);
+        verify(limitePorCliente).verificar(evento.getEventoId(), clienteId, 4, 1);
         assertThat(response.total()).isEqualByComparingTo("15000.00");
         assertThat(response.items()).hasSize(1);
         assertThat(asiento.getEstado()).isEqualTo(EstadoAsiento.RESERVADO);
@@ -151,6 +156,30 @@ class ReservaServiceTest {
                 UUID.randomUUID()))
                 .isInstanceOfSatisfying(ApiException.class, ex -> assertThat(ex.getCode()).isEqualTo("SEAT_NOT_AVAILABLE"));
         assertThat(libre.getEstado()).isEqualTo(EstadoAsiento.LIBRE);
+    }
+
+    @Test
+    void superarElLimiteNoReservaNada() {
+        EventoInventario evento = evento();
+        SectorInventario sector = sector(evento.getEventoId(), TipoSectorInventario.NUMERADO);
+        UUID clienteId = UUID.randomUUID();
+        UUID asientoId = UUID.randomUUID();
+        when(eventoRepository.findById(evento.getEventoId())).thenReturn(Optional.of(evento));
+        when(sectorRepository.findByEventoIdAndSectorId(evento.getEventoId(), sector.getSectorId()))
+                .thenReturn(Optional.of(sector));
+        doThrow(ApiException.unprocessable("CLIENT_LIMIT_EXCEEDED", "supera el límite"))
+                .when(limitePorCliente).verificar(evento.getEventoId(), clienteId, 4, 1);
+
+        assertThatThrownBy(() -> reservaService.reservar(
+                new ReservaRequest(evento.getEventoId(), List.of(
+                        new ReservaRequest.Item(sector.getSectorId(), List.of(asientoId), null))),
+                clienteId))
+                .isInstanceOfSatisfying(ApiException.class, ex -> {
+                    assertThat(ex.getStatus().value()).isEqualTo(422);
+                    assertThat(ex.getCode()).isEqualTo("CLIENT_LIMIT_EXCEEDED");
+                });
+        verify(reservaRepository, never()).save(any());
+        verify(asientoRepository, never()).bloquearAsientos(any(), anyCollection());
     }
 
     @Test

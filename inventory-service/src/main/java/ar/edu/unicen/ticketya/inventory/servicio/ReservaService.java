@@ -44,6 +44,7 @@ public class ReservaService {
     private final ReservaRepository reservaRepository;
     private final ReservaItemRepository reservaItemRepository;
     private final JdbcTemplate jdbcTemplate;
+    private final LimitePorCliente limitePorCliente;
     private final Clock clock;
 
     public ReservaService(EventoInventarioRepository eventoRepository,
@@ -52,6 +53,7 @@ public class ReservaService {
                           ReservaRepository reservaRepository,
                           ReservaItemRepository reservaItemRepository,
                           JdbcTemplate jdbcTemplate,
+                          LimitePorCliente limitePorCliente,
                           Clock clock) {
         this.eventoRepository = eventoRepository;
         this.sectorRepository = sectorRepository;
@@ -59,6 +61,7 @@ public class ReservaService {
         this.reservaRepository = reservaRepository;
         this.reservaItemRepository = reservaItemRepository;
         this.jdbcTemplate = jdbcTemplate;
+        this.limitePorCliente = limitePorCliente;
         this.clock = clock;
     }
 
@@ -102,6 +105,12 @@ public class ReservaService {
                 itemsZona.add(item);
             }
         }
+
+        int cantidadPedida = asientosPedidos.size();
+        for (ReservaRequest.Item item : itemsZona) {
+            cantidadPedida += item.cantidad();
+        }
+        limitePorCliente.verificar(evento.getEventoId(), clienteId, evento.getLimitePorCliente(), cantidadPedida);
 
         OffsetDateTime expiresAt = OffsetDateTime.now(clock).plusMinutes(MINUTOS_VIGENCIA);
         Reserva reserva = new Reserva();

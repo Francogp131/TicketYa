@@ -416,6 +416,7 @@ Reglas:
 - Un item con `cantidad` es de zona no numerada; `asientoIds` debe omitirse.
 - Todo o nada: si un asiento no está libre o la zona no alcanza, no se reserva nada.
 - `clienteId` sale de `X-User-Id`.
+- Límite por cliente: se toma `pg_advisory_xact_lock(hashtext(eventoId || clienteId))` y se suman `cliente_evento.entradas_vendidas` más las cantidades de reservas `VIGENTE`. Si eso más lo pedido supera `limitePorCliente`, se responde 422 y no se reserva nada.
 - Vencimiento: 10 minutos desde la creación.
 
 **201 Created**
