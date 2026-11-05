@@ -453,7 +453,7 @@ Errores: `400 VALIDATION_ERROR`, `404 EVENT_NOT_FOUND`/`SECTOR_NOT_FOUND`, `409 
 
 ### 4.4 Consultar reserva — `GET /api/inventory/reservations/{reservaId}` (dueño)
 
-**200** `ReservationResponse`. Si está vencida devuelve `estado: "VENCIDA"` (no 410 en la consulta; 410 se usa al pagar). Errores: `403 NOT_RESERVATION_OWNER`, `404 RESERVATION_NOT_FOUND`.
+**200** `ReservationResponse`. Si está vencida libera los lugares y devuelve `estado: "VENCIDA"` (no 410 en la consulta; 410 se usa al pagar). Errores: `403 NOT_RESERVATION_OWNER`, `404 RESERVATION_NOT_FOUND`.
 
 ### 4.5 Cancelar reserva — `DELETE /api/inventory/reservations/{reservaId}` (dueño)
 

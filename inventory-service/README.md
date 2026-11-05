@@ -18,14 +18,14 @@ Servicio de disponibilidad, reservas temporales y no doble venta de TicketYa.
 | GET | `/api/inventory/reservations/{reservaId}` | dueño | Consulta de una reserva |
 | GET | `/internal/reservations/{reservaId}` | interno | Reserva para orders, con nombre/fecha del evento |
 
-Vencimiento, límite por cliente, confirmación/liberación y devolución corresponden a las tareas 3.3–3.8 (Días 2–4).
+Límite por cliente, confirmación/liberación y devolución corresponden a las tareas 3.4 y 3.6–3.8.
 
 ## Reserva y no doble venta
 
 - La reserva se ejecuta en una transacción.
 - Asientos numerados: se bloquean con `SELECT ... FOR UPDATE` ordenados por `asientoId`; si alguno no está `LIBRE`, se aborta toda la reserva con `409 SEAT_NOT_AVAILABLE`.
 - Zonas no numeradas: `UPDATE ... SET disponibles = disponibles - N WHERE disponibles >= N RETURNING disponibles`; si no hay filas, `409 INSUFFICIENT_AVAILABILITY`.
-- La reserva vence a los 10 minutos (`expires_at`).
+- La reserva vence a los 10 minutos (`expires_at`). Un scheduler cada 30 segundos pasa a `VENCIDA` las reservas `VIGENTE` con `expires_at` cumplido y libera sus lugares. Los asientos se sueltan con `UPDATE ... WHERE estado = 'RESERVADO' AND reserva_id = ?`, así dos instancias no liberan dos veces. Consultar una reserva vencida también la libera y responde `estado: VENCIDA`. Pagarla (`validarParaPago`, lo usa la confirmación de la tarea 3.6) responde `410 RESERVATION_EXPIRED`.
 - El alta de inventario es idempotente por `eventoId + version` y usa `ON CONFLICT DO NOTHING` para los asientos.
 
 ## Modelo

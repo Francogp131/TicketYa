@@ -44,6 +44,7 @@ public class ReservaService {
     private final ReservaRepository reservaRepository;
     private final ReservaItemRepository reservaItemRepository;
     private final JdbcTemplate jdbcTemplate;
+    private final VencimientoService vencimientoService;
     private final Clock clock;
 
     public ReservaService(EventoInventarioRepository eventoRepository,
@@ -52,6 +53,7 @@ public class ReservaService {
                           ReservaRepository reservaRepository,
                           ReservaItemRepository reservaItemRepository,
                           JdbcTemplate jdbcTemplate,
+                          VencimientoService vencimientoService,
                           Clock clock) {
         this.eventoRepository = eventoRepository;
         this.sectorRepository = sectorRepository;
@@ -59,6 +61,7 @@ public class ReservaService {
         this.reservaRepository = reservaRepository;
         this.reservaItemRepository = reservaItemRepository;
         this.jdbcTemplate = jdbcTemplate;
+        this.vencimientoService = vencimientoService;
         this.clock = clock;
     }
 
@@ -156,18 +159,39 @@ public class ReservaService {
         return toResponse(reserva, evento, sectores, reservaItems);
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public ReservationResponse obtener(UUID reservaId, UUID clienteId) {
         Reserva reserva = buscarReserva(reservaId);
         if (!reserva.getClienteId().equals(clienteId)) {
             throw ApiException.forbidden("NOT_RESERVATION_OWNER", "La reserva pertenece a otro cliente");
         }
+        marcarVencidaSiCorresponde(reserva);
         return toResponse(reserva);
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public ReservationResponse obtenerInterno(UUID reservaId) {
-        return toResponse(buscarReserva(reservaId));
+        Reserva reserva = buscarReserva(reservaId);
+        marcarVencidaSiCorresponde(reserva);
+        return toResponse(reserva);
+    }
+
+    /**
+     * La usa el pago (confirmación, tarea 3.6). Si la reserva ya venció, libera los lugares y responde 410.
+     */
+    @Transactional
+    public void validarParaPago(UUID reservaId) {
+        Reserva reserva = buscarReserva(reservaId);
+        boolean acabaDeVencer = vencimientoService.liberarSiVencio(reserva.getId());
+        if (acabaDeVencer || reserva.getEstado() == EstadoReserva.VENCIDA) {
+            throw ApiException.gone("RESERVATION_EXPIRED", "La reserva está vencida y no se puede pagar");
+        }
+    }
+
+    private void marcarVencidaSiCorresponde(Reserva reserva) {
+        if (vencimientoService.liberarSiVencio(reserva.getId())) {
+            reserva.setEstado(EstadoReserva.VENCIDA);
+        }
     }
 
     private ReservationResponse toResponse(Reserva reserva) {
