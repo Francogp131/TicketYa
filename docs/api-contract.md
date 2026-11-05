@@ -545,6 +545,8 @@ Errores: `409 RESERVATION_NOT_CONFIRMABLE`, `410 RESERVATION_EXPIRED`. Idempoten
 
 **204**, idempotente. Libera asientos vendidos o repone disponibilidad de zonas.
 
+Header opcional `Idempotency-Key`. Si orders reintenta la misma devolución, manda la misma clave: la segunda llamada no vuelve a sumar lugares. Sin la clave, un asiento igual no se libera dos veces (solo pasa de `VENDIDO` a `LIBRE` una vez); la zona sí necesita la clave para no reponerse dos veces.
+
 ## 5. orders-service
 
 ### 5.1 Crear orden y pagar — `POST /api/orders` (autenticado)

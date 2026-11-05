@@ -27,7 +27,7 @@
 - [ ] 3.3 Implementar la reserva atómica de zonas no numeradas; verificar con tests de disponibilidad suficiente (descuenta N) e insuficiente (409 sin cambios).
 - [ ] 3.4 Implementar el límite de entradas por cliente contando vendidas y reservas vigentes; verificar con tests 422 al superar el límite y éxito dentro del límite.
 - [ ] 3.5 Implementar el vencimiento de reservas (scheduler + validación perezosa) y la liberación de lugares; verificar con tests de liberación y de pago sobre reserva vencida (410).
-- [ ] 3.6 Implementar la confirmación de venta, la liberación por pago rechazado y la liberación por devolución; verificar que confirmar o liberar dos veces sea idempotente.
+- [x] 3.6 Implementar la confirmación de venta, la liberación por pago rechazado y la liberación por devolución; verificar que confirmar o liberar dos veces sea idempotente.
 - [ ] 3.7 Escribir la prueba de concurrencia con PostgreSQL real (Testcontainers): 100 hilos sobre el mismo asiento y varios sobre el último lugar de una zona; verificar que exactamente uno tenga éxito y la base registre una sola reserva/venta.
 - [ ] 3.8 Documentar el OpenAPI de inventory-service con ejemplos y errores; verificar Swagger UI y los códigos 409/410/422.
 
