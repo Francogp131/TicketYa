@@ -23,8 +23,11 @@ import ar.edu.unicen.ticketya.catalog.repositorio.EventoSectorPrecioRepository;
 import ar.edu.unicen.ticketya.catalog.repositorio.LugarRepository;
 import ar.edu.unicen.ticketya.catalog.repositorio.SectorRepository;
 import ar.edu.unicen.ticketya.catalog.web.ApiException;
+import ar.edu.unicen.ticketya.catalog.web.dto.CancelacionResponse;
 import ar.edu.unicen.ticketya.catalog.web.dto.CrearEventoRequest;
+import ar.edu.unicen.ticketya.catalog.web.dto.EventoBusquedaResponse;
 import ar.edu.unicen.ticketya.catalog.web.dto.EventoResponse;
+import ar.edu.unicen.ticketya.catalog.web.dto.PageResponse;
 import ar.edu.unicen.ticketya.catalog.web.dto.PrecioRequest;
 import java.math.BigDecimal;
 import java.time.Clock;
@@ -59,6 +62,8 @@ class EventServiceTest {
     private EventoSectorPrecioRepository precioRepository;
     @Mock
     private InventoryClient inventoryClient;
+    @Mock
+    private OrdersClient ordersClient;
 
     private EventService eventService;
     private final Clock clock = Clock.fixed(Instant.parse("2026-11-03T12:00:00Z"), ZONA);
@@ -66,7 +71,7 @@ class EventServiceTest {
     @BeforeEach
     void setUp() {
         eventService = new EventService(eventoRepository, lugarRepository, sectorRepository,
-                asientoRepository, participanteRepository, precioRepository, inventoryClient, clock);
+                asientoRepository, participanteRepository, precioRepository, inventoryClient, ordersClient, clock);
     }
 
     @Test
@@ -279,6 +284,194 @@ class EventServiceTest {
                     assertThat(ex.getCode()).isEqualTo("EVENT_NOT_EDITABLE");
                 });
         verify(inventoryClient, times(1)).publicarInventario(any());
+    }
+
+    @Test
+    void laBusquedaOrdenaPorPrecioYDevuelveElTotalDePaginas() {
+        Evento caro = evento(UUID.randomUUID(), UUID.randomUUID());
+        caro.setEstado(EstadoEvento.PUBLICADO);
+        Evento barato = evento(UUID.randomUUID(), UUID.randomUUID());
+        barato.setEstado(EstadoEvento.PUBLICADO);
+        Lugar lugarCaro = lugar(caro.getLugarId(), "Estadio");
+        Lugar lugarBarato = lugar(barato.getLugarId(), "Teatro");
+        UUID sectorCaro = UUID.randomUUID();
+        UUID sectorBarato = UUID.randomUUID();
+        when(eventoRepository.buscar(any(), any(), any(), any(), any(), any(), any()))
+                .thenReturn(List.of(caro, barato));
+        when(lugarRepository.findAllById(any())).thenReturn(List.of(lugarCaro, lugarBarato));
+        when(precioRepository.findByEventoIdIn(any())).thenReturn(List.of(
+                new EventoSectorPrecio(caro.getId(), sectorCaro, new BigDecimal("20000")),
+                new EventoSectorPrecio(barato.getId(), sectorBarato, new BigDecimal("8000"))));
+
+        PageResponse<EventoBusquedaResponse> pagina = eventService.buscar(
+                null, null, null, null, null, null, "PRECIO_ASC", 0, 1);
+
+        assertThat(pagina.content()).singleElement()
+                .satisfies(evento -> {
+                    assertThat(evento.id()).isEqualTo(barato.getId());
+                    assertThat(evento.precioDesde()).isEqualByComparingTo("8000");
+                });
+        assertThat(pagina.totalElements()).isEqualTo(2);
+        assertThat(pagina.totalPages()).isEqualTo(2);
+    }
+
+    @Test
+    void laRelevanciaPriorizaLosPublicadosSobreLosAgotados() {
+        Evento agotado = evento(UUID.randomUUID(), UUID.randomUUID());
+        agotado.setEstado(EstadoEvento.AGOTADO);
+        agotado.setFecha(OffsetDateTime.parse("2027-01-01T21:00:00-03:00"));
+        Evento publicado = evento(UUID.randomUUID(), UUID.randomUUID());
+        publicado.setEstado(EstadoEvento.PUBLICADO);
+        publicado.setFecha(OffsetDateTime.parse("2027-02-01T21:00:00-03:00"));
+        when(eventoRepository.buscar(any(), any(), any(), any(), any(), any(), any()))
+                .thenReturn(List.of(agotado, publicado));
+        when(lugarRepository.findAllById(any())).thenReturn(List.of());
+        when(precioRepository.findByEventoIdIn(any())).thenReturn(List.of());
+
+        PageResponse<EventoBusquedaResponse> pagina = eventService.buscar(
+                null, null, null, null, null, null, "RELEVANCIA", 0, 20);
+
+        assertThat(pagina.content()).extracting(EventoBusquedaResponse::id)
+                .containsExactly(publicado.getId(), agotado.getId());
+    }
+
+    @Test
+    void unRangoDeFechasInvalidoDevuelve400() {
+        assertThatThrownBy(() -> eventService.buscar(null, null, null, null,
+                "2027-02-01T00:00:00-03:00", "2027-01-01T00:00:00-03:00",
+                "FECHA_ASC", 0, 20))
+                .isInstanceOfSatisfying(ApiException.class, ex -> {
+                    assertThat(ex.getStatus().value()).isEqualTo(400);
+                    assertThat(ex.getCode()).isEqualTo("INVALID_DATE_RANGE");
+                });
+    }
+
+    @Test
+    void unOrdenDesconocidoDevuelve400() {
+        assertThatThrownBy(() -> eventService.buscar(null, null, null, null,
+                null, null, "CARO_PRIMERO", 0, 20))
+                .isInstanceOfSatisfying(ApiException.class, ex -> {
+                    assertThat(ex.getStatus().value()).isEqualTo(400);
+                    assertThat(ex.getCode()).isEqualTo("INVALID_SORT");
+                });
+    }
+
+    @Test
+    void cancelarUnEventoPublicadoLoMarcaCanceladoYAvisaAOrders() {
+        Evento evento = evento(UUID.randomUUID(), UUID.randomUUID());
+        evento.setEstado(EstadoEvento.PUBLICADO);
+        when(eventoRepository.findById(evento.getId())).thenReturn(Optional.of(evento));
+        when(eventoRepository.save(any(Evento.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        CancelacionResponse response = eventService.cancelar(evento.getId());
+
+        assertThat(response.estado()).isEqualTo(EstadoEvento.CANCELADO);
+        assertThat(response.cancelacionPendiente()).isFalse();
+        verify(ordersClient).cancelarEvento(evento.getId());
+    }
+
+    @Test
+    void siOrdersNoRespondeLaCancelacionQuedaPendiente() {
+        Evento evento = evento(UUID.randomUUID(), UUID.randomUUID());
+        evento.setEstado(EstadoEvento.PUBLICADO);
+        when(eventoRepository.findById(evento.getId())).thenReturn(Optional.of(evento));
+        when(eventoRepository.save(any(Evento.class))).thenAnswer(inv -> inv.getArgument(0));
+        org.mockito.Mockito.doThrow(new RuntimeException("orders caído"))
+                .when(ordersClient).cancelarEvento(evento.getId());
+
+        CancelacionResponse response = eventService.cancelar(evento.getId());
+
+        assertThat(response.estado()).isEqualTo(EstadoEvento.CANCELADO);
+        assertThat(response.cancelacionPendiente()).isTrue();
+    }
+
+    @Test
+    void noSePuedeCancelarUnEventoYaCancelado() {
+        Evento evento = evento(UUID.randomUUID(), UUID.randomUUID());
+        evento.setEstado(EstadoEvento.CANCELADO);
+        when(eventoRepository.findById(evento.getId())).thenReturn(Optional.of(evento));
+
+        assertThatThrownBy(() -> eventService.cancelar(evento.getId()))
+                .isInstanceOfSatisfying(ApiException.class, ex -> {
+                    assertThat(ex.getStatus().value()).isEqualTo(409);
+                    assertThat(ex.getCode()).isEqualTo("EVENT_NOT_CANCELLABLE");
+                });
+    }
+
+    @Test
+    void elCallbackDeDisponibilidadEsIdempotente() {
+        Evento evento = evento(UUID.randomUUID(), UUID.randomUUID());
+        evento.setEstado(EstadoEvento.PUBLICADO);
+        when(eventoRepository.findById(evento.getId())).thenReturn(Optional.of(evento));
+        when(eventoRepository.save(any(Evento.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        eventService.actualizarDisponibilidad(evento.getId(), true);
+        eventService.actualizarDisponibilidad(evento.getId(), true);
+
+        assertThat(evento.getEstado()).isEqualTo(EstadoEvento.AGOTADO);
+        verify(eventoRepository, times(1)).save(evento);
+    }
+
+    @Test
+    void elCallbackPuedeVolverAAbilitarUnEventoAgotado() {
+        Evento evento = evento(UUID.randomUUID(), UUID.randomUUID());
+        evento.setEstado(EstadoEvento.AGOTADO);
+        when(eventoRepository.findById(evento.getId())).thenReturn(Optional.of(evento));
+        when(eventoRepository.save(any(Evento.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        eventService.actualizarDisponibilidad(evento.getId(), false);
+
+        assertThat(evento.getEstado()).isEqualTo(EstadoEvento.PUBLICADO);
+    }
+
+    @Test
+    void elSchedulerFinalizaLosEventosVencidos() {
+        Evento vencido = evento(UUID.randomUUID(), UUID.randomUUID());
+        vencido.setEstado(EstadoEvento.PUBLICADO);
+        Evento agotado = evento(UUID.randomUUID(), UUID.randomUUID());
+        agotado.setEstado(EstadoEvento.AGOTADO);
+        when(eventoRepository.findByEstadoInAndFechaBefore(anyList(), any()))
+                .thenReturn(List.of(vencido, agotado));
+
+        int finalizados = eventService.finalizarEventosVencidos();
+
+        assertThat(finalizados).isEqualTo(2);
+        assertThat(vencido.getEstado()).isEqualTo(EstadoEvento.FINALIZADO);
+        assertThat(agotado.getEstado()).isEqualTo(EstadoEvento.FINALIZADO);
+        verify(eventoRepository).saveAll(anyList());
+    }
+
+    @Test
+    void elReintentoDeCancelacionesResuelveSoloLasQueResponden() {
+        Evento pendiente = evento(UUID.randomUUID(), UUID.randomUUID());
+        pendiente.setEstado(EstadoEvento.CANCELADO);
+        pendiente.setCancelacionPendiente(true);
+        Evento caido = evento(UUID.randomUUID(), UUID.randomUUID());
+        caido.setEstado(EstadoEvento.CANCELADO);
+        caido.setCancelacionPendiente(true);
+        when(eventoRepository.findByEstadoAndCancelacionPendienteTrue(EstadoEvento.CANCELADO))
+                .thenReturn(List.of(pendiente, caido));
+        when(eventoRepository.save(any(Evento.class))).thenAnswer(inv -> inv.getArgument(0));
+        org.mockito.Mockito.doAnswer(invocation -> {
+            if (caido.getId().equals(invocation.getArgument(0))) {
+                throw new RuntimeException("orders caído");
+            }
+            return null;
+        }).when(ordersClient).cancelarEvento(any());
+
+        int resueltas = eventService.reintentarCancelacionesPendientes();
+
+        assertThat(resueltas).isEqualTo(1);
+        assertThat(pendiente.isCancelacionPendiente()).isFalse();
+        assertThat(caido.isCancelacionPendiente()).isTrue();
+    }
+
+    private Lugar lugar(UUID id, String nombre) {
+        Lugar lugar = new Lugar();
+        lugar.setId(id);
+        lugar.setNombre(nombre);
+        lugar.setCiudad("Tandil");
+        return lugar;
     }
 
     private Evento evento(UUID organizadorId, UUID lugarId) {

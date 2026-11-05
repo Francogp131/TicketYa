@@ -7,6 +7,7 @@ import ar.edu.unicen.ticketya.catalog.dominio.EventoParticipante;
 import ar.edu.unicen.ticketya.catalog.dominio.EventoSectorPrecio;
 import ar.edu.unicen.ticketya.catalog.dominio.Lugar;
 import ar.edu.unicen.ticketya.catalog.dominio.Sector;
+import ar.edu.unicen.ticketya.catalog.dominio.TipoEvento;
 import ar.edu.unicen.ticketya.catalog.repositorio.AsientoRepository;
 import ar.edu.unicen.ticketya.catalog.repositorio.EventoParticipanteRepository;
 import ar.edu.unicen.ticketya.catalog.repositorio.EventoRepository;
@@ -14,16 +15,21 @@ import ar.edu.unicen.ticketya.catalog.repositorio.EventoSectorPrecioRepository;
 import ar.edu.unicen.ticketya.catalog.repositorio.LugarRepository;
 import ar.edu.unicen.ticketya.catalog.repositorio.SectorRepository;
 import ar.edu.unicen.ticketya.catalog.web.ApiException;
+import ar.edu.unicen.ticketya.catalog.web.dto.CancelacionResponse;
 import ar.edu.unicen.ticketya.catalog.web.dto.CrearEventoRequest;
+import ar.edu.unicen.ticketya.catalog.web.dto.EventoBusquedaResponse;
 import ar.edu.unicen.ticketya.catalog.web.dto.EventoDetalleResponse;
 import ar.edu.unicen.ticketya.catalog.web.dto.EventoResponse;
+import ar.edu.unicen.ticketya.catalog.web.dto.PageResponse;
 import ar.edu.unicen.ticketya.catalog.web.dto.PrecioRequest;
 import ar.edu.unicen.ticketya.catalog.web.dto.PrecioResponse;
 import ar.edu.unicen.ticketya.catalog.web.dto.SectorDetalleResponse;
 import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.OffsetDateTime;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -44,6 +50,7 @@ public class EventService {
     private final EventoParticipanteRepository participanteRepository;
     private final EventoSectorPrecioRepository precioRepository;
     private final InventoryClient inventoryClient;
+    private final OrdersClient ordersClient;
     private final Clock clock;
 
     public EventService(EventoRepository eventoRepository,
@@ -53,6 +60,7 @@ public class EventService {
                         EventoParticipanteRepository participanteRepository,
                         EventoSectorPrecioRepository precioRepository,
                         InventoryClient inventoryClient,
+                        OrdersClient ordersClient,
                         Clock clock) {
         this.eventoRepository = eventoRepository;
         this.lugarRepository = lugarRepository;
@@ -61,6 +69,7 @@ public class EventService {
         this.participanteRepository = participanteRepository;
         this.precioRepository = precioRepository;
         this.inventoryClient = inventoryClient;
+        this.ordersClient = ordersClient;
         this.clock = clock;
     }
 
@@ -211,6 +220,196 @@ public class EventService {
                 participanteRepository.findByEventoIdOrderByNombreAsc(eventoId).stream()
                         .map(EventoParticipante::getNombre).toList(),
                 sectoresResponse);
+    }
+
+    @Transactional(readOnly = true)
+    public PageResponse<EventoBusquedaResponse> buscar(String tipo,
+                                                       String organizadorId,
+                                                       String participante,
+                                                       String ciudad,
+                                                       String fechaDesde,
+                                                       String fechaHasta,
+                                                       String orden,
+                                                       int page,
+                                                       int size) {
+        TipoEvento tipoEvento = parseTipo(tipo);
+        UUID organizador = parseUuid("organizadorId", organizadorId);
+        OffsetDateTime desde = parseFecha("fechaDesde", fechaDesde);
+        OffsetDateTime hasta = parseFecha("fechaHasta", fechaHasta);
+        if (desde != null && hasta != null && desde.isAfter(hasta)) {
+            throw ApiException.badRequest("INVALID_DATE_RANGE",
+                    "fechaDesde no puede ser posterior a fechaHasta");
+        }
+        String ordenNormalizado = orden == null || orden.isBlank()
+                ? "FECHA_ASC"
+                : orden.trim().toUpperCase();
+        if (!List.of("FECHA_ASC", "FECHA_DESC", "PRECIO_ASC", "PRECIO_DESC", "RELEVANCIA")
+                .contains(ordenNormalizado)) {
+            throw ApiException.badRequest("INVALID_SORT", "El orden " + orden + " no está soportado");
+        }
+
+        List<Evento> eventos = eventoRepository.buscar(
+                List.of(EstadoEvento.PUBLICADO, EstadoEvento.AGOTADO),
+                tipoEvento, organizador, filtro(ciudad), filtro(participante),
+                desde == null ? OffsetDateTime.parse("1970-01-01T00:00:00Z") : desde,
+                hasta == null ? OffsetDateTime.parse("9999-12-31T23:59:59Z") : hasta);
+
+        Map<UUID, Lugar> lugares = lugarRepository.findAllById(
+                        eventos.stream().map(Evento::getLugarId).distinct().toList()).stream()
+                .collect(Collectors.toMap(Lugar::getId, Function.identity()));
+        Map<UUID, BigDecimal> preciosDesde = new LinkedHashMap<>();
+        precioRepository.findByEventoIdIn(eventos.stream().map(Evento::getId).toList())
+                .forEach(precio -> preciosDesde.merge(precio.getEventoId(), precio.getPrecio(), BigDecimal::min));
+
+        Comparator<Evento> comparador = comparador(ordenNormalizado, preciosDesde);
+        List<Evento> ordenados = eventos.stream().sorted(comparador).toList();
+
+        int pageNormalizada = Math.max(page, 0);
+        int sizeNormalizado = size < 1 ? 20 : Math.min(size, 100);
+        int desdeIndice = Math.min(pageNormalizada * sizeNormalizado, ordenados.size());
+        int hastaIndice = Math.min(desdeIndice + sizeNormalizado, ordenados.size());
+        List<EventoBusquedaResponse> contenido = ordenados.subList(desdeIndice, hastaIndice).stream()
+                .map(evento -> {
+                    Lugar lugar = lugares.get(evento.getLugarId());
+                    return new EventoBusquedaResponse(
+                            evento.getId(),
+                            evento.getNombre(),
+                            evento.getTipo(),
+                            lugar == null ? null : lugar.getCiudad(),
+                            lugar == null ? null : lugar.getNombre(),
+                            ar.edu.unicen.ticketya.catalog.web.dto.Fechas.argentina(evento.getFecha()),
+                            evento.getEstado(),
+                            preciosDesde.get(evento.getId()));
+                })
+                .toList();
+        int totalPages = sizeNormalizado == 0 ? 0 : (int) Math.ceil(ordenados.size() / (double) sizeNormalizado);
+        return new PageResponse<>(contenido, pageNormalizada, sizeNormalizado,
+                ordenados.size(), totalPages);
+    }
+
+    @Transactional
+    public CancelacionResponse cancelar(UUID eventoId) {
+        Evento evento = buscarEvento(eventoId);
+        if (evento.getEstado() != EstadoEvento.PUBLICADO && evento.getEstado() != EstadoEvento.AGOTADO) {
+            throw ApiException.conflict("EVENT_NOT_CANCELLABLE",
+                    "Solo se puede cancelar un evento publicado o agotado");
+        }
+        evento.setEstado(EstadoEvento.CANCELADO);
+        evento.setCancelacionPendiente(false);
+        try {
+            ordersClient.cancelarEvento(eventoId);
+        } catch (RuntimeException ex) {
+            evento.setCancelacionPendiente(true);
+        }
+        evento = eventoRepository.save(evento);
+        return new CancelacionResponse(evento.getId(), evento.getEstado(), evento.isCancelacionPendiente());
+    }
+
+    /**
+     * Callback de inventory. Es idempotente: repetir el mismo aviso no cambia el estado.
+     */
+    @Transactional
+    public void actualizarDisponibilidad(UUID eventoId, boolean agotado) {
+        Evento evento = buscarEvento(eventoId);
+        if (agotado && evento.getEstado() == EstadoEvento.PUBLICADO) {
+            evento.setEstado(EstadoEvento.AGOTADO);
+            eventoRepository.save(evento);
+        } else if (!agotado && evento.getEstado() == EstadoEvento.AGOTADO) {
+            evento.setEstado(EstadoEvento.PUBLICADO);
+            eventoRepository.save(evento);
+        }
+    }
+
+    /**
+     * Scheduler del Día 2/3: finaliza los eventos cuya fecha ya pasó.
+     */
+    @Transactional
+    public int finalizarEventosVencidos() {
+        List<Evento> vencidos = eventoRepository.findByEstadoInAndFechaBefore(
+                List.of(EstadoEvento.PUBLICADO, EstadoEvento.AGOTADO), OffsetDateTime.now(clock));
+        vencidos.forEach(evento -> evento.setEstado(EstadoEvento.FINALIZADO));
+        eventoRepository.saveAll(vencidos);
+        return vencidos.size();
+    }
+
+    /**
+     * Reintenta el aviso de cancelación a orders-service. El endpoint de cancelación
+     * responde 200 con cancelacionPendiente=true y este job lo resuelve después.
+     */
+    @Transactional
+    public int reintentarCancelacionesPendientes() {
+        List<Evento> pendientes = eventoRepository.findByEstadoAndCancelacionPendienteTrue(EstadoEvento.CANCELADO);
+        int resueltas = 0;
+        for (Evento evento : pendientes) {
+            try {
+                ordersClient.cancelarEvento(evento.getId());
+                evento.setCancelacionPendiente(false);
+                eventoRepository.save(evento);
+                resueltas++;
+            } catch (RuntimeException ex) {
+                // Se reintenta en la próxima corrida del scheduler.
+            }
+        }
+        return resueltas;
+    }
+
+    private Comparator<Evento> comparador(String orden, Map<UUID, BigDecimal> preciosDesde) {
+        Comparator<Evento> porFecha = Comparator.comparing(Evento::getFecha);
+        Function<Evento, BigDecimal> precioDe = evento -> preciosDesde.get(evento.getId());
+        Comparator<Evento> porPrecio = Comparator.comparing(precioDe,
+                Comparator.nullsLast(Comparator.naturalOrder()));
+        return switch (orden) {
+            case "FECHA_DESC" -> porFecha.reversed();
+            case "PRECIO_ASC" -> porPrecio.thenComparing(porFecha);
+            case "PRECIO_DESC" -> porPrecio.reversed().thenComparing(porFecha);
+            // Heurística documentada: disponibles primero, luego el evento más próximo y el más barato.
+            case "RELEVANCIA" -> Comparator
+                    .comparing((Evento evento) -> evento.getEstado() == EstadoEvento.PUBLICADO ? 0 : 1)
+                    .thenComparing(porFecha)
+                    .thenComparing(porPrecio);
+            default -> porFecha;
+        };
+    }
+
+    private TipoEvento parseTipo(String tipo) {
+        if (tipo == null || tipo.isBlank()) {
+            return null;
+        }
+        try {
+            return TipoEvento.valueOf(tipo.trim().toUpperCase());
+        } catch (IllegalArgumentException ex) {
+            throw validacion("tipo", "tipo de evento inválido");
+        }
+    }
+
+    private UUID parseUuid(String field, String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        try {
+            return UUID.fromString(value.trim());
+        } catch (IllegalArgumentException ex) {
+            throw validacion(field, "debe ser un UUID válido");
+        }
+    }
+
+    private OffsetDateTime parseFecha(String field, String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        try {
+            return OffsetDateTime.parse(value.trim());
+        } catch (DateTimeParseException ex) {
+            throw validacion(field, "debe ser una fecha ISO-8601 con offset");
+        }
+    }
+
+    /**
+     * Los filtros de texto viajan como cadena vacía cuando no se usan: si se
+     * pasara null, PostgreSQL no puede inferir el tipo de lower(?).
+     */
+    private String filtro(String value) {
+        return value == null || value.isBlank() ? "" : value.trim();
     }
 
     private InventorySnapshot armarSnapshot(Evento evento, List<Sector> sectores,

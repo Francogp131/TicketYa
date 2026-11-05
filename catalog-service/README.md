@@ -1,13 +1,13 @@
 # catalog-service
 
-Servicio de catálogo de TicketYa: lugares, sectores, asientos, eventos, precios, publicación, búsqueda y estado del evento.
+Servicio de catálogo de TicketYa: lugares, sectores, asientos, eventos, precios, publicación, búsqueda, estados y cancelación.
 
 - **Puerto:** 8081
 - **Base:** `catalog_db` (PostgreSQL 16, puerto 5433)
 - **Responsable:** P1 — ver [`docs/equipo/compa-1.md`](../docs/equipo/compa-1.md)
 - **Contrato:** [`docs/api-contract.md`](../docs/api-contract.md), sección 3.
 
-## Endpoints implementados (Día 1)
+## Endpoints
 
 | Método | Ruta | Rol | Descripción |
 |---|---|---|---|
@@ -19,9 +19,28 @@ Servicio de catálogo de TicketYa: lugares, sectores, asientos, eventos, precios
 | POST | `/api/catalog/events` | ORGANIZER | Crea un evento en `BORRADOR` |
 | PUT | `/api/catalog/events/{eventoId}/prices/{sectorId}` | ORGANIZER | Asigna el precio de un sector |
 | POST | `/api/catalog/events/{eventoId}/publish` | ORGANIZER | Publica y envía el snapshot a inventory |
+| POST | `/api/catalog/events/{eventoId}/cancel` | ADMIN | Cancela y avisa a orders; si falla queda `cancelacionPendiente` |
+| GET | `/api/catalog/events` | público | Búsqueda multi-criterio con orden y paginación |
 | GET | `/api/catalog/events/{eventoId}` | público | Detalle con disponibilidad consultada a inventory |
+| PATCH | `/internal/events/{eventoId}/availability` | interno | Callback de `AGOTADO`/`PUBLICADO` desde inventory |
 
-Los endpoints de búsqueda (`GET /api/catalog/events` con filtros), cancelación y scheduler de finalización corresponden a las tareas 2.3–2.6 (Días 2–4).
+### Búsqueda
+
+Parámetros combinables: `tipo`, `organizadorId`, `participante`, `ciudad`,
+`fechaDesde`, `fechaHasta`, `orden` (`FECHA_ASC`, `FECHA_DESC`, `PRECIO_ASC`,
+`PRECIO_DESC`, `RELEVANCIA`) y `page`/`size`. Solo devuelve eventos `PUBLICADO` o
+`AGOTADO`. `precioDesde` sale del mínimo de `evento_sector_precio`.
+
+`RELEVANCIA` prioriza los eventos `PUBLICADO` sobre `AGOTADO`, luego la fecha más
+próxima y, por último, el precio más bajo.
+
+### Estados y scheduler
+
+- `BORRADOR -> PUBLICADO` al publicar; si inventory falla, sigue en `BORRADOR`.
+- `PUBLICADO <-> AGOTADO` por el callback de inventory (idempotente).
+- `PUBLICADO/AGOTADO -> CANCELADO` por el endpoint de cancelación.
+- `PUBLICADO/AGOTADO -> FINALIZADO` cuando pasa la fecha (job cada 60 s).
+- Si orders no responde al cancelar, `cancelacionPendiente = true` y el job reintenta.
 
 ## Modelo
 
@@ -30,10 +49,12 @@ Tablas Flyway en [`src/main/resources/db/migration`](src/main/resources/db/migra
 - `lugar` — nombre, dirección, ciudad, latitud/longitud.
 - `sector` — pertenece a un lugar; `NUMERADO` exige filas y asientos por fila.
 - `asiento` — se genera al crear un sector numerado (`filas × asientosPorFila`).
-- `evento` — estado `BORRADOR/PUBLICADO/AGOTADO/CANCELADO/FINALIZADO`, organizador y límite por cliente.
+- `evento` — estado, organizador, límite por cliente y `cancelacion_pendiente`.
 - `evento_participante` y `evento_sector_precio` — participantes y precio por sector.
 
-Al publicar, el servicio envía a inventory el snapshot del evento (sectores, precios, capacidad y asientos) por `POST /internal/events/{id}/inventory`. Si inventory falla, el evento sigue en `BORRADOR` y se responde `502 INVENTORY_UNAVAILABLE`.
+Al publicar, el servicio envía a inventory el snapshot del evento (sectores, precios,
+capacidad y asientos) por `POST /internal/events/{id}/inventory`. Si inventory falla,
+el evento sigue en `BORRADOR` y se responde `502 INVENTORY_UNAVAILABLE`.
 
 ## Variables de entorno
 
@@ -43,6 +64,9 @@ Al publicar, el servicio envía a inventory el snapshot del evento (sectores, pr
 | `DB_URL` | `jdbc:postgresql://localhost:5433/catalog_db` | Conexión JDBC |
 | `DB_USER` / `DB_PASSWORD` | `ticketya` | Credenciales |
 | `INVENTORY_URL` | `http://localhost:8082` | Cliente interno hacia inventory |
+| `ORDERS_URL` | `http://localhost:8083` | Aviso de cancelación a orders |
+| `CATALOG_FINALIZACION_MS` | `60000` | Frecuencia del job de finalización |
+| `CATALOG_CANCELACIONES_MS` | `60000` | Frecuencia del reintento de cancelaciones |
 
 ## Ejecutar y probar
 

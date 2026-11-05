@@ -11,8 +11,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import ar.edu.unicen.ticketya.catalog.dominio.EstadoEvento;
 import ar.edu.unicen.ticketya.catalog.dominio.TipoEvento;
 import ar.edu.unicen.ticketya.catalog.servicio.EventService;
+import ar.edu.unicen.ticketya.catalog.web.dto.CancelacionResponse;
+import ar.edu.unicen.ticketya.catalog.web.dto.EventoBusquedaResponse;
 import ar.edu.unicen.ticketya.catalog.web.dto.EventoDetalleResponse;
 import ar.edu.unicen.ticketya.catalog.web.dto.EventoResponse;
+import ar.edu.unicen.ticketya.catalog.web.dto.PageResponse;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -108,6 +111,51 @@ class EventControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(eventoId.toString()))
                 .andExpect(jsonPath("$.estado").value("PUBLICADO"));
+    }
+
+    @Test
+    void buscarEventosEsPublicoYDevuelveLaPagina() throws Exception {
+        UUID eventoId = UUID.randomUUID();
+        when(eventService.buscar("RECITAL", null, "Artista", "Tandil", null, null,
+                "PRECIO_ASC", 0, 10)).thenReturn(new PageResponse<>(
+                List.of(new EventoBusquedaResponse(eventoId, "Recital", TipoEvento.RECITAL,
+                        "Tandil", "Estadio", OffsetDateTime.parse("2027-01-15T21:00:00-03:00"),
+                        EstadoEvento.PUBLICADO, new java.math.BigDecimal("8000.00"))),
+                0, 10, 1, 1));
+
+        mockMvc.perform(get("/api/catalog/events")
+                        .param("tipo", "RECITAL")
+                        .param("participante", "Artista")
+                        .param("ciudad", "Tandil")
+                        .param("orden", "PRECIO_ASC")
+                        .param("size", "10"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content[0].id").value(eventoId.toString()))
+                .andExpect(jsonPath("$.content[0].precioDesde").value(8000.00))
+                .andExpect(jsonPath("$.totalElements").value(1));
+    }
+
+    @Test
+    void cancelarEventoConRolClienteDevuelve403() throws Exception {
+        mockMvc.perform(post("/api/catalog/events/{id}/cancel", UUID.randomUUID())
+                        .header("X-User-Id", CLIENT)
+                        .header("X-User-Role", "CLIENT"))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("FORBIDDEN"));
+    }
+
+    @Test
+    void cancelarEventoComoAdminDevuelveElEstado() throws Exception {
+        UUID eventoId = UUID.randomUUID();
+        when(eventService.cancelar(eventoId))
+                .thenReturn(new CancelacionResponse(eventoId, EstadoEvento.CANCELADO, false));
+
+        mockMvc.perform(post("/api/catalog/events/{id}/cancel", eventoId)
+                        .header("X-User-Id", ORGANIZER)
+                        .header("X-User-Role", "ADMIN"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.estado").value("CANCELADO"))
+                .andExpect(jsonPath("$.cancelacionPendiente").value(false));
     }
 
     private String eventoJson(String tipo, int limitePorCliente) {
