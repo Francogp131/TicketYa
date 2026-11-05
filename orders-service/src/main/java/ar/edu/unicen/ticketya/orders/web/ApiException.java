@@ -13,16 +13,23 @@ public class ApiException extends RuntimeException {
     private final HttpStatus status;
     private final String code;
     private final List<Map<String, Object>> errors;
+    private final Map<String, String> headers;
 
     public ApiException(HttpStatus status, String code, String detail) {
-        this(status, code, detail, List.of());
+        this(status, code, detail, List.of(), Map.of());
     }
 
     public ApiException(HttpStatus status, String code, String detail, List<Map<String, Object>> errors) {
+        this(status, code, detail, errors, Map.of());
+    }
+
+    public ApiException(HttpStatus status, String code, String detail,
+                        List<Map<String, Object>> errors, Map<String, String> headers) {
         super(detail);
         this.status = status;
         this.code = code;
         this.errors = errors == null ? List.of() : List.copyOf(errors);
+        this.headers = headers == null ? Map.of() : Map.copyOf(headers);
     }
 
     public HttpStatus getStatus() {
@@ -35,6 +42,10 @@ public class ApiException extends RuntimeException {
 
     public List<Map<String, Object>> getErrors() {
         return errors;
+    }
+
+    public Map<String, String> getHeaders() {
+        return headers;
     }
 
     public static ApiException badRequest(String code, String detail) {
