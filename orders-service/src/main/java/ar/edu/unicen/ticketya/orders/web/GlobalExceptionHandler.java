@@ -29,7 +29,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(ApiException.class)
     public ResponseEntity<ProblemDetail> handleApiException(ApiException ex, HttpServletRequest request) {
-        return build(ex.getStatus(), ex.getCode(), ex.getMessage(), ex.getErrors(), request);
+        return build(ex.getStatus(), ex.getCode(), ex.getMessage(), ex.getErrors(), request, ex.getHeaders());
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
@@ -82,14 +82,21 @@ public class GlobalExceptionHandler {
 
     private ResponseEntity<ProblemDetail> build(HttpStatus status, String code, String detail,
                                                  List<Map<String, Object>> errors, HttpServletRequest request) {
+        return build(status, code, detail, errors, request, Map.of());
+    }
+
+    private ResponseEntity<ProblemDetail> build(HttpStatus status, String code, String detail,
+                                                 List<Map<String, Object>> errors, HttpServletRequest request,
+                                                 Map<String, String> headers) {
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(status, detail);
         problem.setTitle(status.getReasonPhrase());
         problem.setType(URI.create("https://ticketya.local/errors/" + code.toLowerCase().replace('_', '-')));
         problem.setInstance(URI.create(request.getRequestURI()));
         problem.setProperty("code", code);
         problem.setProperty("errors", errors == null ? List.of() : errors);
-        return ResponseEntity.status(status)
-                .contentType(org.springframework.http.MediaType.APPLICATION_PROBLEM_JSON)
-                .body(problem);
+        ResponseEntity.BodyBuilder builder = ResponseEntity.status(status)
+                .contentType(org.springframework.http.MediaType.APPLICATION_PROBLEM_JSON);
+        headers.forEach(builder::header);
+        return builder.body(problem);
     }
 }
