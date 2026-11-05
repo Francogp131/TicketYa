@@ -18,7 +18,7 @@ Servicio de disponibilidad, reservas temporales y no doble venta de TicketYa.
 | GET | `/api/inventory/reservations/{reservaId}` | dueño | Consulta de una reserva |
 | GET | `/internal/reservations/{reservaId}` | interno | Reserva para orders, con nombre/fecha del evento |
 
-Vencimiento, límite por cliente, confirmación/liberación y devolución corresponden a las tareas 3.3–3.8 (Días 2–4).
+La prueba de concurrencia corre con `mvn test` contra PostgreSQL real (Testcontainers): 100 hilos sobre el mismo asiento y varios sobre el último lugar de una zona. Vencimiento, límite por cliente, confirmación y OpenAPI corresponden a las tareas 3.3–3.6 y 3.8.
 
 ## Reserva y no doble venta
 
@@ -26,6 +26,7 @@ Vencimiento, límite por cliente, confirmación/liberación y devolución corres
 - Asientos numerados: se bloquean con `SELECT ... FOR UPDATE` ordenados por `asientoId`; si alguno no está `LIBRE`, se aborta toda la reserva con `409 SEAT_NOT_AVAILABLE`.
 - Zonas no numeradas: `UPDATE ... SET disponibles = disponibles - N WHERE disponibles >= N RETURNING disponibles`; si no hay filas, `409 INSUFFICIENT_AVAILABILITY`.
 - La reserva vence a los 10 minutos (`expires_at`).
+- Concurrencia: `ConcurrenciaPostgresTest` verifica que un asiento y el último lugar de una zona se reservan una sola vez.
 - El alta de inventario es idempotente por `eventoId + version` y usa `ON CONFLICT DO NOTHING` para los asientos.
 
 ## Modelo
