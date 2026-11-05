@@ -17,6 +17,9 @@ Servicio de disponibilidad, reservas temporales y no doble venta de TicketYa.
 | POST | `/api/inventory/reservations` | autenticado | Reserva atómica de asientos numerados y zonas |
 | GET | `/api/inventory/reservations/{reservaId}` | dueño | Consulta de una reserva |
 | GET | `/internal/reservations/{reservaId}` | interno | Reserva para orders, con nombre/fecha del evento |
+| POST | `/internal/reservations/{reservaId}/confirm` | interno | Confirma la venta. Repetir una confirmada devuelve 200 |
+| POST | `/internal/reservations/{reservaId}/release` | interno | Libera la reserva si el pago se rechazó. Idempotente, 204 |
+| POST | `/internal/returns` | interno | Devuelve un asiento vendido o repone una zona. Idempotente con `Idempotency-Key`, 204 |
 
 Límite por cliente, vencimiento, confirmación/liberación y devolución corresponden a las tareas 3.4–3.8.
 
@@ -26,7 +29,10 @@ Límite por cliente, vencimiento, confirmación/liberación y devolución corres
 - Asientos numerados: se bloquean con `SELECT ... FOR UPDATE` ordenados por `asientoId`; si alguno no está `LIBRE`, se aborta toda la reserva con `409 SEAT_NOT_AVAILABLE`.
 - Zonas no numeradas: `UPDATE ... SET disponibles = disponibles - N WHERE disponibles >= N RETURNING disponibles`; si no hay filas, `409 INSUFFICIENT_AVAILABILITY`.
 - Límite por cliente: `pg_advisory_xact_lock(hashtext(evento_id || cliente_id))` y después se suman `cliente_evento.entradas_vendidas` más las cantidades de reservas `VIGENTE`. Si eso más lo pedido supera `limite_por_cliente`, se responde `422 CLIENT_LIMIT_EXCEEDED` y no se escribe la reserva. Al confirmar una venta (tarea 3.6) hay que incrementar `entradas_vendidas`, porque la reserva pasa a `CONFIRMADA` y deja de entrar en el conteo de vigentes.
-- La reserva vence a los 10 minutos (`expires_at`). Un scheduler cada 30 segundos pasa a `VENCIDA` las reservas `VIGENTE` con `expires_at` cumplido y libera sus lugares. Los asientos se sueltan con `UPDATE ... WHERE estado = 'RESERVADO' AND reserva_id = ?`, así dos instancias no liberan dos veces. Consultar una reserva vencida también la libera y responde `estado: VENCIDA`. Pagarla (`validarParaPago`, lo usa la confirmación de la tarea 3.6) responde `410 RESERVATION_EXPIRED`.
+- La reserva vence a los 10 minutos (`expires_at`). Un scheduler cada 30 segundos pasa a `VENCIDA` las reservas `VIGENTE` con `expires_at` cumplido y libera sus lugares. Los asientos se sueltan con `UPDATE ... WHERE estado = 'RESERVADO' AND reserva_id = ?`, así dos instancias no liberan dos veces. Consultar una reserva vencida también la libera y responde `estado: VENCIDA`. Pagar una vencida responde `410 RESERVATION_EXPIRED` (lo valida la confirmación de la tarea 3.6).
+- Confirmar: `UPDATE reserva SET estado = 'CONFIRMADA' WHERE id = ? AND estado = 'VIGENTE' AND expires_at > now()`. Los asientos pasan de `RESERVADO` a `VENDIDO` y se suma `cliente_evento.entradas_vendidas`. Si ya estaba `CONFIRMADA`, se devuelve la misma reserva. Si venció, se liberan los lugares y se responde `410 RESERVATION_EXPIRED`.
+- Liberar: la reserva `VIGENTE` pasa a `LIBERADA` y se reponen asientos y zona. Repetir la llamada responde 204 sin tocar la disponibilidad otra vez.
+- Devolver: un asiento `VENDIDO` vuelve a `LIBRE`; una zona suma la cantidad a `disponibles`. Con el header `Idempotency-Key`, repetir el mismo cuerpo no repone dos veces.
 - El alta de inventario es idempotente por `eventoId + version` y usa `ON CONFLICT DO NOTHING` para los asientos.
 
 ## Modelo
