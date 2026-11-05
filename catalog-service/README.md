@@ -7,7 +7,7 @@ Servicio de catálogo de TicketYa: lugares, sectores, asientos, eventos, precios
 - **Responsable:** P1 — ver [`docs/equipo/compa-1.md`](../docs/equipo/compa-1.md)
 - **Contrato:** [`docs/api-contract.md`](../docs/api-contract.md), sección 3.
 
-## Endpoints implementados (Día 1)
+## Endpoints implementados (Días 1 y 2)
 
 | Método | Ruta | Rol | Descripción |
 |---|---|---|---|
@@ -19,9 +19,13 @@ Servicio de catálogo de TicketYa: lugares, sectores, asientos, eventos, precios
 | POST | `/api/catalog/events` | ORGANIZER | Crea un evento en `BORRADOR` |
 | PUT | `/api/catalog/events/{eventoId}/prices/{sectorId}` | ORGANIZER | Asigna el precio de un sector |
 | POST | `/api/catalog/events/{eventoId}/publish` | ORGANIZER | Publica y envía el snapshot a inventory |
+| POST | `/api/catalog/events/{eventoId}/cancel` | ADMIN | Cancela el evento y avisa a orders |
+| GET | `/api/catalog/events` | público | Busca eventos publicados o agotados con filtros, orden y paginación |
 | GET | `/api/catalog/events/{eventoId}` | público | Detalle con disponibilidad consultada a inventory |
 
-Los endpoints de búsqueda (`GET /api/catalog/events` con filtros), cancelación y scheduler de finalización corresponden a las tareas 2.3–2.6 (Días 2–4).
+La búsqueda acepta `tipo`, `organizadorId`, `participante`, `ciudad`, `fechaDesde`, `fechaHasta`, `orden`, `page` y `size`. Los órdenes válidos son `FECHA_ASC` (default), `FECHA_DESC`, `PRECIO_ASC`, `PRECIO_DESC` y `RELEVANCIA`; esta última prioriza eventos `PUBLICADO` y luego la fecha más próxima. Un rango inválido responde `400 INVALID_DATE_RANGE` y un orden desconocido `400 INVALID_SORT`.
+
+Las transiciones de estado permitidas son `BORRADOR → PUBLICADO`, `PUBLICADO ↔ AGOTADO`, `PUBLICADO/AGOTADO → CANCELADO` y `PUBLICADO/AGOTADO → FINALIZADO`. Si orders no responde al cancelar, el evento queda `CANCELADO` con `cancelacionPendiente: true` y el scheduler reintenta el aviso cada minuto. El mismo scheduler pasa a `FINALIZADO` los eventos cuya fecha ya pasó. La tarea 2.4 (callback público de disponibilidad desde inventory) queda pendiente.
 
 ## Modelo
 
@@ -43,6 +47,8 @@ Al publicar, el servicio envía a inventory el snapshot del evento (sectores, pr
 | `DB_URL` | `jdbc:postgresql://localhost:5433/catalog_db` | Conexión JDBC |
 | `DB_USER` / `DB_PASSWORD` | `ticketya` | Credenciales |
 | `INVENTORY_URL` | `http://localhost:8082` | Cliente interno hacia inventory |
+| `ORDERS_URL` | `http://localhost:8083` | Cliente interno hacia orders |
+| `CATALOG_SCHEDULER_FINALIZACION_MS` | `60000` | Intervalo del scheduler de estados |
 
 ## Ejecutar y probar
 

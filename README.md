@@ -176,7 +176,9 @@ openspec status --change entrega-1-core
 
 ## Estado
 
-**Día 1 completado (3/11):** CRUD de catálogo con publicación, inventario base con reserva atómica numerada y de zonas, y creación de orden `PENDIENTE_PAGO` desde una reserva. Seeds de catálogo/inventario y colección Postman base incluidos. Siguen el Día 2 (estados y búsqueda, vencimiento y límite, pago aprobado) y las tareas de integración/entrega.
+**Día 1 completado (3/11):** CRUD de catálogo con publicación, inventario base con reserva atómica numerada y de zonas, y creación de orden `PENDIENTE_PAGO` desde una reserva. Seeds de catálogo/inventario y colección Postman base incluidos.
+
+**Día 2, catálogo (4/11):** completadas las tareas 2.3 (estados, cancelación con aviso a orders y scheduler de finalización) y 2.5 (búsqueda multi-criterio, orden, paginación y detalle). Siguen el resto de tareas del Día 2 en inventory/orders y las tareas de integración/entrega.
 
 El avance verificable está en [`tasks.md`](openspec/changes/entrega-1-core/tasks.md).
 

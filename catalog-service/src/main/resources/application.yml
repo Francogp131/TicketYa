@@ -35,3 +35,10 @@ springdoc:
 
 inventory:
   url: ${INVENTORY_URL:http://localhost:8082}
+
+orders:
+  url: ${ORDERS_URL:http://localhost:8083}
+
+catalog:
+  scheduler:
+    finalizacion-ms: ${CATALOG_SCHEDULER_FINALIZACION_MS:60000}

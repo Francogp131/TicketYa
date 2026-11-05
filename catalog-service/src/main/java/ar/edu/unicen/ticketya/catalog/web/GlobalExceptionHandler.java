@@ -16,6 +16,7 @@ import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 /**
@@ -48,6 +49,16 @@ public class GlobalExceptionHandler {
                         "message", violation.getMessage()))
                 .toList();
         return build(HttpStatus.BAD_REQUEST, "VALIDATION_ERROR", "La solicitud tiene parámetros inválidos", errors, request);
+    }
+
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<ProblemDetail> handleTypeMismatch(MethodArgumentTypeMismatchException ex,
+                                                            HttpServletRequest request) {
+        List<Map<String, Object>> errors = List.of(Map.of(
+                "field", ex.getName(),
+                "message", "valor inválido"));
+        return build(HttpStatus.BAD_REQUEST, "VALIDATION_ERROR",
+                "La solicitud tiene parámetros inválidos", errors, request);
     }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)

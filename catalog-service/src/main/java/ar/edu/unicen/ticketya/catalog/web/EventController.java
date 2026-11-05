@@ -1,14 +1,20 @@
 package ar.edu.unicen.ticketya.catalog.web;
 
+import ar.edu.unicen.ticketya.catalog.dominio.TipoEvento;
 import ar.edu.unicen.ticketya.catalog.servicio.EventService;
+import ar.edu.unicen.ticketya.catalog.web.dto.CancelacionResponse;
 import ar.edu.unicen.ticketya.catalog.web.dto.CrearEventoRequest;
+import ar.edu.unicen.ticketya.catalog.web.dto.EventoBusquedaResponse;
 import ar.edu.unicen.ticketya.catalog.web.dto.EventoDetalleResponse;
 import ar.edu.unicen.ticketya.catalog.web.dto.EventoResponse;
+import ar.edu.unicen.ticketya.catalog.web.dto.PageResponse;
 import ar.edu.unicen.ticketya.catalog.web.dto.PrecioRequest;
 import ar.edu.unicen.ticketya.catalog.web.dto.PrecioResponse;
 import jakarta.validation.Valid;
 import java.net.URI;
+import java.time.OffsetDateTime;
 import java.util.UUID;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -17,6 +23,7 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -60,6 +67,33 @@ public class EventController {
         RequestIdentity identity = RequestIdentity.require(userId, userRole);
         identity.requireRole("ORGANIZER");
         return eventService.publicar(eventoId, identity.userId());
+    }
+
+    @PostMapping("/{eventoId}/cancel")
+    public CancelacionResponse cancelar(
+            @PathVariable UUID eventoId,
+            @RequestHeader(value = "X-User-Id", required = false) String userId,
+            @RequestHeader(value = "X-User-Role", required = false) String userRole) {
+        RequestIdentity identity = RequestIdentity.require(userId, userRole);
+        identity.requireRole("ADMIN");
+        return eventService.cancelar(eventoId);
+    }
+
+    @GetMapping
+    public PageResponse<EventoBusquedaResponse> buscar(
+            @RequestParam(required = false) TipoEvento tipo,
+            @RequestParam(required = false) UUID organizadorId,
+            @RequestParam(required = false) String participante,
+            @RequestParam(required = false) String ciudad,
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) OffsetDateTime fechaDesde,
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) OffsetDateTime fechaHasta,
+            @RequestParam(defaultValue = "FECHA_ASC") String orden,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        return eventService.buscar(tipo, organizadorId, participante, ciudad,
+                fechaDesde, fechaHasta, orden, page, size);
     }
 
     @GetMapping("/{eventoId}")

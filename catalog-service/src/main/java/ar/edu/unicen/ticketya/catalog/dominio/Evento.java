@@ -47,6 +47,9 @@ public class Evento {
     @Column(name = "limite_por_cliente", nullable = false)
     private Integer limitePorCliente = 4;
 
+    @Column(name = "cancelacion_pendiente", nullable = false)
+    private boolean cancelacionPendiente = false;
+
     @Column(name = "created_at", insertable = false, updatable = false)
     private OffsetDateTime createdAt;
 
@@ -138,6 +141,14 @@ public class Evento {
 
     public void setLimitePorCliente(Integer limitePorCliente) {
         this.limitePorCliente = limitePorCliente;
+    }
+
+    public boolean isCancelacionPendiente() {
+        return cancelacionPendiente;
+    }
+
+    public void setCancelacionPendiente(boolean cancelacionPendiente) {
+        this.cancelacionPendiente = cancelacionPendiente;
     }
 
     public OffsetDateTime getCreatedAt() {
