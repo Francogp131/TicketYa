@@ -352,6 +352,8 @@ Llamado por inventory cuando la disponibilidad llega a 0 o vuelve a ser positiva
 
 ## 4. inventory-service
 
+OpenAPI: [`../openapi/inventory-openapi.json`](../openapi/inventory-openapi.json). Swagger UI en `http://localhost:8082/swagger-ui.html`.
+
 ### 4.1 Disponibilidad — `GET /api/inventory/events/{eventoId}/availability` (público)
 
 **200**

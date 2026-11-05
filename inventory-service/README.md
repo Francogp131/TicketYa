@@ -18,7 +18,7 @@ Servicio de disponibilidad, reservas temporales y no doble venta de TicketYa.
 | GET | `/api/inventory/reservations/{reservaId}` | dueño | Consulta de una reserva |
 | GET | `/internal/reservations/{reservaId}` | interno | Reserva para orders, con nombre/fecha del evento |
 
-Vencimiento, límite por cliente, confirmación/liberación y devolución corresponden a las tareas 3.3–3.8 (Días 2–4).
+El OpenAPI exportado está en [`../openapi/inventory-openapi.json`](../openapi/inventory-openapi.json). Incluye ejemplos y los códigos 201, 400, 404, 409, 410 y 422. Confirmar, liberar y devolver figuran ahí según el contrato (secciones 4.8 a 4.10); el handler lo trae la tarea 3.6. Vencimiento, límite por cliente y esa confirmación corresponden a las tareas 3.3 a 3.6.
 
 ## Reserva y no doble venta
 
@@ -50,4 +50,6 @@ mvn spring-boot:run
 curl http://localhost:8082/actuator/health
 ```
 
-Swagger UI: <http://localhost:8082/swagger-ui.html> · OpenAPI: <http://localhost:8082/v3/api-docs>
+Swagger UI: <http://localhost:8082/swagger-ui.html> · OpenAPI en vivo: <http://localhost:8082/v3/api-docs>
+
+El archivo versionado se regenera con `mvn test -Dexport.openapi=true` (lo escribe `OpenApiDocumentoTest`).
