@@ -35,11 +35,11 @@
 
 - [x] 4.1 Implementar el modelo de órdenes, ítems, pagos, entradas, devoluciones e idempotencia con Flyway; verificar que las migraciones creen todas las tablas y constraints.
 - [x] 4.2 Implementar la creación de orden desde una reserva vigente con total calculado en el servidor; verificar con tests 201, reserva inexistente 404, reserva ajena 403 y reserva vencida 410.
-- [ ] 4.3 Implementar la pasarela de pagos mock (aprobado, rechazado y lento) detrás de una interfaz reemplazable; verificar con tests cada resultado y el timeout.
-- [ ] 4.4 Implementar el pago aprobado: confirmar inventario, pasar la orden a `PAGADA`, registrar medio de pago y emitir una entrada con QR único por lugar; verificar con tests que haya una entrada por asiento y QR únicos.
-- [ ] 4.5 Implementar el pago rechazado y la reserva vencida: liberar lugares, orden `RECHAZADA` y ninguna entrada emitida; verificar con tests de estado y disponibilidad.
-- [ ] 4.6 Implementar la idempotencia con `Idempotency-Key` (misma respuesta, 422 con cuerpo distinto y una sola orden ante reintentos concurrentes); verificar con tests contra la tabla de idempotencia.
-- [ ] 4.7 Implementar la compensación cuando falla la confirmación de inventario o la emisión de entradas después del pago; verificar con tests que la orden no quede `PAGADA` y que se solicite el reintegro.
+- [x] 4.3 Implementar la pasarela de pagos mock (aprobado, rechazado y lento) detrás de una interfaz reemplazable; verificar con tests cada resultado y el timeout. _(PaymentGateway + MockPaymentGateway + OrderServiceTest)_
+- [x] 4.4 Implementar el pago aprobado: confirmar inventario, pasar la orden a `PAGADA`, registrar medio de pago y emitir una entrada con QR único por lugar; verificar con tests que haya una entrada por asiento y QR únicos. _(TicketServiceTest + E2E de compra aprobada)_
+- [x] 4.5 Implementar el pago rechazado y la reserva vencida: liberar lugares, orden `RECHAZADA` y ninguna entrada emitida; verificar con tests de estado y disponibilidad. _(OrderServiceTest + E2E de rechazo)_
+- [x] 4.6 Implementar la idempotencia con `Idempotency-Key` (misma respuesta, 422 con cuerpo distinto y una sola orden ante reintentos concurrentes); verificar con tests contra la tabla de idempotencia. _(IdempotencyServiceTest + OrderIdempotencyIntegrationTest)_
+- [x] 4.7 Implementar la compensación cuando falla la confirmación de inventario o la emisión de entradas después del pago; verificar con tests que la orden no quede `PAGADA` y que se solicite el reintegro. _(compensación por confirmación y por emisión en OrderServiceTest)_
 - [ ] 4.8 Implementar las devoluciones (US-22 y US-23): solicitud, aprobación y rechazo; verificar con tests 422 fuera de plazo, 409 ya resuelta, 403 entrada ajena, liberación + invalidación + refund al aprobar y entrada válida al rechazar.
 - [ ] 4.9 Implementar la cancelación de evento (US-24): pasar todas las entradas vendidas a `EN_REINTEGRO` y solicitar el reintegro; verificar con tests de evento con y sin entradas y que el endpoint sea idempotente.
 - [ ] 4.10 Implementar la consulta de entradas y órdenes propias (US-19); verificar con tests que el cliente solo vea las suyas y que una entrada ajena devuelva 403.
