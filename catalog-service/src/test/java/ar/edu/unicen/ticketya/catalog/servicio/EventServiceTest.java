@@ -3,6 +3,7 @@ package ar.edu.unicen.ticketya.catalog.servicio;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
@@ -313,8 +314,8 @@ class EventServiceTest {
         Evento evento = evento(organizadorId, lugarId, "Festival",
                 OffsetDateTime.parse("2027-03-14T21:00:00-03:00"), EstadoEvento.PUBLICADO);
         Lugar lugar = lugar(lugarId, "Estadio", "Tandil");
-        when(eventoRepository.buscar(any(), eq(TipoEvento.FESTIVAL), eq(organizadorId),
-                eq("Los Piojos"), eq("Tandil"), any(), any())).thenReturn(List.of(evento));
+        when(eventoRepository.buscar(any(), eq(List.of(TipoEvento.FESTIVAL)), eq(true), eq(organizadorId),
+                eq("%los piojos%"), eq("tandil"), any(), any())).thenReturn(List.of(evento));
         when(lugarRepository.findAllById(any())).thenReturn(List.of(lugar));
         when(precioRepository.findByEventoIdIn(any())).thenReturn(List.of(
                 new EventoSectorPrecio(evento.getId(), UUID.randomUUID(), new BigDecimal("25000")),
@@ -342,7 +343,7 @@ class EventServiceTest {
                 OffsetDateTime.parse("2027-02-01T21:00:00-03:00"), EstadoEvento.PUBLICADO);
         Evento medio = evento(organizadorId, lugarId, "Medio",
                 OffsetDateTime.parse("2027-03-01T21:00:00-03:00"), EstadoEvento.AGOTADO);
-        when(eventoRepository.buscar(any(), any(), any(), any(), any(), any(), any()))
+        when(eventoRepository.buscar(any(), any(), anyBoolean(), any(), any(), any(), any(), any()))
                 .thenReturn(List.of(barato, caro, medio));
         when(lugarRepository.findAllById(any())).thenReturn(List.of(lugar(lugarId, "Estadio", "Tandil")));
         when(precioRepository.findByEventoIdIn(any())).thenReturn(List.of(
@@ -367,7 +368,7 @@ class EventServiceTest {
                 OffsetDateTime.parse("2027-05-01T21:00:00-03:00"), EstadoEvento.PUBLICADO);
         Evento temprano = evento(organizadorId, lugarId, "Temprano",
                 OffsetDateTime.parse("2027-01-01T21:00:00-03:00"), EstadoEvento.PUBLICADO);
-        when(eventoRepository.buscar(any(), any(), any(), any(), any(), any(), any()))
+        when(eventoRepository.buscar(any(), any(), anyBoolean(), any(), any(), any(), any(), any()))
                 .thenReturn(List.of(tarde, temprano));
         when(lugarRepository.findAllById(any())).thenReturn(List.of(lugar(lugarId, "Estadio", "Tandil")));
         when(precioRepository.findByEventoIdIn(any())).thenReturn(List.of());
@@ -389,7 +390,7 @@ class EventServiceTest {
                 OffsetDateTime.parse("2027-02-01T21:00:00-03:00"), EstadoEvento.PUBLICADO);
         Evento agotadoCercano = evento(organizadorId, lugarId, "Agotado cercano",
                 OffsetDateTime.parse("2027-01-01T21:00:00-03:00"), EstadoEvento.AGOTADO);
-        when(eventoRepository.buscar(any(), any(), any(), any(), any(), any(), any()))
+        when(eventoRepository.buscar(any(), any(), anyBoolean(), any(), any(), any(), any(), any()))
                 .thenReturn(List.of(publicadoLejano, agotadoCercano, publicadoCercano));
         when(lugarRepository.findAllById(any())).thenReturn(List.of(lugar(lugarId, "Estadio", "Tandil")));
         when(precioRepository.findByEventoIdIn(any())).thenReturn(List.of());
@@ -403,7 +404,7 @@ class EventServiceTest {
 
     @Test
     void buscarSinResultadosDevuelveListaVacia() {
-        when(eventoRepository.buscar(any(), any(), any(), any(), any(), any(), any()))
+        when(eventoRepository.buscar(any(), any(), anyBoolean(), any(), any(), any(), any(), any()))
                 .thenReturn(List.of());
 
         PageResponse<EventoBusquedaResponse> pagina = eventService.buscar(
