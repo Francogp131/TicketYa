@@ -28,10 +28,12 @@ import ar.edu.unicen.ticketya.catalog.web.dto.SectorDetalleResponse;
 import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -49,6 +51,9 @@ public class EventService {
     private static final Logger log = LoggerFactory.getLogger(EventService.class);
     private static final int TAMANIO_MAXIMO_PAGINA = 100;
     private static final Set<EstadoEvento> ESTADOS_VISIBLES = Set.of(EstadoEvento.PUBLICADO, EstadoEvento.AGOTADO);
+    private static final UUID SIN_ORGANIZADOR = new UUID(0, 0);
+    private static final OffsetDateTime FECHA_MINIMA = OffsetDateTime.of(1900, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC);
+    private static final OffsetDateTime FECHA_MAXIMA = OffsetDateTime.of(9999, 12, 31, 23, 59, 59, 0, ZoneOffset.UTC);
 
     private final EventoRepository eventoRepository;
     private final LugarRepository lugarRepository;
@@ -321,9 +326,15 @@ public class EventService {
         OrdenBusqueda ordenBusqueda = OrdenBusqueda.parse(orden);
         String participanteNormalizado = normalizar(participante);
         String ciudadNormalizada = normalizar(ciudad);
+        List<TipoEvento> tipos = tipo == null ? List.of(TipoEvento.values()) : List.of(tipo);
+        UUID organizadorFiltro = organizadorId == null ? SIN_ORGANIZADOR : organizadorId;
+        String participanteFiltro = participanteNormalizado == null ? "%" : "%" + participanteNormalizado + "%";
+        String ciudadFiltro = ciudadNormalizada == null ? "%" : ciudadNormalizada;
+        OffsetDateTime desdeFiltro = fechaDesde == null ? FECHA_MINIMA : fechaDesde;
+        OffsetDateTime hastaFiltro = fechaHasta == null ? FECHA_MAXIMA : fechaHasta;
 
-        List<Evento> eventos = eventoRepository.buscar(ESTADOS_VISIBLES, tipo, organizadorId,
-                participanteNormalizado, ciudadNormalizada, fechaDesde, fechaHasta);
+        List<Evento> eventos = eventoRepository.buscar(ESTADOS_VISIBLES, tipos, organizadorId != null,
+                organizadorFiltro, participanteFiltro, ciudadFiltro, desdeFiltro, hastaFiltro);
         if (eventos.isEmpty()) {
             return new PageResponse<>(List.of(), page, size, 0, 0);
         }
@@ -386,7 +397,7 @@ public class EventService {
         if (valor == null || valor.isBlank()) {
             return null;
         }
-        return valor.trim();
+        return valor.trim().toLowerCase(Locale.ROOT);
     }
 
     private InventorySnapshot armarSnapshot(Evento evento, List<Sector> sectores,
