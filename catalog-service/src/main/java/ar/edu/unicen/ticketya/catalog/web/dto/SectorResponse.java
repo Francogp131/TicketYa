@@ -2,8 +2,10 @@ package ar.edu.unicen.ticketya.catalog.web.dto;
 
 import ar.edu.unicen.ticketya.catalog.dominio.Sector;
 import ar.edu.unicen.ticketya.catalog.dominio.TipoSector;
+import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.UUID;
 
+@Schema(name = "SectorResponse", description = "Sector de un lugar con los asientos generados")
 public record SectorResponse(
         UUID id,
         UUID lugarId,

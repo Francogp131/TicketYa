@@ -6,6 +6,9 @@ import ar.edu.unicen.ticketya.catalog.web.dto.CrearSectorRequest;
 import ar.edu.unicen.ticketya.catalog.web.dto.LugarResponse;
 import ar.edu.unicen.ticketya.catalog.web.dto.PageResponse;
 import ar.edu.unicen.ticketya.catalog.web.dto.SectorResponse;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.net.URI;
 import java.util.List;
@@ -22,6 +25,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/catalog/venues")
+@Tag(name = "Lugares", description = "Lugares, sectores y asientos")
 public class VenueController {
 
     private final VenueService venueService;
@@ -31,6 +35,11 @@ public class VenueController {
     }
 
     @PostMapping
+    @Operation(summary = "Crear un lugar", description = "Requiere rol ADMIN.")
+    @ApiResponse(responseCode = "201", description = "Lugar creado")
+    @ApiResponse(responseCode = "400", description = "Datos inválidos (VALIDATION_ERROR)")
+    @ApiResponse(responseCode = "401", description = "Falta identidad (UNAUTHORIZED)")
+    @ApiResponse(responseCode = "403", description = "Rol insuficiente (FORBIDDEN)")
     public ResponseEntity<LugarResponse> crear(
             @Valid @RequestBody CrearLugarRequest request,
             @RequestHeader(value = "X-User-Id", required = false) String userId,
@@ -41,6 +50,8 @@ public class VenueController {
     }
 
     @GetMapping
+    @Operation(summary = "Listar lugares", description = "Listado paginado de lugares.")
+    @ApiResponse(responseCode = "200", description = "Página de lugares")
     public PageResponse<LugarResponse> listar(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
@@ -48,11 +59,19 @@ public class VenueController {
     }
 
     @GetMapping("/{venueId}")
+    @Operation(summary = "Obtener un lugar")
+    @ApiResponse(responseCode = "200", description = "Detalle del lugar")
+    @ApiResponse(responseCode = "404", description = "El lugar no existe (VENUE_NOT_FOUND)")
     public LugarResponse obtener(@PathVariable UUID venueId) {
         return venueService.obtenerLugar(venueId);
     }
 
     @PostMapping("/{venueId}/sectors")
+    @Operation(summary = "Crear un sector",
+            description = "Un sector NUMERADO genera filas * asientosPorFila asientos. Requiere rol ADMIN.")
+    @ApiResponse(responseCode = "201", description = "Sector creado y asientos generados")
+    @ApiResponse(responseCode = "400", description = "Datos inválidos (VALIDATION_ERROR)")
+    @ApiResponse(responseCode = "404", description = "El lugar no existe (VENUE_NOT_FOUND)")
     public ResponseEntity<SectorResponse> crearSector(
             @PathVariable UUID venueId,
             @Valid @RequestBody CrearSectorRequest request,
@@ -65,6 +84,9 @@ public class VenueController {
     }
 
     @GetMapping("/{venueId}/sectors")
+    @Operation(summary = "Listar sectores de un lugar")
+    @ApiResponse(responseCode = "200", description = "Sectores del lugar")
+    @ApiResponse(responseCode = "404", description = "El lugar no existe (VENUE_NOT_FOUND)")
     public List<SectorResponse> listarSectores(@PathVariable UUID venueId) {
         return venueService.listarSectores(venueId);
     }

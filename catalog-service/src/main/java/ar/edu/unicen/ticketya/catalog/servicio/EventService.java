@@ -7,6 +7,7 @@ import ar.edu.unicen.ticketya.catalog.dominio.EventoParticipante;
 import ar.edu.unicen.ticketya.catalog.dominio.EventoSectorPrecio;
 import ar.edu.unicen.ticketya.catalog.dominio.Lugar;
 import ar.edu.unicen.ticketya.catalog.dominio.Sector;
+import ar.edu.unicen.ticketya.catalog.dominio.TipoEvento;
 import ar.edu.unicen.ticketya.catalog.repositorio.AsientoRepository;
 import ar.edu.unicen.ticketya.catalog.repositorio.EventoParticipanteRepository;
 import ar.edu.unicen.ticketya.catalog.repositorio.EventoRepository;
@@ -14,9 +15,13 @@ import ar.edu.unicen.ticketya.catalog.repositorio.EventoSectorPrecioRepository;
 import ar.edu.unicen.ticketya.catalog.repositorio.LugarRepository;
 import ar.edu.unicen.ticketya.catalog.repositorio.SectorRepository;
 import ar.edu.unicen.ticketya.catalog.web.ApiException;
+import ar.edu.unicen.ticketya.catalog.web.dto.CancelacionResponse;
 import ar.edu.unicen.ticketya.catalog.web.dto.CrearEventoRequest;
+import ar.edu.unicen.ticketya.catalog.web.dto.EventoBusquedaResponse;
 import ar.edu.unicen.ticketya.catalog.web.dto.EventoDetalleResponse;
 import ar.edu.unicen.ticketya.catalog.web.dto.EventoResponse;
+import ar.edu.unicen.ticketya.catalog.web.dto.Fechas;
+import ar.edu.unicen.ticketya.catalog.web.dto.PageResponse;
 import ar.edu.unicen.ticketya.catalog.web.dto.PrecioRequest;
 import ar.edu.unicen.ticketya.catalog.web.dto.PrecioResponse;
 import ar.edu.unicen.ticketya.catalog.web.dto.SectorDetalleResponse;
@@ -24,18 +29,26 @@ import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class EventService {
+
+    private static final Logger log = LoggerFactory.getLogger(EventService.class);
+    private static final int TAMANIO_MAXIMO_PAGINA = 100;
+    private static final Set<EstadoEvento> ESTADOS_VISIBLES = Set.of(EstadoEvento.PUBLICADO, EstadoEvento.AGOTADO);
 
     private final EventoRepository eventoRepository;
     private final LugarRepository lugarRepository;
@@ -44,6 +57,7 @@ public class EventService {
     private final EventoParticipanteRepository participanteRepository;
     private final EventoSectorPrecioRepository precioRepository;
     private final InventoryClient inventoryClient;
+    private final OrdersClient ordersClient;
     private final Clock clock;
 
     public EventService(EventoRepository eventoRepository,
@@ -53,6 +67,7 @@ public class EventService {
                         EventoParticipanteRepository participanteRepository,
                         EventoSectorPrecioRepository precioRepository,
                         InventoryClient inventoryClient,
+                        OrdersClient ordersClient,
                         Clock clock) {
         this.eventoRepository = eventoRepository;
         this.lugarRepository = lugarRepository;
@@ -61,6 +76,7 @@ public class EventService {
         this.participanteRepository = participanteRepository;
         this.precioRepository = precioRepository;
         this.inventoryClient = inventoryClient;
+        this.ordersClient = ordersClient;
         this.clock = clock;
     }
 
@@ -208,6 +224,169 @@ public class EventService {
                 participanteRepository.findByEventoIdOrderByNombreAsc(eventoId).stream()
                         .map(EventoParticipante::getNombre).toList(),
                 sectoresResponse);
+    }
+
+    @Transactional
+    public CancelacionResponse cancelar(UUID eventoId) {
+        Evento evento = buscarEvento(eventoId);
+        if (evento.getEstado() == EstadoEvento.CANCELADO || evento.getEstado() == EstadoEvento.FINALIZADO) {
+            throw ApiException.conflict("EVENT_NOT_CANCELLABLE",
+                    "No se puede cancelar un evento " + evento.getEstado().name().toLowerCase());
+        }
+
+        evento.setEstado(EstadoEvento.CANCELADO);
+        boolean pendiente = false;
+        try {
+            ordersClient.cancelarEvento(eventoId);
+        } catch (RuntimeException ex) {
+            pendiente = true;
+            log.warn("No se pudo avisar la cancelación del evento {} a orders; queda pendiente", eventoId, ex);
+        }
+        evento.setCancelacionPendiente(pendiente);
+        evento = eventoRepository.save(evento);
+        return new CancelacionResponse(evento.getId(), evento.getEstado(), evento.isCancelacionPendiente());
+    }
+
+    @Transactional
+    public void actualizarDisponibilidad(UUID eventoId, boolean agotado) {
+        Evento evento = buscarEvento(eventoId);
+        if (agotado) {
+            if (evento.getEstado() == EstadoEvento.AGOTADO) {
+                return;
+            }
+            if (evento.getEstado() != EstadoEvento.PUBLICADO) {
+                throw ApiException.conflict("EVENT_NOT_EDITABLE",
+                        "Solo un evento publicado puede pasar a agotado");
+            }
+            evento.setEstado(EstadoEvento.AGOTADO);
+        } else {
+            if (evento.getEstado() == EstadoEvento.PUBLICADO) {
+                return;
+            }
+            if (evento.getEstado() != EstadoEvento.AGOTADO) {
+                throw ApiException.conflict("EVENT_NOT_EDITABLE",
+                        "Solo un evento agotado puede volver a publicado");
+            }
+            evento.setEstado(EstadoEvento.PUBLICADO);
+        }
+        eventoRepository.save(evento);
+    }
+
+    @Transactional
+    public int finalizarEventosVencidos() {
+        List<Evento> vencidos = eventoRepository.findByEstadoInAndFechaBefore(
+                List.of(EstadoEvento.PUBLICADO, EstadoEvento.AGOTADO), OffsetDateTime.now(clock));
+        vencidos.forEach(evento -> evento.setEstado(EstadoEvento.FINALIZADO));
+        eventoRepository.saveAll(vencidos);
+        return vencidos.size();
+    }
+
+    @Transactional
+    public int reintentarCancelacionesPendientes() {
+        List<Evento> pendientes = eventoRepository.findByCancelacionPendienteTrue();
+        int reintentadas = 0;
+        for (Evento evento : pendientes) {
+            try {
+                ordersClient.cancelarEvento(evento.getId());
+                evento.setCancelacionPendiente(false);
+                eventoRepository.save(evento);
+                reintentadas++;
+            } catch (RuntimeException ex) {
+                log.warn("Sigue pendiente el aviso de cancelación del evento {}", evento.getId(), ex);
+            }
+        }
+        return reintentadas;
+    }
+
+    @Transactional(readOnly = true)
+    public PageResponse<EventoBusquedaResponse> buscar(TipoEvento tipo,
+                                                       UUID organizadorId,
+                                                       String participante,
+                                                       String ciudad,
+                                                       OffsetDateTime fechaDesde,
+                                                       OffsetDateTime fechaHasta,
+                                                       String orden,
+                                                       int page,
+                                                       int size) {
+        if (fechaDesde != null && fechaHasta != null && fechaDesde.isAfter(fechaHasta)) {
+            throw ApiException.badRequest("INVALID_DATE_RANGE",
+                    "fechaDesde no puede ser posterior a fechaHasta");
+        }
+        if (page < 0) {
+            throw validacion("page", "debe ser mayor o igual a 0");
+        }
+        if (size < 1 || size > TAMANIO_MAXIMO_PAGINA) {
+            throw validacion("size", "debe estar entre 1 y " + TAMANIO_MAXIMO_PAGINA);
+        }
+        OrdenBusqueda ordenBusqueda = OrdenBusqueda.parse(orden);
+        String participanteNormalizado = normalizar(participante);
+        String ciudadNormalizada = normalizar(ciudad);
+
+        List<Evento> eventos = eventoRepository.buscar(ESTADOS_VISIBLES, tipo, organizadorId,
+                participanteNormalizado, ciudadNormalizada, fechaDesde, fechaHasta);
+        if (eventos.isEmpty()) {
+            return new PageResponse<>(List.of(), page, size, 0, 0);
+        }
+
+        Set<UUID> lugaresIds = eventos.stream().map(Evento::getLugarId).collect(Collectors.toSet());
+        Map<UUID, Lugar> lugares = lugarRepository.findAllById(lugaresIds).stream()
+                .collect(Collectors.toMap(Lugar::getId, Function.identity()));
+        Map<UUID, List<EventoSectorPrecio>> precios = precioRepository
+                .findByEventoIdIn(eventos.stream().map(Evento::getId).toList()).stream()
+                .collect(Collectors.groupingBy(EventoSectorPrecio::getEventoId));
+
+        List<EventoBusquedaResponse> resultados = new ArrayList<>();
+        for (Evento evento : eventos) {
+            Lugar lugar = lugares.get(evento.getLugarId());
+            if (lugar == null) {
+                continue;
+            }
+            BigDecimal precioDesde = precios.getOrDefault(evento.getId(), List.of()).stream()
+                    .map(EventoSectorPrecio::getPrecio)
+                    .min(Comparator.naturalOrder())
+                    .orElse(null);
+            resultados.add(new EventoBusquedaResponse(
+                    evento.getId(),
+                    evento.getNombre(),
+                    evento.getTipo(),
+                    lugar.getCiudad(),
+                    lugar.getNombre(),
+                    Fechas.argentina(evento.getFecha()),
+                    evento.getEstado(),
+                    precioDesde));
+        }
+
+        resultados.sort(comparador(ordenBusqueda).thenComparing(EventoBusquedaResponse::id));
+        long total = resultados.size();
+        int desde = (int) Math.min((long) page * size, total);
+        int hasta = (int) Math.min(desde + (long) size, total);
+        int totalPaginas = (int) Math.ceil((double) total / size);
+        return new PageResponse<>(List.copyOf(resultados.subList(desde, hasta)),
+                page, size, total, totalPaginas);
+    }
+
+    private Comparator<EventoBusquedaResponse> comparador(OrdenBusqueda orden) {
+        return switch (orden) {
+            case FECHA_ASC -> Comparator.comparing(EventoBusquedaResponse::fecha);
+            case FECHA_DESC -> Comparator.comparing(EventoBusquedaResponse::fecha).reversed();
+            case PRECIO_ASC -> Comparator.comparing(EventoBusquedaResponse::precioDesde,
+                    Comparator.nullsLast(Comparator.naturalOrder()));
+            case PRECIO_DESC -> Comparator.comparing(EventoBusquedaResponse::precioDesde,
+                    Comparator.nullsLast(Comparator.reverseOrder()));
+            case RELEVANCIA -> Comparator
+                    .comparingInt((EventoBusquedaResponse evento) ->
+                            evento.estado() == EstadoEvento.PUBLICADO ? 0 : 1)
+                    .thenComparing(EventoBusquedaResponse::fecha)
+                    .thenComparing(EventoBusquedaResponse::precioDesde,
+                            Comparator.nullsLast(Comparator.naturalOrder()));
+        };
+    }
+
+    private String normalizar(String valor) {
+        if (valor == null || valor.isBlank()) {
+            return null;
+        }
+        return valor.trim();
     }
 
     private InventorySnapshot armarSnapshot(Evento evento, List<Sector> sectores,

@@ -35,3 +35,13 @@ springdoc:
 
 inventory:
   url: ${INVENTORY_URL:http://localhost:8082}
+  timeout:
+    connect-ms: ${INVENTORY_CONNECT_TIMEOUT_MS:2000}
+    read-ms: ${INVENTORY_READ_TIMEOUT_MS:3000}
+
+orders:
+  url: ${ORDERS_URL:http://localhost:8083}
+
+catalog:
+  scheduler:
+    finalizacion-ms: ${CATALOG_SCHEDULER_FINALIZACION_MS:60000}
