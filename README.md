@@ -101,6 +101,9 @@ Los servicios traen valores por defecto para desarrollo. Se pueden pisar con:
 | `CATALOG_URL` | `http://localhost:8081` | Gateway → catalog |
 | `INVENTORY_URL` | `http://localhost:8082` | Gateway → inventory |
 | `ORDERS_URL` | `http://localhost:8083` | Gateway → orders |
+| `CATALOG_FINALIZACION_MS` | `60000` | Frecuencia del job de eventos vencidos |
+| `CATALOG_CANCELACIONES_MS` | `60000` | Frecuencia del reintento de cancelaciones |
+| `INVENTORY_VENCIMIENTO_MS` | `30000` | Frecuencia del job de reservas vencidas |
 
 Ver [`.env.example`](.env.example). No se commitea `.env`.
 
@@ -147,7 +150,7 @@ cd orders-service && mvn test
 cd api-gateway && mvn test
 ```
 
-La prueba de concurrencia de inventory usa Testcontainers y requiere Docker.
+Las pruebas de integración de catalog, concurrencia de inventory e idempotencia de orders usan Testcontainers y requieren Docker.
 
 ## Equipo y flujo de trabajo
 
@@ -176,9 +179,11 @@ openspec status --change entrega-1-core
 
 ## Estado
 
-**Día 1 completado (3/11):** CRUD de catálogo con publicación, inventario base con reserva atómica numerada y de zonas, y creación de orden `PENDIENTE_PAGO` desde una reserva. Seeds de catálogo/inventario y colección Postman base incluidos.
+**Día 1 completado (3/11):** CRUD de catálogo con publicación, inventario base con reserva atómica numerada y de zonas, y creación de orden `PENDIENTE_PAGO` desde una reserva.
 
-**Día 2, catálogo (4/11):** completadas las tareas 2.3 (estados, cancelación con aviso a orders y scheduler de finalización) y 2.5 (búsqueda multi-criterio, orden, paginación y detalle). Siguen el resto de tareas del Día 2 en inventory/orders y las tareas de integración/entrega.
+**Días 2 y 3 completados (4-5/11):** estados, búsqueda con orden/paginación, cancelación y scheduler en catalog; límite por cliente, vencimiento, confirmación, liberación y devoluciones en inventory; pasarela mock, pago aprobado con QR, rechazo, timeout, idempotencia y compensaciones en orders. La colección Postman ya incluye los flujos de compra, reintento, rechazo, pago lento y cancelación.
+
+**Día 4 (6/11):** cerrada la reserva de zonas (3.3) con unitarios y concurrencia; orders 4.3-4.7 extraído a `main`; búsqueda de catalog corregida (500 por parámetros nulos) con test de regresión; suite local 51/30/24/5 y E2E 34/34 por gateway. Quedan devoluciones/consultas propias y OpenAPI de orders (4.8-4.11).
 
 El avance verificable está en [`tasks.md`](openspec/changes/entrega-1-core/tasks.md).
 
@@ -202,4 +207,4 @@ Identidades de la Entrega 1 (el gateway las propaga como headers):
 | ORGANIZER | `22222222-2222-4222-8222-222222222222` |
 | CLIENT | `33333333-3333-4333-8333-333333333333` |
 
-Los asientos numerados usan IDs determinísticos: `c0000000-0000-4000-8000-[sector][fila][numero]000000`. La colección [`postman/TicketYa.postman_collection.json`](postman/TicketYa.postman_collection.json) recorre el flujo base del Día 1 y guarda los IDs que crea.
+Los asientos numerados usan IDs determinísticos: `c0000000-0000-4000-8000-[sector][fila][numero]000000`. La colección [`postman/TicketYa.postman_collection.json`](postman/TicketYa.postman_collection.json) recorre los flujos de catálogo y compra (aprobada, rechazada, pago lento y cancelación) y guarda los IDs que crea.

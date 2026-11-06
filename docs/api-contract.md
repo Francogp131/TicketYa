@@ -540,6 +540,7 @@ Errores: `409 RESERVATION_NOT_CONFIRMABLE`, `410 RESERVATION_EXPIRED`. Idempoten
 ```json
 {
   "eventoId": "1f2e...",
+  "referencia": "f1a2b3c4-d5e6-4f7a-8b9c-0d1e2f3a4b5c",
   "items": [
     { "sectorId": "9a1b...", "asientoId": "a1b2...", "cantidad": 1 }
   ]
@@ -547,6 +548,8 @@ Errores: `409 RESERVATION_NOT_CONFIRMABLE`, `410 RESERVATION_EXPIRED`. Idempoten
 ```
 
 **204**, idempotente. Libera asientos vendidos o repone disponibilidad de zonas.
+`referencia` es opcional; orders envía el id de la devolución para que un reintento
+no reponga dos veces la disponibilidad de una zona no numerada.
 
 Header opcional `Idempotency-Key`. Si orders reintenta la misma devolución, manda la misma clave: la segunda llamada no vuelve a sumar lugares. Sin la clave, un asiento igual no se libera dos veces (solo pasa de `VENDIDO` a `LIBRE` una vez); la zona sí necesita la clave para no reponerse dos veces.
 

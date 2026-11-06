@@ -4,6 +4,19 @@ Lista verificable de **todo** lo que pide el enunciado para la Entrega 1. Cada f
 
 **Leyenda:** `[ ]` pendiente · `[x]` verificado con evidencia.
 
+## 0. Estado de verificación (Día 4 — 6/11/2026)
+
+| Área | Estado | Evidencia |
+|---|---|---|
+| CI de `main` | Verde después de #2, #8, #9 y #10 | GitHub Actions, HEAD `71a4164` |
+| Suite local | catalog 51, inventory 30, orders 24, gateway 5; 0 fallos | [`pruebas.md`](pruebas.md), [`evidencia/dia-4-suite.txt`](evidencia/dia-4-suite.txt) |
+| E2E por gateway | 34/34 requests y 34/34 assertions | [`evidencia/dia-4-newman.txt`](evidencia/dia-4-newman.txt) |
+| Reserva de zonas (3.3) | Verificada con unitarios + concurrencia PostgreSQL | `ReservaServiceTest`, `ConcurrenciaPostgresTest` |
+| OpenAPI catalog/inventory | Exportado y revisado (2.6, 3.8) | `openapi/catalog-openapi.json`, `openapi/inventory-openapi.json` |
+| Postman | Compra, búsqueda, rechazo, vencimiento y cancelación | `postman/TicketYa.postman_collection.json` |
+| Pendiente Día 4 | Devoluciones/consultas propias y OpenAPI de orders (4.8-4.11) | Caro / apoyo P5 |
+| Pendiente posterior | ER, índice/ADR, README limpio, E2E de devolución y checklist 100 % (5.5-5.11, 6.x) | Días 5-6 |
+
 ## 1. Funcionalidad de la Entrega 1
 
 | # | Requisito del enunciado | User stories | Spec | Tareas | Evidencia |
@@ -49,15 +62,15 @@ Lista verificable de **todo** lo que pide el enunciado para la Entrega 1. Cada f
 
 ## 3. Arquitectura y requisitos no funcionales de la Entrega 1
 
-- [ ] **Microservicios Spring Boot independientes:** cada proyecto compila y se ejecuta por separado (`mvn package` en las cuatro carpetas). → 1.2
-- [ ] **Punto de entrada único:** el gateway expone `/api/catalog`, `/api/inventory` y `/api/orders`; los servicios no se consumen directo. → 1.6
-- [ ] **Comunicación REST mayormente síncrona:** publicación, reserva, compra, devolución y cancelación documentadas en el contrato. → 1.3, 2.4
-- [ ] **Una base relacional por microservicio:** `catalog_db`, `inventory_db`, `orders_db` con Flyway. → 1.5
-- [ ] **Mecanismo contra la doble venta probado y multi-instancia:** locks/updates condicionales en PostgreSQL + test de concurrencia. → 3.7, `design.md` decisión 6
-- [ ] **Pasarela de pagos simulada:** aprobado, rechazado y lento; interfaz reemplazable. → 4.3
-- [ ] **Sin autenticación en Entrega 1:** identidad por `X-User-Id` y `X-User-Role` propagados por el gateway; 401/403 según corresponda. → 1.6
+- [x] **Microservicios Spring Boot independientes:** cada proyecto compila y se ejecuta por separado (`mvn package` en las cuatro carpetas). → 1.2
+- [x] **Punto de entrada único:** el gateway expone `/api/catalog`, `/api/inventory` y `/api/orders`; los servicios no se consumen directo. → 1.6
+- [x] **Comunicación REST mayormente síncrona:** publicación, reserva, compra, devolución y cancelación documentadas en el contrato. → 1.3, 2.4
+- [x] **Una base relacional por microservicio:** `catalog_db`, `inventory_db`, `orders_db` con Flyway. → 1.5
+- [x] **Mecanismo contra la doble venta probado y multi-instancia:** locks/updates condicionales en PostgreSQL + test de concurrencia. → 3.7, `design.md` decisión 6
+- [x] **Pasarela de pagos simulada:** aprobado, rechazado y lento; interfaz reemplazable. → 4.3
+- [x] **Sin autenticación en Entrega 1:** identidad por `X-User-Id` y `X-User-Role` propagados por el gateway; 401/403 según corresponda. → 1.6
 - [ ] **Ejecución local:** README con Docker para las bases y Maven/IDE para los servicios. → 5.6
-- [ ] **Consistencia y compensaciones:** flujo de compra con estados intermedios y reintentos idempotentes documentado; la estrategia completa de Saga/outbox queda para Entrega 2. → `design.md` decisión 7, 4.7
+- [x] **Consistencia y compensaciones:** flujo de compra con estados intermedios y reintentos idempotentes documentado; la estrategia completa de Saga/outbox queda para Entrega 2. → `design.md` decisión 7, 4.7
 
 ## 4. Tareas y entregables de la Entrega 1 (enunciado)
 
@@ -72,9 +85,9 @@ Lista verificable de **todo** lo que pide el enunciado para la Entrega 1. Cada f
 - [ ] **README con instrucciones de ejecución y documentación técnica adicional:** README raíz + `docs/arquitectura.md`. → 5.6, 5.7
 - [ ] **Índice de documentación y registro de decisiones:** `docs/README.md` y `docs/decisiones.md`. → 5.9
 - [ ] **README por microservicio:** responsabilidad, endpoints, modelo y comandos de test. → 5.10
-- [ ] **Evidencia de pruebas:** estrategia, comandos y resultados de concurrencia/E2E en `docs/pruebas.md`. → 5.11
+- [x] **Evidencia de pruebas:** estrategia, comandos y resultados de concurrencia/E2E en `docs/pruebas.md`. → 5.11
 - [ ] **Pruebas unitarias de compra, devoluciones y búsqueda:** → 2.5, 4.4, 4.5, 4.7, 4.8, 4.9
-- [ ] **Prueba de compras simultáneas del mismo asiento o último lugar de zona:** → 3.7
+- [x] **Prueba de compras simultáneas del mismo asiento o último lugar de zona:** → 3.7
 - [ ] **Repositorio con código, especificaciones, documentación de diseño, README, datos de prueba y colección Postman:** → 5.1, 5.2, 6.3, 6.4
 
 ## 5. Fuera de alcance (Entrega 2)

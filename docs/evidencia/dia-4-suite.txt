@@ -1,0 +1,31 @@
+# Evidencia de suite — Día 4 (6/11/2026)
+
+Comando por servicio, desde `ticketya/`:
+
+```bash
+cd catalog-service   && mvn clean test
+cd inventory-service && mvn clean test
+cd orders-service    && mvn clean test
+cd api-gateway       && mvn clean test
+```
+
+Resultados locales:
+
+| Proyecto | Tests | Fallos | Errores | Omitidos |
+|---|---|---|---|---|
+| catalog-service | 51 | 0 | 0 | 0 |
+| inventory-service | 30 | 0 | 0 | 0 |
+| orders-service | 24 | 0 | 0 | 0 |
+| api-gateway | 5 | 0 | 0 | 0 |
+
+Tests de integración relevantes:
+
+- `catalog-service/EventoBusquedaIntegrationTest` (3): búsqueda sin filtros, texto con
+  mayúsculas y filtros combinados contra PostgreSQL 16 (Testcontainers).
+- `inventory-service/ConcurrenciaPostgresTest` (2): 100 hilos sobre un asiento y 20 hilos
+  sobre el último lugar de una zona; exactamente un ganador en cada caso.
+- `orders-service/OrderIdempotencyIntegrationTest` (2): dos reintentos concurrentes con la
+  misma `Idempotency-Key` crean una sola orden; el reintento secuencial devuelve lo mismo.
+
+Nota: usar `mvn clean test` al cambiar de rama. Si no se limpia `target/`, pueden quedar
+migraciones Flyway viejas copiadas y el contexto falla con “Found more than one migration”.
