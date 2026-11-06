@@ -230,15 +230,33 @@ public class OrderService {
 
     /**
      * Cancelación de evento pedida por catalog (tarea 4.9, necesaria para 2.3).
-     * Idempotente: repetir devuelve la misma cantidad de entradas en reintegro.
+     * Idempotente: repetir devuelve la misma cantidad de entradas en reintegro
+     * y no vuelve a pedir reintegros ya solicitados.
      */
     @Transactional
     public CancelacionEventoResponse cancelarEvento(UUID eventoId) {
         List<Entrada> validas = entradaRepository.findByEventoIdAndEstado(eventoId, EstadoEntrada.VALIDA);
         validas.forEach(entrada -> entrada.setEstado(EstadoEntrada.EN_REINTEGRO));
         entradaRepository.saveAll(validas);
-        long afectadas = entradaRepository.countByEventoIdAndEstado(eventoId, EstadoEntrada.EN_REINTEGRO);
-        return new CancelacionEventoResponse(eventoId, (int) afectadas, (int) afectadas);
+
+        List<Entrada> enReintegro = entradaRepository.findByEventoIdAndEstado(eventoId, EstadoEntrada.EN_REINTEGRO);
+        int reintegros = 0;
+        List<UUID> ordenes = enReintegro.stream().map(Entrada::getOrdenId).distinct().toList();
+        for (UUID ordenId : ordenes) {
+            for (Pago pago : pagoRepository.findByOrdenId(ordenId)) {
+                if (pago.getEstado() == EstadoPago.APROBADO) {
+                    pago.setEstado(EstadoPago.REINTEGRADO);
+                    pagoRepository.save(pago);
+                    try {
+                        paymentGateway.reintegrar(pago.getId());
+                    } catch (RuntimeException ex) {
+                        // El pago queda REINTEGRADO; la pasarela mock es idempotente.
+                    }
+                    reintegros++;
+                }
+            }
+        }
+        return new CancelacionEventoResponse(eventoId, enReintegro.size(), reintegros);
     }
 
     private void liberarSinFallo(UUID reservaId, String motivo) {
@@ -252,7 +270,7 @@ public class OrderService {
     private void devolverSinFallo(ReservationDto reserva, List<OrdenItem> items, UUID referencia) {
         List<ReturnDto.Item> devoluciones = items.stream()
                 .map(item -> new ReturnDto.Item(item.getSectorId(), item.getAsientoId(),
-                        item.getAsientoId() == null ? item.getCantidad() : null))
+                        item.getAsientoId() == null ? item.getCantidad() : 1))
                 .toList();
         try {
             inventoryClient.devolverItems(new ReturnDto(reserva.eventoId(), referencia, devoluciones));

@@ -313,6 +313,46 @@ class OrderServiceTest {
         });
     }
 
+    @Test
+    void cancelarEventoMarcaEntradasYReintegraLosPagos() {
+        UUID eventoId = UUID.randomUUID();
+        UUID ordenId = UUID.randomUUID();
+        Entrada primera = entradaCancelacion(eventoId, ordenId);
+        Entrada segunda = entradaCancelacion(eventoId, ordenId);
+        Pago pago = new Pago();
+        pago.setId(UUID.randomUUID());
+        pago.setOrdenId(ordenId);
+        pago.setEstado(EstadoPago.APROBADO);
+        when(entradaRepository.findByEventoIdAndEstado(eventoId, EstadoEntrada.VALIDA))
+                .thenReturn(List.of(primera, segunda));
+        when(entradaRepository.findByEventoIdAndEstado(eventoId, EstadoEntrada.EN_REINTEGRO))
+                .thenReturn(List.of(primera, segunda));
+        when(pagoRepository.findByOrdenId(ordenId)).thenReturn(List.of(pago));
+        when(pagoRepository.save(any(Pago.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        var response = orderService.cancelarEvento(eventoId);
+
+        assertThat(response.entradasAfectadas()).isEqualTo(2);
+        assertThat(response.reintegrosSolicitados()).isEqualTo(1);
+        assertThat(primera.getEstado()).isEqualTo(EstadoEntrada.EN_REINTEGRO);
+        assertThat(segunda.getEstado()).isEqualTo(EstadoEntrada.EN_REINTEGRO);
+        assertThat(pago.getEstado()).isEqualTo(EstadoPago.REINTEGRADO);
+        verify(paymentGateway).reintegrar(pago.getId());
+    }
+
+    @Test
+    void cancelarEventoSinEntradasDevuelveCero() {
+        UUID eventoId = UUID.randomUUID();
+        when(entradaRepository.findByEventoIdAndEstado(eventoId, EstadoEntrada.VALIDA)).thenReturn(List.of());
+        when(entradaRepository.findByEventoIdAndEstado(eventoId, EstadoEntrada.EN_REINTEGRO)).thenReturn(List.of());
+
+        var response = orderService.cancelarEvento(eventoId);
+
+        assertThat(response.entradasAfectadas()).isZero();
+        assertThat(response.reintegrosSolicitados()).isZero();
+        verify(paymentGateway, never()).reintegrar(any());
+    }
+
     private Entrada entrada(ReservationDto reserva, UUID qr) {
         Entrada entrada = new Entrada();
         entrada.setId(UUID.randomUUID());
@@ -320,6 +360,21 @@ class OrderServiceTest {
         entrada.setEstado(EstadoEntrada.VALIDA);
         entrada.setSectorId(reserva.items().getFirst().sectorId());
         entrada.setAsientoId(reserva.items().getFirst().asientoId());
+        return entrada;
+    }
+
+    private Entrada entradaCancelacion(UUID eventoId, UUID ordenId) {
+        Entrada entrada = new Entrada();
+        entrada.setId(UUID.randomUUID());
+        entrada.setOrdenId(ordenId);
+        entrada.setClienteId(clienteId);
+        entrada.setEventoId(eventoId);
+        entrada.setEventoNombre("Recital");
+        entrada.setEventoFecha(OffsetDateTime.parse("2027-01-15T21:00:00-03:00"));
+        entrada.setSectorId(UUID.randomUUID());
+        entrada.setAsientoId(UUID.randomUUID());
+        entrada.setQrCode(UUID.randomUUID());
+        entrada.setEstado(EstadoEntrada.VALIDA);
         return entrada;
     }
 

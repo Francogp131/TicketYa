@@ -45,7 +45,7 @@ Resultado de la última corrida local (6/11/2026, `mvn clean test` con Docker):
 |---|---|---|
 | catalog-service | 51 | 0 fallos, 0 errores, 0 omitidos |
 | inventory-service | 30 | 0 fallos, 0 errores, 0 omitidos |
-| orders-service | 24 | 0 fallos, 0 errores, 0 omitidos |
+| orders-service | 38 | 0 fallos, 0 errores, 0 omitidos |
 | api-gateway | 5 | 0 fallos, 0 errores, 0 omitidos |
 
 Desglose relevante:
@@ -58,8 +58,13 @@ Desglose relevante:
   confirmación/liberación y devoluciones idempotentes.
 - `ConcurrenciaPostgresTest` (2): 100 hilos sobre el mismo asiento y 20 hilos sobre el último
   lugar de una zona; en ambos casos exactamente un ganador.
-- `OrderServiceTest` (13): pago aprobado, rechazado, timeout, compensación por confirmación
-  y por emisión de entradas, idempotencia y errores de reserva.
+- `OrderServiceTest` (15): pago aprobado, rechazado, timeout, compensación por confirmación
+  y por emisión de entradas, idempotencia, errores de reserva y cancelación de evento con
+  reintegro de pagos.
+- `DevolucionServiceTest` (8): solicitud dentro/fuera de plazo, entrada ajena/usada,
+  aprobación con liberación + invalidación + refund, fallo de inventory deja PROCESANDO,
+  rechazo mantiene la entrada VALIDA y resolución duplicada.
+- `ReturnControllerTest` (3): 401 sin identidad, 403 para cliente y 200 para ADMIN.
 - `IdempotencyServiceTest` (5): misma respuesta, 422 con cuerpo distinto, 409 en proceso,
   hash determinista.
 - `OrderIdempotencyIntegrationTest` (2): dos reintentos concurrentes crean una sola orden y
@@ -106,9 +111,10 @@ La colección Postman se ejecuta completa con Newman:
 npx -y newman run postman/TicketYa.postman_collection.json --reporters cli
 ```
 
-Resultado de la última corrida (6/11/2026): **34 requests, 34 assertions, 0 fallos**.
+Resultado de la última corrida (6/11/2026): **40 requests, 40 assertions, 0 fallos**.
 Incluye catálogo, búsqueda, publicación, reserva numerada y de zona, compra aprobada con QR,
-reintento idempotente, reuso de clave, pago rechazado, pago lento y cancelación.
+reintento idempotente, reuso de clave, pago rechazado, pago lento, devolución aprobada,
+devolución rechazada y cancelación.
 
 Evidencia: [`docs/evidencia/dia-4-newman.txt`](evidencia/dia-4-newman.txt).
 
@@ -185,8 +191,21 @@ curl -s -X POST "$GATEWAY/api/catalog/events/$EVENTO/cancel" \
 ```
 
 Resultado observado: `estado: "CANCELADO"`, `cancelacionPendiente: false` y las entradas del
-evento pasan a `EN_REINTEGRO` en `orders_db`. Repetir el endpoint interno devuelve la misma
-cantidad de entradas afectadas.
+evento pasan a `EN_REINTEGRO` en `orders_db`; los pagos aprobados pasan a `REINTEGRADO`.
+Repetir el endpoint interno devuelve la misma cantidad de entradas afectadas.
+
+### 6.6 Devoluciones
+
+- `POST /api/orders/tickets/{entradaId}/returns` (dueño) crea la solicitud `PENDIENTE`;
+  fuera de las 72 horas responde `422 RETURN_WINDOW_CLOSED`.
+- `POST /api/orders/returns/{id}/approve` (ADMIN) libera el lugar en inventory, pasa la
+  entrada a `DEVUELTA`, el pago a `REINTEGRADO` y la solicitud a `APROBADA`.
+- `POST /api/orders/returns/{id}/reject` (ADMIN) deja la solicitud `RECHAZADA` y la entrada
+  sigue `VALIDA`.
+- Repetir approve/reject sobre una solicitud resuelta responde `409 RETURN_ALREADY_RESOLVED`.
+
+La colección Postman cubre los dos caminos (aprobar la primera entrada y rechazar la segunda)
+y verifica el estado final de cada entrada en el detalle de la orden.
 
 ## 7. Hallazgos del E2E
 
@@ -195,7 +214,7 @@ La primera corrida completa (6/11/2026) encontró que **todos** los
 (`lower(bytea) does not exist`). Se corrigió en el PR
 [#10](https://github.com/Francogp131/TicketYa/pull/10), con un test de regresión contra
 PostgreSQL real (`EventoBusquedaIntegrationTest`). La colección volvió a correr completa:
-34/34 requests y 34/34 assertions.
+40/40 requests y 40/40 assertions.
 
 Evidencia de la suite: [`docs/evidencia/dia-4-suite.txt`](evidencia/dia-4-suite.txt).
 

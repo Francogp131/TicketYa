@@ -23,4 +23,9 @@ public class MockPaymentGateway implements PaymentGateway {
             default -> throw new PaymentGatewayException("Resultado de pasarela desconocido: " + token);
         };
     }
+
+    @Override
+    public void reintegrar(UUID pagoId) {
+        // El mock no mueve dinero: el estado REINTEGRADO del pago es la evidencia.
+    }
 }

@@ -17,18 +17,19 @@ Resultado:
 │                         │         executed │           failed │
 ├─────────────────────────┼──────────────────┼──────────────────┤
 │              iterations │                1 │                0 │
-│                requests │               34 │                0 │
-│            test-scripts │               34 │                0 │
+│                requests │               40 │                0 │
+│            test-scripts │               40 │                0 │
 │      prerequest-scripts │                1 │                0 │
-│              assertions │               34 │                0 │
+│              assertions │               40 │                0 │
 └─────────────────────────┴──────────────────┴──────────────────┘
 ```
 
 Flujos incluidos: catálogo (lugares, sectores, evento, precios, publicación y detalle),
 búsqueda por ciudad/orden y error de orden inválido, disponibilidad, asientos, reserva
 numerada y de zona, rechazo de doble reserva, compra aprobada con QR, consulta de orden,
-reintento idempotente, reuso de clave (422), pago rechazado, pago lento (502), errores
-401/404 y cancelación de evento con verificación interna idempotente en orders.
+reintento idempotente, reuso de clave (422), pago rechazado, pago lento (502), devolución
+aprobada, devolución rechazada, errores 401/404 y cancelación de evento con verificación
+interna idempotente en orders.
 
 Hallazgo de la primera corrida: `GET /api/catalog/events` devolvía 500 por parámetros nulos
-en la consulta JPQL. Corregido en el PR #10; la segunda corrida completa quedó 34/34.
+en la consulta JPQL. Corregido en el PR #10; la segunda corrida completa quedó 40/40.

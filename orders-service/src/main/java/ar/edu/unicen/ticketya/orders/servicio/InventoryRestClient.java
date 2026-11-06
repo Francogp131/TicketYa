@@ -47,6 +47,7 @@ public class InventoryRestClient implements InventoryClient {
         restClient.post()
                 .uri("/internal/returns")
                 .contentType(MediaType.APPLICATION_JSON)
+                .header("Idempotency-Key", devolucion.referencia().toString())
                 .body(devolucion)
                 .retrieve()
                 .toBodilessEntity();
