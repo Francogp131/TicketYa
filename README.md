@@ -183,7 +183,7 @@ openspec status --change entrega-1-core
 
 **Días 2 y 3 completados (4-5/11):** estados, búsqueda con orden/paginación, cancelación y scheduler en catalog; límite por cliente, vencimiento, confirmación, liberación y devoluciones en inventory; pasarela mock, pago aprobado con QR, rechazo, timeout, idempotencia y compensaciones en orders. La colección Postman ya incluye los flujos de compra, reintento, rechazo, pago lento y cancelación.
 
-**Día 4 (6/11):** cerrada la reserva de zonas (3.3) con unitarios y concurrencia; orders 4.3-4.7 extraído a `main`; búsqueda de catalog corregida (500 por parámetros nulos) con test de regresión; suite local 51/30/24/5 y E2E 34/34 por gateway. Quedan devoluciones/consultas propias y OpenAPI de orders (4.8-4.11).
+**Día 4 (6/11):** cerrada la reserva de zonas (3.3) con unitarios y concurrencia; orders 4.3-4.7 extraído a `main`; devoluciones (4.8) y cancelación con reintegro (4.9) implementadas; búsqueda de catalog corregida (500 por parámetros nulos) con test de regresión; suite local 51/30/38/5 y E2E 40/40 por gateway. Quedan consultas propias y OpenAPI de orders (4.10-4.11).
 
 El avance verificable está en [`tasks.md`](openspec/changes/entrega-1-core/tasks.md).
 

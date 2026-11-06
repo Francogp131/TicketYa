@@ -3,6 +3,9 @@ package ar.edu.unicen.ticketya.orders.web;
 import ar.edu.unicen.ticketya.orders.servicio.OrderService;
 import ar.edu.unicen.ticketya.orders.web.dto.CrearOrdenRequest;
 import ar.edu.unicen.ticketya.orders.web.dto.OrderResponse;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.net.URI;
 import java.util.UUID;
@@ -17,6 +20,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/orders")
+@Tag(name = "Órdenes", description = "Compra, pago mock, entradas y consultas propias")
 public class OrderController {
 
     private final OrderService orderService;
@@ -26,6 +30,16 @@ public class OrderController {
     }
 
     @PostMapping
+    @Operation(summary = "Crear la orden, cobrar y emitir entradas",
+            description = "Requiere Idempotency-Key. Token APROBADO, RECHAZADO o LENTO. El total se calcula en el servidor.")
+    @ApiResponse(responseCode = "201", description = "Orden creada (PAGADA o RECHAZADA)")
+    @ApiResponse(responseCode = "400", description = "Validación (VALIDATION_ERROR)")
+    @ApiResponse(responseCode = "403", description = "La reserva es de otro cliente (NOT_RESERVATION_OWNER)")
+    @ApiResponse(responseCode = "404", description = "La reserva no existe (RESERVATION_NOT_FOUND)")
+    @ApiResponse(responseCode = "409", description = "Idempotencia en proceso (IDEMPOTENCY_IN_PROGRESS)")
+    @ApiResponse(responseCode = "410", description = "Reserva vencida (RESERVATION_EXPIRED)")
+    @ApiResponse(responseCode = "422", description = "Clave reusada con otro cuerpo (IDEMPOTENCY_KEY_REUSED)")
+    @ApiResponse(responseCode = "502", description = "Pasarela o inventory no disponible")
     public ResponseEntity<OrderResponse> crear(
             @Valid @RequestBody CrearOrdenRequest request,
             @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
@@ -37,6 +51,10 @@ public class OrderController {
     }
 
     @GetMapping("/{ordenId}")
+    @Operation(summary = "Detalle de una orden", description = "Solo el dueño de la orden.")
+    @ApiResponse(responseCode = "200", description = "Orden con items y entradas")
+    @ApiResponse(responseCode = "403", description = "La orden es de otro cliente (ORDER_NOT_OWNER)")
+    @ApiResponse(responseCode = "404", description = "La orden no existe (ORDER_NOT_FOUND)")
     public OrderResponse obtener(
             @PathVariable UUID ordenId,
             @RequestHeader(value = "X-User-Id", required = false) String userId,

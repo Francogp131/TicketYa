@@ -9,12 +9,13 @@ Lista verificable de **todo** lo que pide el enunciado para la Entrega 1. Cada f
 | Área | Estado | Evidencia |
 |---|---|---|
 | CI de `main` | Verde después de #2, #8, #9 y #10 | GitHub Actions, HEAD `71a4164` |
-| Suite local | catalog 51, inventory 30, orders 24, gateway 5; 0 fallos | [`pruebas.md`](pruebas.md), [`evidencia/dia-4-suite.txt`](evidencia/dia-4-suite.txt) |
-| E2E por gateway | 34/34 requests y 34/34 assertions | [`evidencia/dia-4-newman.txt`](evidencia/dia-4-newman.txt) |
+| Suite local | catalog 51, inventory 30, orders 38, gateway 5; 0 fallos | [`pruebas.md`](pruebas.md), [`evidencia/dia-4-suite.txt`](evidencia/dia-4-suite.txt) |
+| E2E por gateway | 40/40 requests y 40/40 assertions | [`evidencia/dia-4-newman.txt`](evidencia/dia-4-newman.txt) |
 | Reserva de zonas (3.3) | Verificada con unitarios + concurrencia PostgreSQL | `ReservaServiceTest`, `ConcurrenciaPostgresTest` |
+| Devoluciones (4.8) y cancelación (4.9) | Aprobación/rechazo, liberación, refund y `EN_REINTEGRO` | `DevolucionServiceTest`, `OrderServiceTest`, E2E |
 | OpenAPI catalog/inventory | Exportado y revisado (2.6, 3.8) | `openapi/catalog-openapi.json`, `openapi/inventory-openapi.json` |
-| Postman | Compra, búsqueda, rechazo, vencimiento y cancelación | `postman/TicketYa.postman_collection.json` |
-| Pendiente Día 4 | Devoluciones/consultas propias y OpenAPI de orders (4.8-4.11) | Caro / apoyo P5 |
+| Postman | Compra, búsqueda, rechazo, devolución y cancelación | `postman/TicketYa.postman_collection.json` |
+| Pendiente Día 4 | Consultas propias y OpenAPI de orders (4.10-4.11) | Caro (guía en `docs/equipo/caro-4.10.md`) |
 | Pendiente posterior | ER, índice/ADR, README limpio, E2E de devolución y checklist 100 % (5.5-5.11, 6.x) | Días 5-6 |
 
 ## 1. Funcionalidad de la Entrega 1
@@ -86,7 +87,7 @@ Lista verificable de **todo** lo que pide el enunciado para la Entrega 1. Cada f
 - [ ] **Índice de documentación y registro de decisiones:** `docs/README.md` y `docs/decisiones.md`. → 5.9
 - [ ] **README por microservicio:** responsabilidad, endpoints, modelo y comandos de test. → 5.10
 - [x] **Evidencia de pruebas:** estrategia, comandos y resultados de concurrencia/E2E en `docs/pruebas.md`. → 5.11
-- [ ] **Pruebas unitarias de compra, devoluciones y búsqueda:** → 2.5, 4.4, 4.5, 4.7, 4.8, 4.9
+- [x] **Pruebas unitarias de compra, devoluciones y búsqueda:** → 2.5, 4.4, 4.5, 4.7, 4.8, 4.9
 - [x] **Prueba de compras simultáneas del mismo asiento o último lugar de zona:** → 3.7
 - [ ] **Repositorio con código, especificaciones, documentación de diseño, README, datos de prueba y colección Postman:** → 5.1, 5.2, 6.3, 6.4
 

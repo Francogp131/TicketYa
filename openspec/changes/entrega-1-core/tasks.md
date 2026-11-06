@@ -40,15 +40,15 @@
 - [x] 4.5 Implementar el pago rechazado y la reserva vencida: liberar lugares, orden `RECHAZADA` y ninguna entrada emitida; verificar con tests de estado y disponibilidad. _(OrderServiceTest + E2E de rechazo)_
 - [x] 4.6 Implementar la idempotencia con `Idempotency-Key` (misma respuesta, 422 con cuerpo distinto y una sola orden ante reintentos concurrentes); verificar con tests contra la tabla de idempotencia. _(IdempotencyServiceTest + OrderIdempotencyIntegrationTest)_
 - [x] 4.7 Implementar la compensación cuando falla la confirmación de inventario o la emisión de entradas después del pago; verificar con tests que la orden no quede `PAGADA` y que se solicite el reintegro. _(compensación por confirmación y por emisión en OrderServiceTest)_
-- [ ] 4.8 Implementar las devoluciones (US-22 y US-23): solicitud, aprobación y rechazo; verificar con tests 422 fuera de plazo, 409 ya resuelta, 403 entrada ajena, liberación + invalidación + refund al aprobar y entrada válida al rechazar.
-- [ ] 4.9 Implementar la cancelación de evento (US-24): pasar todas las entradas vendidas a `EN_REINTEGRO` y solicitar el reintegro; verificar con tests de evento con y sin entradas y que el endpoint sea idempotente.
+- [x] 4.8 Implementar las devoluciones (US-22 y US-23): solicitud, aprobación y rechazo; verificar con tests 422 fuera de plazo, 409 ya resuelta, 403 entrada ajena, liberación + invalidación + refund al aprobar y entrada válida al rechazar. _(DevolucionServiceTest + ReturnControllerTest + E2E de devolución)_
+- [x] 4.9 Implementar la cancelación de evento (US-24): pasar todas las entradas vendidas a `EN_REINTEGRO` y solicitar el reintegro; verificar con tests de evento con y sin entradas y que el endpoint sea idempotente. _(OrderServiceTest + cancelación idempotente del E2E; pagos pasan a REINTEGRADO)_
 - [ ] 4.10 Implementar la consulta de entradas y órdenes propias (US-19); verificar con tests que el cliente solo vea las suyas y que una entrada ajena devuelva 403.
 - [ ] 4.11 Documentar el OpenAPI de orders-service con ejemplos y errores; verificar Swagger UI y los códigos 201/403/404/409/410/422.
 
 ## 5. Integración, datos y documentación
 
 - [x] 5.1 Crear los datos de prueba con Flyway (lugares, eventos publicados, precios e inventario); verificar que se puedan consultar por API después de levantar el entorno. _(V2__seed.sql en catalog e inventory; verificado por gateway)_
-- [x] 5.2 Crear la colección Postman con los flujos de compra aprobada, rechazada, vencida, devolución y cancelación, con assertions; verificar que se ejecute completa contra el entorno local. _(34 requests / 34 assertions verdes por gateway; flujos de devolución se agregan al cerrar 4.8)_
+- [x] 5.2 Crear la colección Postman con los flujos de compra aprobada, rechazada, vencida, devolución y cancelación, con assertions; verificar que se ejecute completa contra el entorno local. _(40 requests / 40 assertions verdes por gateway, incluidos devolución aprobada y rechazada)_
 - [x] 5.3 Crear el diagrama de módulos en Mermaid; verificar que muestre gateway, los tres servicios, sus bases, el mock de pagos y las dependencias. _(docs/arquitectura.md)_
 - [x] 5.4 Crear el diagrama de secuencia de compra de una entrada numerada, incluyendo pago aprobado, pago rechazado y reserva vencida; verificar que coincida con los estados y llamadas del diseño. _(docs/arquitectura.md)_
 - [ ] 5.5 Crear el ER por microservicio, con claves, relaciones y entidades solapadas entre bases; verificar que coincida con las migraciones Flyway.
@@ -57,7 +57,7 @@
 - [ ] 5.8 Revisar el OpenAPI agregado de los tres servicios (descripciones, ejemplos y códigos de error); verificar que Swagger UI de cada servicio muestre todos los endpoints del contrato.
 - [ ] 5.9 Crear `docs/README.md` como índice de documentación y `docs/decisiones.md` con las ADR cortas (decisión, alternativas y consecuencias); verificar que todos los enlaces resuelvan y que el índice refleje el estado real.
 - [ ] 5.10 Documentar cada servicio en su `README.md` (responsabilidad, endpoints, modelo, variables y comandos de test); verificar que otra persona pueda levantarlo siguiendo solo ese README.
-- [x] 5.11 Crear `docs/pruebas.md` con la estrategia, los comandos y la evidencia de la prueba de concurrencia y del E2E; verificar que los comandos documentados se ejecuten tal cual. _(suite 51/30/24/5 y Newman 34/34; evidencia en `docs/evidencia/`)_
+- [x] 5.11 Crear `docs/pruebas.md` con la estrategia, los comandos y la evidencia de la prueba de concurrencia y del E2E; verificar que los comandos documentados se ejecuten tal cual. _(suite 51/30/38/5 y Newman 40/40; evidencia en `docs/evidencia/`)_
 
 ## 6. Verificación y entrega
 

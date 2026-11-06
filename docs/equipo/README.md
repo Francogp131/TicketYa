@@ -10,6 +10,8 @@ Esta carpeta tiene un brief por integrante. La idea es que cada uno pueda clonar
 | P4 | Thiago | Gateway + infraestructura | [`compa-4.md`](compa-4.md) |
 | P5 | Franco | Calidad, integración y documentación | [`franco-p5.md`](franco-p5.md) |
 
+**Guía puntual Día 4:** [`caro-4.10.md`](caro-4.10.md) — pasos exactos para implementar la consulta de órdenes/entradas propias (tarea 4.10).
+
 ## 1. Acceso al repositorio
 
 **¿Es tu primer PR?** Empezá por [`primer-pr.md`](primer-pr.md): explica rama, commit, push y PR paso a paso, con GitHub Desktop y con terminal.
