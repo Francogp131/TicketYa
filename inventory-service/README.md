@@ -21,7 +21,7 @@ Servicio de disponibilidad, reservas temporales y no doble venta de TicketYa.
 | POST | `/internal/reservations/{reservaId}/release` | interno | Libera la reserva si el pago se rechazó. Idempotente, 204 |
 | POST | `/internal/returns` | interno | Devuelve un asiento vendido o repone una zona. Idempotente con `Idempotency-Key`, 204 |
 
-Límite por cliente, vencimiento, confirmación/liberación y devolución corresponden a las tareas 3.4–3.8.
+Límite por cliente, vencimiento, confirmación/liberación y devolución corresponden a las tareas 3.4–3.8. La prueba de concurrencia corre con `mvn test` contra PostgreSQL real (Testcontainers): 100 hilos sobre el mismo asiento y varios sobre el último lugar de una zona.
 
 ## Reserva y no doble venta
 
@@ -33,6 +33,7 @@ Límite por cliente, vencimiento, confirmación/liberación y devolución corres
 - Confirmar: `UPDATE reserva SET estado = 'CONFIRMADA' WHERE id = ? AND estado = 'VIGENTE' AND expires_at > now()`. Los asientos pasan de `RESERVADO` a `VENDIDO` y se suma `cliente_evento.entradas_vendidas`. Si ya estaba `CONFIRMADA`, se devuelve la misma reserva. Si venció, se liberan los lugares y se responde `410 RESERVATION_EXPIRED`.
 - Liberar: la reserva `VIGENTE` pasa a `LIBERADA` y se reponen asientos y zona. Repetir la llamada responde 204 sin tocar la disponibilidad otra vez.
 - Devolver: un asiento `VENDIDO` vuelve a `LIBRE`; una zona suma la cantidad a `disponibles`. Con el header `Idempotency-Key`, repetir el mismo cuerpo no repone dos veces.
+- Concurrencia: `ConcurrenciaPostgresTest` verifica que un asiento y el último lugar de una zona se reservan una sola vez.
 - El alta de inventario es idempotente por `eventoId + version` y usa `ON CONFLICT DO NOTHING` para los asientos.
 
 ## Modelo
