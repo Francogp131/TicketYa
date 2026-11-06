@@ -10,7 +10,7 @@ Esta carpeta tiene un brief por integrante. La idea es que cada uno pueda clonar
 | P4 | Thiago | Gateway + infraestructura | [`compa-4.md`](compa-4.md) |
 | P5 | Franco | Calidad, integración y documentación | [`franco-p5.md`](franco-p5.md) |
 
-**Guía puntual Día 4:** [`caro-4.10.md`](caro-4.10.md) — pasos exactos para implementar la consulta de órdenes/entradas propias (tarea 4.10).
+**Guía puntual Día 4:** [`caro-4.10.md`](caro-4.10.md) — la tarea 4.10 ya está implementada; pasos simples para verificarla y aprobar el PR.
 
 ## 1. Acceso al repositorio
 

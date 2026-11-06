@@ -1084,6 +1084,246 @@
           }
         },
         {
+          "name": "Listar mis órdenes",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "{{clientId}}"
+              },
+              {
+                "key": "X-User-Role",
+                "value": "CLIENT"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/orders?page=0&size=5",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "orders"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "5"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 con la página del cliente', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.content).to.be.an('array');",
+                  "    pm.expect(body.totalElements).to.be.at.least(1);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Listar mis entradas",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "{{clientId}}"
+              },
+              {
+                "key": "X-User-Role",
+                "value": "CLIENT"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/orders/tickets?eventoId={{eventoId}}&page=0&size=5",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "orders",
+                "tickets"
+              ],
+              "query": [
+                {
+                  "key": "eventoId",
+                  "value": "{{eventoId}}"
+                },
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "5"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 con las entradas del evento', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.content).to.be.an('array').that.is.not.empty;",
+                  "    pm.expect(body.content[0]).to.have.property('qrCode');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Detalle de entrada propia",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "{{clientId}}"
+              },
+              {
+                "key": "X-User-Role",
+                "value": "CLIENT"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/orders/tickets/{{entradaId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "orders",
+                "tickets",
+                "{{entradaId}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 con la entrada pedida', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    pm.expect(pm.response.json().id).to.eql(pm.collectionVariables.get('entradaId'));",
+                  "    pm.expect(pm.response.json()).to.have.property('estado');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Entrada ajena devuelve 403",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "{{adminId}}"
+              },
+              {
+                "key": "X-User-Role",
+                "value": "ADMIN"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/orders/tickets/{{entradaId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "orders",
+                "tickets",
+                "{{entradaId}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('403 NOT_TICKET_OWNER', function () {",
+                  "    pm.response.to.have.status(403);",
+                  "    pm.expect(pm.response.json().code).to.eql('NOT_TICKET_OWNER');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Órdenes con size inválido devuelve 400",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "{{clientId}}"
+              },
+              {
+                "key": "X-User-Role",
+                "value": "CLIENT"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/orders?size=101",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "orders"
+              ],
+              "query": [
+                {
+                  "key": "size",
+                  "value": "101"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('400 VALIDATION_ERROR', function () {",
+                  "    pm.response.to.have.status(400);",
+                  "    pm.expect(pm.response.json().code).to.eql('VALIDATION_ERROR');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
           "name": "Reintento idempotente devuelve la misma orden",
           "request": {
             "method": "POST",

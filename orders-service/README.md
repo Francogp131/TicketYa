@@ -12,14 +12,14 @@ Servicio de órdenes, pagos, entradas/QR y compensaciones de TicketYa.
 | Método | Ruta | Rol | Descripción |
 |---|---|---|---|
 | POST | `/api/orders` | autenticado | Crea la orden, cobra y emite entradas; requiere `Idempotency-Key` |
+| GET | `/api/orders` | autenticado | Lista paginada de las órdenes del cliente |
 | GET | `/api/orders/{ordenId}` | dueño | Detalle de la orden con sus entradas |
+| GET | `/api/orders/tickets` | autenticado | Lista paginada de las entradas propias |
+| GET | `/api/orders/tickets/{entradaId}` | dueño | Detalle de una entrada propia |
 | POST | `/api/orders/tickets/{entradaId}/returns` | dueño | Solicita la devolución de una entrada |
 | POST | `/api/orders/returns/{devolucionId}/approve` | ADMIN | Libera el lugar, invalida la entrada y reintegra |
 | POST | `/api/orders/returns/{devolucionId}/reject` | ADMIN | Rechaza la devolución; la entrada sigue válida |
 | POST | `/internal/events/{eventoId}/cancel` | interno | Marca las entradas vendidas `EN_REINTEGRO` y solicita los reintegros |
-
-La consulta de órdenes y entradas propias (`GET /api/orders`, `GET /api/orders/tickets`) es la
-tarea 4.10 y se implementa en una rama aparte.
 
 ## Flujo de compra
 
