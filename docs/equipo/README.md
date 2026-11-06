@@ -11,6 +11,7 @@ Esta carpeta tiene un brief por integrante. La idea es que cada uno pueda clonar
 | P5 | Franco | Calidad, integración y documentación | [`franco-p5.md`](franco-p5.md) |
 
 **Guía puntual Día 4:** [`caro-4.10.md`](caro-4.10.md) — la tarea 4.10 ya está implementada; pasos simples para verificarla y aprobar el PR.
+**Mensaje corto para WhatsApp:** [`caro-4.10-whatsapp.txt`](caro-4.10-whatsapp.txt).
 
 ## 1. Acceso al repositorio
 
