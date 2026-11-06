@@ -131,6 +131,34 @@ class EventServiceTest {
     }
 
     @Test
+    void republicarElMismoEventoNoVuelveAEnviarElInventario() {
+        Evento evento = evento(UUID.randomUUID(), UUID.randomUUID());
+        Sector sector = sector(evento.getLugarId(), "Platea");
+        EventoSectorPrecio precio = new EventoSectorPrecio(evento.getId(), sector.getId(), new BigDecimal("15000"));
+        Lugar lugar = new Lugar();
+        lugar.setId(evento.getLugarId());
+        lugar.setNombre("Estadio");
+        lugar.setCiudad("Tandil");
+
+        when(eventoRepository.findById(evento.getId())).thenReturn(Optional.of(evento));
+        when(sectorRepository.findByLugarIdOrderByNombreAsc(evento.getLugarId())).thenReturn(List.of(sector));
+        when(precioRepository.findByEventoId(evento.getId())).thenReturn(List.of(precio));
+        when(asientoRepository.findBySectorIdOrderByFilaAscNumeroAsc(sector.getId())).thenReturn(List.of());
+        when(eventoRepository.save(any(Evento.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(lugarRepository.findById(evento.getLugarId())).thenReturn(Optional.of(lugar));
+        when(participanteRepository.findByEventoIdOrderByNombreAsc(evento.getId())).thenReturn(List.of());
+
+        eventService.publicar(evento.getId(), evento.getOrganizadorId());
+
+        assertThatThrownBy(() -> eventService.publicar(evento.getId(), evento.getOrganizadorId()))
+                .isInstanceOfSatisfying(ApiException.class, ex -> {
+                    assertThat(ex.getStatus().value()).isEqualTo(409);
+                    assertThat(ex.getCode()).isEqualTo("EVENT_NOT_EDITABLE");
+                });
+        verify(inventoryClient, times(1)).publicarInventario(any());
+    }
+
+    @Test
     void siInventoryFallaElEventoSigueEnBorrador() {
         Evento evento = evento(UUID.randomUUID(), UUID.randomUUID());
         Sector sector = sector(evento.getLugarId(), "Platea");

@@ -16,9 +16,9 @@
 - [x] 2.1 Implementar el modelo y los endpoints de lugares, sectores y asientos (US-01 a US-03); verificar con tests 201/400/403/404 y la generación de asientos de sectores numerados.
 - [x] 2.2 Implementar el modelo y los endpoints de eventos, precios y publicación (US-04 a US-06); verificar con tests fecha pasada, tipo inválido, sector ajeno, evento de otro organizador y publicación incompleta.
 - [x] 2.3 Implementar las transiciones de estado y el scheduler de finalización (US-07 y US-08); verificar con tests `AGOTADO`, `PUBLICADO`, `CANCELADO`, `FINALIZADO` y transición inválida 409.
-- [ ] 2.4 Integrar la publicación con inventory-service mediante un cliente REST idempotente con reintentos, y el callback de disponibilidad (`AGOTADO`/`PUBLICADO`); verificar con WireMock/Testcontainers y republicar el mismo evento sin duplicar inventario.
+- [x] 2.4 Integrar la publicación con inventory-service mediante un cliente REST idempotente con reintentos, y el callback de disponibilidad (`AGOTADO`/`PUBLICADO`); verificar con WireMock/Testcontainers y republicar el mismo evento sin duplicar inventario. _(timeout corto + 3 intentos con backoff; `PATCH /internal/events/{id}/availability`; tests con servidor HTTP local y republicación sin segundo envío)_
 - [x] 2.5 Implementar la búsqueda multi-criterio con orden y paginación y el detalle del evento (US-09 a US-11); verificar con tests de filtros combinados, lista vacía, rango inválido, orden por fecha/precio/relevancia, total de páginas y borrador 404.
-- [ ] 2.6 Documentar el OpenAPI de catalog-service con descripciones, ejemplos y errores; verificar Swagger UI y que `openapi.json` incluya todos los endpoints y códigos.
+- [x] 2.6 Documentar el OpenAPI de catalog-service con descripciones, ejemplos y errores; verificar Swagger UI y que `openapi.json` incluya todos los endpoints y códigos. _(`openapi/catalog-openapi.json` exportado con springdoc; anotaciones `@Operation`/`@ApiResponse` y ejemplos en los DTOs)_
 
 ## 3. inventory-service: reservas y no doble venta
 

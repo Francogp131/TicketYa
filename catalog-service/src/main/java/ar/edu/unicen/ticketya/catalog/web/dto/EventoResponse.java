@@ -3,10 +3,12 @@ package ar.edu.unicen.ticketya.catalog.web.dto;
 import ar.edu.unicen.ticketya.catalog.dominio.EstadoEvento;
 import ar.edu.unicen.ticketya.catalog.dominio.Evento;
 import ar.edu.unicen.ticketya.catalog.dominio.TipoEvento;
+import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
 
+@Schema(name = "EventoResponse", description = "Evento con sus participantes y precios")
 public record EventoResponse(
         UUID id,
         String nombre,

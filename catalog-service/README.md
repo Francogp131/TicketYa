@@ -7,7 +7,7 @@ Servicio de catálogo de TicketYa: lugares, sectores, asientos, eventos, precios
 - **Responsable:** P1 — ver [`docs/equipo/compa-1.md`](../docs/equipo/compa-1.md)
 - **Contrato:** [`docs/api-contract.md`](../docs/api-contract.md), sección 3.
 
-## Endpoints implementados (Días 1 y 2)
+## Endpoints implementados
 
 | Método | Ruta | Rol | Descripción |
 |---|---|---|---|
@@ -22,10 +22,13 @@ Servicio de catálogo de TicketYa: lugares, sectores, asientos, eventos, precios
 | POST | `/api/catalog/events/{eventoId}/cancel` | ADMIN | Cancela el evento y avisa a orders |
 | GET | `/api/catalog/events` | público | Busca eventos publicados o agotados con filtros, orden y paginación |
 | GET | `/api/catalog/events/{eventoId}` | público | Detalle con disponibilidad consultada a inventory |
+| PATCH | `/internal/events/{eventoId}/availability` | interno | Callback de inventory: `AGOTADO` ↔ `PUBLICADO` |
 
 La búsqueda acepta `tipo`, `organizadorId`, `participante`, `ciudad`, `fechaDesde`, `fechaHasta`, `orden`, `page` y `size`. Los órdenes válidos son `FECHA_ASC` (default), `FECHA_DESC`, `PRECIO_ASC`, `PRECIO_DESC` y `RELEVANCIA`; esta última prioriza eventos `PUBLICADO` y luego la fecha más próxima. Un rango inválido responde `400 INVALID_DATE_RANGE` y un orden desconocido `400 INVALID_SORT`.
 
-Las transiciones de estado permitidas son `BORRADOR → PUBLICADO`, `PUBLICADO ↔ AGOTADO`, `PUBLICADO/AGOTADO → CANCELADO` y `PUBLICADO/AGOTADO → FINALIZADO`. Si orders no responde al cancelar, el evento queda `CANCELADO` con `cancelacionPendiente: true` y el scheduler reintenta el aviso cada minuto. El mismo scheduler pasa a `FINALIZADO` los eventos cuya fecha ya pasó. La tarea 2.4 (callback público de disponibilidad desde inventory) queda pendiente.
+Las transiciones de estado permitidas son `BORRADOR → PUBLICADO`, `PUBLICADO ↔ AGOTADO`, `PUBLICADO/AGOTADO → CANCELADO` y `PUBLICADO/AGOTADO → FINALIZADO`. Si orders no responde al cancelar, el evento queda `CANCELADO` con `cancelacionPendiente: true` y el scheduler reintenta el aviso cada minuto. El mismo scheduler pasa a `FINALIZADO` los eventos cuya fecha ya pasó.
+
+La integración con inventory usa timeout corto (`INVENTORY_CONNECT_TIMEOUT_MS`/`INVENTORY_READ_TIMEOUT_MS`) y hasta 3 intentos con backoff ante timeouts o 5xx; los 4xx no se reintentan. La publicación envía un snapshot idempotente por `eventoId + version`, por lo que un reintento o una republicación no duplica inventario. Inventory notifica los cambios de disponibilidad con `PATCH /internal/events/{eventoId}/availability`.
 
 ## Modelo
 
@@ -47,6 +50,8 @@ Al publicar, el servicio envía a inventory el snapshot del evento (sectores, pr
 | `DB_URL` | `jdbc:postgresql://localhost:5433/catalog_db` | Conexión JDBC |
 | `DB_USER` / `DB_PASSWORD` | `ticketya` | Credenciales |
 | `INVENTORY_URL` | `http://localhost:8082` | Cliente interno hacia inventory |
+| `INVENTORY_CONNECT_TIMEOUT_MS` | `2000` | Timeout de conexión contra inventory |
+| `INVENTORY_READ_TIMEOUT_MS` | `3000` | Timeout de lectura contra inventory |
 | `ORDERS_URL` | `http://localhost:8083` | Cliente interno hacia orders |
 | `CATALOG_SCHEDULER_FINALIZACION_MS` | `60000` | Intervalo del scheduler de estados |
 
@@ -61,5 +66,7 @@ curl http://localhost:8081/actuator/health
 ```
 
 Swagger UI: <http://localhost:8081/swagger-ui.html> · OpenAPI: <http://localhost:8081/v3/api-docs>
+
+El OpenAPI exportado está en [`../openapi/catalog-openapi.json`](../openapi/catalog-openapi.json). Se regenera ejecutando `mvn -Dtest=OpenApiExportTest test`; el test escribe el archivo generado por springdoc en `openapi/catalog-openapi.json` de la raíz del repositorio.
 
 Los tests unitarios y de controller no necesitan Docker. La validación de integración con PostgreSQL se corre levantando la base y los servicios (ver `docs/pruebas.md`).
