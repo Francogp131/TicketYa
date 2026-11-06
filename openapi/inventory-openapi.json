@@ -1,0 +1,1292 @@
+{
+  "openapi" : "3.1.0",
+  "info" : {
+    "title" : "inventory-service",
+    "description" : "Disponibilidad, reservas temporales y no doble venta de TicketYa.\nLos errores usan application/problem+json (RFC 7807) con `code` y `errors`.\nCódigos de esta API: 200, 201, 204, 400, 401, 403, 404, 409, 410 y 422.\n",
+    "version" : "1.0.0"
+  },
+  "servers" : [ {
+    "url" : "http://localhost:8082",
+    "description" : "inventory-service"
+  } ],
+  "tags" : [ {
+    "name" : "Inventario interno",
+    "description" : "Llamadas de catalog y orders. El gateway no las expone."
+  }, {
+    "name" : "Inventario público",
+    "description" : "Disponibilidad, mapa de asientos y reservas del cliente."
+  } ],
+  "paths" : {
+    "/internal/returns" : {
+      "post" : {
+        "tags" : [ "Inventario interno" ],
+        "summary" : "Devolver lugares",
+        "description" : "Devuelve un asiento vendido o repone una zona. Idempotente con Idempotency-Key.",
+        "operationId" : "devolver",
+        "parameters" : [ {
+          "name" : "Idempotency-Key",
+          "in" : "header",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ReturnRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "204" : {
+            "description" : "Lugares devueltos"
+          },
+          "404" : {
+            "description" : "No existe el sector",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Problema"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/internal/reservations/{reservaId}/release" : {
+      "post" : {
+        "tags" : [ "Inventario interno" ],
+        "summary" : "Liberar una reserva",
+        "description" : "Libera la reserva si el pago se rechazó. Idempotente: repetir la llamada devuelve 204 sin reponer dos veces.",
+        "operationId" : "liberar",
+        "parameters" : [ {
+          "name" : "reservaId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ReleaseRequest"
+              }
+            }
+          }
+        },
+        "responses" : {
+          "204" : {
+            "description" : "Reserva liberada, o ya lo estaba"
+          },
+          "404" : {
+            "description" : "No existe la reserva",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Problema"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/internal/reservations/{reservaId}/confirm" : {
+      "post" : {
+        "tags" : [ "Inventario interno" ],
+        "summary" : "Confirmar la venta",
+        "description" : "Pasa la reserva de VIGENTE a CONFIRMADA si no venció y los asientos de RESERVADO a VENDIDO. Repetir una confirmada devuelve 200.",
+        "operationId" : "confirmar",
+        "parameters" : [ {
+          "name" : "reservaId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Reserva confirmada, también si ya estaba CONFIRMADA",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ReservationResponse"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "No existe la reserva",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Problema"
+                }
+              }
+            }
+          },
+          "409" : {
+            "description" : "La reserva no se puede confirmar",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Problema"
+                }
+              }
+            }
+          },
+          "410" : {
+            "description" : "La reserva venció",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Problema"
+                },
+                "examples" : {
+                  "RESERVATION_EXPIRED" : {
+                    "description" : "RESERVATION_EXPIRED",
+                    "value" : {
+                      "type" : "https://ticketya.local/errors/reservation-expired",
+                      "title" : "Gone",
+                      "status" : 410,
+                      "detail" : "La reserva está vencida y no se puede pagar",
+                      "instance" : "/internal/reservations/b1c2d3e4-f5a6-4b7c-8d9e-0f1a2b3c4d5e/confirm",
+                      "code" : "RESERVATION_EXPIRED",
+                      "errors" : [ ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/internal/events/{eventoId}/inventory" : {
+      "post" : {
+        "tags" : [ "Inventario interno" ],
+        "summary" : "Alta o actualización del inventario publicado",
+        "description" : "Idempotente por eventoId + version. Reintentar la misma clave no duplica filas ni reinicia la disponibilidad ya vendida.\n",
+        "operationId" : "upsert",
+        "parameters" : [ {
+          "name" : "eventoId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/InventoryUpsertRequest"
+              },
+              "example" : {
+                "eventoId" : "d0000000-0000-4000-8000-000000000001",
+                "nombre" : "Festival de Rock Tandil 2027",
+                "fecha" : "2027-03-14T21:00:00-03:00",
+                "limitePorCliente" : 4,
+                "version" : 1,
+                "sectores" : [ {
+                  "sectorId" : "b0000000-0000-4000-8000-000000000001",
+                  "nombre" : "Platea",
+                  "tipo" : "NUMERADO",
+                  "precio" : 25000.0,
+                  "capacidad" : 20,
+                  "filas" : 4,
+                  "asientos" : [ {
+                    "asientoId" : "c0000000-0000-4000-8000-010101000000",
+                    "fila" : 1,
+                    "numero" : 1
+                  } ]
+                } ]
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "Inventario guardado",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/InventoryUpsertResponse"
+                },
+                "example" : {
+                  "eventoId" : "d0000000-0000-4000-8000-000000000001",
+                  "sectores" : 2,
+                  "asientos" : 20,
+                  "idempotente" : true
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Cuerpo inválido",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Problema"
+                },
+                "examples" : {
+                  "VALIDATION_ERROR" : {
+                    "description" : "VALIDATION_ERROR",
+                    "value" : {
+                      "type" : "https://ticketya.local/errors/validation-error",
+                      "title" : "Bad Request",
+                      "status" : 400,
+                      "detail" : "La solicitud tiene campos inválidos",
+                      "instance" : "/api/inventory/reservations",
+                      "code" : "VALIDATION_ERROR",
+                      "errors" : [ {
+                        "field" : "items",
+                        "message" : "un ítem numerado requiere asientoIds y no admite cantidad"
+                      } ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/inventory/reservations" : {
+      "post" : {
+        "tags" : [ "Inventario público" ],
+        "summary" : "Reservar asientos o lugares de una zona",
+        "description" : "Todo o nada, durante 10 minutos. Un ítem numerado manda asientoIds y omite cantidad. Un ítem de zona manda cantidad y omite asientoIds. El cliente sale de X-User-Id. 409 si el asiento no está libre o la zona no alcanza. 422 CLIENT_LIMIT_EXCEEDED si vendidas más reservas vigentes más lo pedido superan limite_por_cliente.\n",
+        "operationId" : "reservar",
+        "parameters" : [ {
+          "name" : "X-User-Id",
+          "in" : "header",
+          "description" : "UUID del cliente. Lo propaga el gateway.",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "example" : "2b3c4d5e-6f7a-4b8c-9d0e-1f2a3b4c5d6e"
+        }, {
+          "name" : "X-User-Role",
+          "in" : "header",
+          "description" : "CLIENT, ORGANIZER o ADMIN.",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          },
+          "example" : "CLIENT"
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ReservaRequest"
+              },
+              "example" : {
+                "eventoId" : "d0000000-0000-4000-8000-000000000001",
+                "items" : [ {
+                  "sectorId" : "b0000000-0000-4000-8000-000000000001",
+                  "asientoIds" : [ "c0000000-0000-4000-8000-010101000000" ]
+                } ]
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "description" : "Reserva VIGENTE creada",
+            "headers" : {
+              "Location" : {
+                "description" : "URL de la reserva",
+                "style" : "simple",
+                "schema" : {
+                  "type" : "string"
+                }
+              }
+            },
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ReservationResponse"
+                },
+                "example" : {
+                  "id" : "b1c2d3e4-f5a6-4b7c-8d9e-0f1a2b3c4d5e",
+                  "eventoId" : "d0000000-0000-4000-8000-000000000001",
+                  "eventoNombre" : "Festival de Rock Tandil 2027",
+                  "eventoFecha" : "2027-03-14T21:00:00-03:00",
+                  "clienteId" : "2b3c4d5e-6f7a-4b8c-9d0e-1f2a3b4c5d6e",
+                  "estado" : "VIGENTE",
+                  "expiresAt" : "2026-11-05T19:10:00-03:00",
+                  "items" : [ {
+                    "sectorId" : "b0000000-0000-4000-8000-000000000001",
+                    "asientoId" : "c0000000-0000-4000-8000-010101000000",
+                    "cantidad" : 1,
+                    "precioUnitario" : 25000.0,
+                    "subtotal" : 25000.0
+                  } ],
+                  "total" : 25000.0
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Cuerpo inválido",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Problema"
+                },
+                "examples" : {
+                  "VALIDATION_ERROR" : {
+                    "description" : "VALIDATION_ERROR",
+                    "value" : {
+                      "type" : "https://ticketya.local/errors/validation-error",
+                      "title" : "Bad Request",
+                      "status" : 400,
+                      "detail" : "La solicitud tiene campos inválidos",
+                      "instance" : "/api/inventory/reservations",
+                      "code" : "VALIDATION_ERROR",
+                      "errors" : [ {
+                        "field" : "items",
+                        "message" : "un ítem numerado requiere asientoIds y no admite cantidad"
+                      } ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Falta la identidad o X-User-Id no es un UUID",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Problema"
+                },
+                "examples" : {
+                  "UNAUTHORIZED" : {
+                    "description" : "UNAUTHORIZED",
+                    "value" : {
+                      "type" : "https://ticketya.local/errors/unauthorized",
+                      "title" : "Unauthorized",
+                      "status" : 401,
+                      "detail" : "Faltan los encabezados X-User-Id y X-User-Role",
+                      "instance" : "/api/inventory/reservations",
+                      "code" : "UNAUTHORIZED",
+                      "errors" : [ ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "No existe el evento o el sector",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Problema"
+                },
+                "examples" : {
+                  "EVENT_NOT_FOUND" : {
+                    "description" : "EVENT_NOT_FOUND",
+                    "value" : {
+                      "type" : "https://ticketya.local/errors/event-not-found",
+                      "title" : "Not Found",
+                      "status" : 404,
+                      "detail" : "No existe el evento d0000000-0000-4000-8000-000000000001",
+                      "instance" : "/api/inventory/events/d0000000-0000-4000-8000-000000000001/availability",
+                      "code" : "EVENT_NOT_FOUND",
+                      "errors" : [ ]
+                    }
+                  },
+                  "SECTOR_NOT_FOUND" : {
+                    "description" : "SECTOR_NOT_FOUND",
+                    "value" : {
+                      "type" : "https://ticketya.local/errors/sector-not-found",
+                      "title" : "Not Found",
+                      "status" : 404,
+                      "detail" : "No existe el sector b0000000-0000-4000-8000-000000000001 en el evento",
+                      "instance" : "/api/inventory/events/d0000000-0000-4000-8000-000000000001/seats",
+                      "code" : "SECTOR_NOT_FOUND",
+                      "errors" : [ ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409" : {
+            "description" : "No se pudo reservar nada",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Problema"
+                },
+                "examples" : {
+                  "SEAT_NOT_AVAILABLE" : {
+                    "description" : "SEAT_NOT_AVAILABLE",
+                    "value" : {
+                      "type" : "https://ticketya.local/errors/seat-not-available",
+                      "title" : "Conflict",
+                      "status" : 409,
+                      "detail" : "El asiento c0000000-0000-4000-8000-010101000000 ya no está disponible",
+                      "instance" : "/api/inventory/reservations",
+                      "code" : "SEAT_NOT_AVAILABLE",
+                      "errors" : [ ]
+                    }
+                  },
+                  "INSUFFICIENT_AVAILABILITY" : {
+                    "description" : "INSUFFICIENT_AVAILABILITY",
+                    "value" : {
+                      "type" : "https://ticketya.local/errors/insufficient-availability",
+                      "title" : "Conflict",
+                      "status" : 409,
+                      "detail" : "No hay disponibilidad suficiente en la zona b0000000-0000-4000-8000-000000000002",
+                      "instance" : "/api/inventory/reservations",
+                      "code" : "INSUFFICIENT_AVAILABILITY",
+                      "errors" : [ ]
+                    }
+                  },
+                  "EVENT_NOT_ON_SALE" : {
+                    "description" : "EVENT_NOT_ON_SALE",
+                    "value" : {
+                      "type" : "https://ticketya.local/errors/event-not-on-sale",
+                      "title" : "Conflict",
+                      "status" : 409,
+                      "detail" : "El evento no está en venta",
+                      "instance" : "/api/inventory/reservations",
+                      "code" : "EVENT_NOT_ON_SALE",
+                      "errors" : [ ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422" : {
+            "description" : "El cliente supera el límite de entradas del evento",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Problema"
+                },
+                "examples" : {
+                  "CLIENT_LIMIT_EXCEEDED" : {
+                    "description" : "CLIENT_LIMIT_EXCEEDED",
+                    "value" : {
+                      "type" : "https://ticketya.local/errors/client-limit-exceeded",
+                      "title" : "Unprocessable Entity",
+                      "status" : 422,
+                      "detail" : "El pedido supera el límite de entradas del cliente para este evento",
+                      "instance" : "/api/inventory/reservations",
+                      "code" : "CLIENT_LIMIT_EXCEEDED",
+                      "errors" : [ ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/internal/reservations/{reservaId}" : {
+      "get" : {
+        "tags" : [ "Inventario interno" ],
+        "summary" : "Reserva para orders",
+        "description" : "Incluye eventoNombre y eventoFecha para que orders guarde el snapshot sin llamar a catalog.",
+        "operationId" : "obtenerReserva",
+        "parameters" : [ {
+          "name" : "reservaId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Reserva, exista o no el dueño",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ReservationResponse"
+                },
+                "example" : {
+                  "id" : "b1c2d3e4-f5a6-4b7c-8d9e-0f1a2b3c4d5e",
+                  "eventoId" : "d0000000-0000-4000-8000-000000000001",
+                  "eventoNombre" : "Festival de Rock Tandil 2027",
+                  "eventoFecha" : "2027-03-14T21:00:00-03:00",
+                  "clienteId" : "2b3c4d5e-6f7a-4b8c-9d0e-1f2a3b4c5d6e",
+                  "estado" : "VIGENTE",
+                  "expiresAt" : "2026-11-05T19:10:00-03:00",
+                  "items" : [ {
+                    "sectorId" : "b0000000-0000-4000-8000-000000000001",
+                    "asientoId" : "c0000000-0000-4000-8000-010101000000",
+                    "cantidad" : 1,
+                    "precioUnitario" : 25000.0,
+                    "subtotal" : 25000.0
+                  } ],
+                  "total" : 25000.0
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "No existe la reserva",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Problema"
+                },
+                "examples" : {
+                  "RESERVATION_NOT_FOUND" : {
+                    "description" : "RESERVATION_NOT_FOUND",
+                    "value" : {
+                      "type" : "https://ticketya.local/errors/reservation-not-found",
+                      "title" : "Not Found",
+                      "status" : 404,
+                      "detail" : "No existe la reserva b1c2d3e4-f5a6-4b7c-8d9e-0f1a2b3c4d5e",
+                      "instance" : "/api/inventory/reservations/b1c2d3e4-f5a6-4b7c-8d9e-0f1a2b3c4d5e",
+                      "code" : "RESERVATION_NOT_FOUND",
+                      "errors" : [ ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/inventory/reservations/{reservaId}" : {
+      "get" : {
+        "tags" : [ "Inventario público" ],
+        "summary" : "Consultar una reserva propia",
+        "description" : "Solo el dueño. Si la reserva venció, la respuesta es 200 con estado VENCIDA: 410 RESERVATION_EXPIRED se usa al confirmar o pagar, no en esta consulta.\n",
+        "operationId" : "obtener",
+        "parameters" : [ {
+          "name" : "reservaId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "name" : "X-User-Id",
+          "in" : "header",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "example" : "2b3c4d5e-6f7a-4b8c-9d0e-1f2a3b4c5d6e"
+        }, {
+          "name" : "X-User-Role",
+          "in" : "header",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          },
+          "example" : "CLIENT"
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Reserva del cliente",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ReservationResponse"
+                },
+                "example" : {
+                  "id" : "b1c2d3e4-f5a6-4b7c-8d9e-0f1a2b3c4d5e",
+                  "eventoId" : "d0000000-0000-4000-8000-000000000001",
+                  "eventoNombre" : "Festival de Rock Tandil 2027",
+                  "eventoFecha" : "2027-03-14T21:00:00-03:00",
+                  "clienteId" : "2b3c4d5e-6f7a-4b8c-9d0e-1f2a3b4c5d6e",
+                  "estado" : "VIGENTE",
+                  "expiresAt" : "2026-11-05T19:10:00-03:00",
+                  "items" : [ {
+                    "sectorId" : "b0000000-0000-4000-8000-000000000001",
+                    "asientoId" : "c0000000-0000-4000-8000-010101000000",
+                    "cantidad" : 1,
+                    "precioUnitario" : 25000.0,
+                    "subtotal" : 25000.0
+                  } ],
+                  "total" : 25000.0
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Falta la identidad o X-User-Id no es un UUID",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Problema"
+                },
+                "examples" : {
+                  "UNAUTHORIZED" : {
+                    "description" : "UNAUTHORIZED",
+                    "value" : {
+                      "type" : "https://ticketya.local/errors/unauthorized",
+                      "title" : "Unauthorized",
+                      "status" : 401,
+                      "detail" : "Faltan los encabezados X-User-Id y X-User-Role",
+                      "instance" : "/api/inventory/reservations",
+                      "code" : "UNAUTHORIZED",
+                      "errors" : [ ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "La reserva es de otro cliente",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Problema"
+                },
+                "examples" : {
+                  "NOT_RESERVATION_OWNER" : {
+                    "description" : "NOT_RESERVATION_OWNER",
+                    "value" : {
+                      "type" : "https://ticketya.local/errors/not-reservation-owner",
+                      "title" : "Forbidden",
+                      "status" : 403,
+                      "detail" : "La reserva pertenece a otro cliente",
+                      "instance" : "/api/inventory/reservations/b1c2d3e4-f5a6-4b7c-8d9e-0f1a2b3c4d5e",
+                      "code" : "NOT_RESERVATION_OWNER",
+                      "errors" : [ ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "No existe la reserva",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Problema"
+                },
+                "examples" : {
+                  "RESERVATION_NOT_FOUND" : {
+                    "description" : "RESERVATION_NOT_FOUND",
+                    "value" : {
+                      "type" : "https://ticketya.local/errors/reservation-not-found",
+                      "title" : "Not Found",
+                      "status" : 404,
+                      "detail" : "No existe la reserva b1c2d3e4-f5a6-4b7c-8d9e-0f1a2b3c4d5e",
+                      "instance" : "/api/inventory/reservations/b1c2d3e4-f5a6-4b7c-8d9e-0f1a2b3c4d5e",
+                      "code" : "RESERVATION_NOT_FOUND",
+                      "errors" : [ ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/inventory/events/{eventoId}/seats" : {
+      "get" : {
+        "tags" : [ "Inventario público" ],
+        "summary" : "Mapa de asientos",
+        "description" : "Público, sin identidad. Una zona no numerada devuelve una lista vacía. Un sector que no pertenece al evento responde 404 SECTOR_NOT_FOUND.\n",
+        "operationId" : "asientos",
+        "parameters" : [ {
+          "name" : "eventoId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "name" : "sectorId",
+          "in" : "query",
+          "description" : "Sector numerado del evento",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Asientos del sector, ordenados por fila y número",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/AsientoMapaResponse"
+                  }
+                },
+                "example" : [ {
+                  "asientoId" : "c0000000-0000-4000-8000-010101000000",
+                  "fila" : 1,
+                  "numero" : 1,
+                  "estado" : "LIBRE"
+                }, {
+                  "asientoId" : "c0000000-0000-4000-8000-010102000000",
+                  "fila" : 1,
+                  "numero" : 2,
+                  "estado" : "RESERVADO"
+                } ]
+              }
+            }
+          },
+          "404" : {
+            "description" : "No existe el evento o el sector",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Problema"
+                },
+                "examples" : {
+                  "EVENT_NOT_FOUND" : {
+                    "description" : "EVENT_NOT_FOUND",
+                    "value" : {
+                      "type" : "https://ticketya.local/errors/event-not-found",
+                      "title" : "Not Found",
+                      "status" : 404,
+                      "detail" : "No existe el evento d0000000-0000-4000-8000-000000000001",
+                      "instance" : "/api/inventory/events/d0000000-0000-4000-8000-000000000001/availability",
+                      "code" : "EVENT_NOT_FOUND",
+                      "errors" : [ ]
+                    }
+                  },
+                  "SECTOR_NOT_FOUND" : {
+                    "description" : "SECTOR_NOT_FOUND",
+                    "value" : {
+                      "type" : "https://ticketya.local/errors/sector-not-found",
+                      "title" : "Not Found",
+                      "status" : 404,
+                      "detail" : "No existe el sector b0000000-0000-4000-8000-000000000001 en el evento",
+                      "instance" : "/api/inventory/events/d0000000-0000-4000-8000-000000000001/seats",
+                      "code" : "SECTOR_NOT_FOUND",
+                      "errors" : [ ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/inventory/events/{eventoId}/availability" : {
+      "get" : {
+        "tags" : [ "Inventario público" ],
+        "summary" : "Disponibilidad del evento",
+        "description" : "Público, sin identidad. En un sector numerado, disponibles es la cantidad de asientos LIBRE.",
+        "operationId" : "disponibilidad",
+        "parameters" : [ {
+          "name" : "eventoId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Sectores con precio y disponibilidad",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/DisponibilidadResponse"
+                },
+                "example" : {
+                  "eventoId" : "d0000000-0000-4000-8000-000000000001",
+                  "estado" : "PUBLICADO",
+                  "sectores" : [ {
+                    "sectorId" : "b0000000-0000-4000-8000-000000000002",
+                    "nombre" : "Campo",
+                    "tipo" : "NO_NUMERADO",
+                    "precio" : 18000.0,
+                    "capacidad" : 100,
+                    "disponibles" : 100
+                  }, {
+                    "sectorId" : "b0000000-0000-4000-8000-000000000001",
+                    "nombre" : "Platea",
+                    "tipo" : "NUMERADO",
+                    "precio" : 25000.0,
+                    "capacidad" : 20,
+                    "disponibles" : 20
+                  } ]
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "No existe el evento",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Problema"
+                },
+                "examples" : {
+                  "EVENT_NOT_FOUND" : {
+                    "description" : "EVENT_NOT_FOUND",
+                    "value" : {
+                      "type" : "https://ticketya.local/errors/event-not-found",
+                      "title" : "Not Found",
+                      "status" : 404,
+                      "detail" : "No existe el evento d0000000-0000-4000-8000-000000000001",
+                      "instance" : "/api/inventory/events/d0000000-0000-4000-8000-000000000001/availability",
+                      "code" : "EVENT_NOT_FOUND",
+                      "errors" : [ ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components" : {
+    "schemas" : {
+      "Item" : {
+        "type" : "object",
+        "properties" : {
+          "sectorId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "asientoId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "cantidad" : {
+            "type" : "integer",
+            "format" : "int32",
+            "minimum" : 1
+          }
+        },
+        "required" : [ "cantidad", "sectorId" ]
+      },
+      "ReturnRequest" : {
+        "type" : "object",
+        "properties" : {
+          "eventoId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "items" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/Item"
+            },
+            "minItems" : 1
+          }
+        },
+        "required" : [ "eventoId", "items" ]
+      },
+      "CampoInvalido" : {
+        "type" : "object",
+        "properties" : {
+          "field" : {
+            "type" : "string",
+            "example" : "items"
+          },
+          "message" : {
+            "type" : "string",
+            "example" : "un ítem numerado requiere asientoIds y no admite cantidad"
+          }
+        }
+      },
+      "Problema" : {
+        "type" : "object",
+        "description" : "Error application/problem+json con el código estable de TicketYa.",
+        "properties" : {
+          "type" : {
+            "type" : "string",
+            "example" : "https://ticketya.local/errors/seat-not-available"
+          },
+          "title" : {
+            "type" : "string",
+            "example" : "Conflict"
+          },
+          "status" : {
+            "type" : "integer",
+            "format" : "int32",
+            "example" : 409
+          },
+          "detail" : {
+            "type" : "string",
+            "example" : "El asiento ya no está disponible"
+          },
+          "instance" : {
+            "type" : "string",
+            "example" : "/api/inventory/reservations"
+          },
+          "code" : {
+            "type" : "string",
+            "example" : "SEAT_NOT_AVAILABLE"
+          },
+          "errors" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/CampoInvalido"
+            }
+          }
+        }
+      },
+      "ReleaseRequest" : {
+        "type" : "object",
+        "properties" : {
+          "motivo" : {
+            "type" : "string"
+          }
+        }
+      },
+      "ItemReserva" : {
+        "type" : "object",
+        "properties" : {
+          "sectorId" : {
+            "type" : "string",
+            "format" : "uuid",
+            "example" : "b0000000-0000-4000-8000-000000000001"
+          },
+          "asientoId" : {
+            "type" : "string",
+            "format" : "uuid",
+            "description" : "Nulo en una zona no numerada.",
+            "example" : "c0000000-0000-4000-8000-010101000000"
+          },
+          "cantidad" : {
+            "type" : "integer",
+            "format" : "int32",
+            "example" : 1
+          },
+          "precioUnitario" : {
+            "type" : "number",
+            "example" : 25000.0
+          },
+          "subtotal" : {
+            "type" : "number",
+            "example" : 25000.0
+          }
+        }
+      },
+      "ReservationResponse" : {
+        "type" : "object",
+        "description" : "Reserva con el snapshot del evento y el total calculado por el servidor.",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid",
+            "example" : "b1c2d3e4-f5a6-4b7c-8d9e-0f1a2b3c4d5e"
+          },
+          "eventoId" : {
+            "type" : "string",
+            "format" : "uuid",
+            "example" : "d0000000-0000-4000-8000-000000000001"
+          },
+          "eventoNombre" : {
+            "type" : "string",
+            "example" : "Festival de Rock Tandil 2027"
+          },
+          "eventoFecha" : {
+            "type" : "string",
+            "format" : "date-time",
+            "example" : "2027-03-14T21:00:00-03:00"
+          },
+          "clienteId" : {
+            "type" : "string",
+            "format" : "uuid",
+            "example" : "2b3c4d5e-6f7a-4b8c-9d0e-1f2a3b4c5d6e"
+          },
+          "estado" : {
+            "type" : "string",
+            "enum" : [ "VIGENTE", "CONFIRMADA", "LIBERADA", "VENCIDA" ],
+            "example" : "VIGENTE"
+          },
+          "expiresAt" : {
+            "type" : "string",
+            "format" : "date-time",
+            "example" : "2026-11-05T19:10:00-03:00"
+          },
+          "items" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/ItemReserva"
+            }
+          },
+          "total" : {
+            "type" : "number",
+            "example" : 25000.0
+          }
+        }
+      },
+      "AsientoRequest" : {
+        "type" : "object",
+        "properties" : {
+          "asientoId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "fila" : {
+            "type" : "integer",
+            "format" : "int32",
+            "minimum" : 1
+          },
+          "numero" : {
+            "type" : "integer",
+            "format" : "int32",
+            "minimum" : 1
+          }
+        },
+        "required" : [ "asientoId" ]
+      },
+      "InventoryUpsertRequest" : {
+        "type" : "object",
+        "properties" : {
+          "eventoId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "nombre" : {
+            "type" : "string",
+            "minLength" : 1
+          },
+          "fecha" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "limitePorCliente" : {
+            "type" : "integer",
+            "format" : "int32",
+            "minimum" : 1
+          },
+          "version" : {
+            "type" : "integer",
+            "format" : "int64",
+            "minimum" : 1
+          },
+          "sectores" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/SectorRequest"
+            },
+            "minItems" : 1
+          }
+        },
+        "required" : [ "eventoId", "fecha", "nombre", "sectores" ]
+      },
+      "SectorRequest" : {
+        "type" : "object",
+        "properties" : {
+          "sectorId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "nombre" : {
+            "type" : "string",
+            "minLength" : 1
+          },
+          "tipo" : {
+            "type" : "string",
+            "minLength" : 1
+          },
+          "precio" : {
+            "type" : "number"
+          },
+          "capacidad" : {
+            "type" : "integer",
+            "format" : "int32",
+            "minimum" : 1
+          },
+          "filas" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "asientos" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/AsientoRequest"
+            }
+          }
+        },
+        "required" : [ "nombre", "precio", "sectorId", "tipo" ]
+      },
+      "InventoryUpsertResponse" : {
+        "type" : "object",
+        "description" : "Resultado del alta. idempotente es true cuando la misma version ya estaba aplicada.",
+        "properties" : {
+          "eventoId" : {
+            "type" : "string",
+            "format" : "uuid",
+            "example" : "d0000000-0000-4000-8000-000000000001"
+          },
+          "sectores" : {
+            "type" : "integer",
+            "format" : "int32",
+            "example" : 2
+          },
+          "asientos" : {
+            "type" : "integer",
+            "format" : "int32",
+            "example" : 20
+          },
+          "idempotente" : {
+            "type" : "boolean",
+            "example" : true
+          }
+        }
+      },
+      "ItemPedido" : {
+        "type" : "object",
+        "properties" : {
+          "sectorId" : {
+            "type" : "string",
+            "format" : "uuid",
+            "example" : "b0000000-0000-4000-8000-000000000001"
+          },
+          "asientoIds" : {
+            "type" : "array",
+            "description" : "Asientos de un sector numerado. Se omite en una zona.",
+            "items" : {
+              "type" : "string",
+              "format" : "uuid"
+            }
+          },
+          "cantidad" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "Lugares de una zona. Se omite si hay asientoIds.",
+            "example" : 2,
+            "minimum" : 1
+          }
+        },
+        "required" : [ "sectorId" ]
+      },
+      "ReservaRequest" : {
+        "type" : "object",
+        "description" : "Un ítem numerado lleva asientoIds. Un ítem de zona lleva cantidad. Nunca los dos.",
+        "properties" : {
+          "eventoId" : {
+            "type" : "string",
+            "format" : "uuid",
+            "example" : "d0000000-0000-4000-8000-000000000001"
+          },
+          "items" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/ItemPedido"
+            },
+            "minItems" : 1
+          }
+        },
+        "required" : [ "eventoId", "items" ]
+      },
+      "AsientoMapaResponse" : {
+        "type" : "object",
+        "description" : "Asiento del mapa público.",
+        "properties" : {
+          "asientoId" : {
+            "type" : "string",
+            "format" : "uuid",
+            "example" : "c0000000-0000-4000-8000-010101000000"
+          },
+          "fila" : {
+            "type" : "integer",
+            "format" : "int32",
+            "example" : 1
+          },
+          "numero" : {
+            "type" : "integer",
+            "format" : "int32",
+            "example" : 1
+          },
+          "estado" : {
+            "type" : "string",
+            "description" : "LIBRE, RESERVADO o VENDIDO",
+            "example" : "LIBRE"
+          }
+        }
+      },
+      "DisponibilidadResponse" : {
+        "type" : "object",
+        "description" : "Disponibilidad pública de un evento. disponibles en un numerado cuenta asientos LIBRE.",
+        "properties" : {
+          "eventoId" : {
+            "type" : "string",
+            "format" : "uuid",
+            "example" : "d0000000-0000-4000-8000-000000000001"
+          },
+          "estado" : {
+            "type" : "string",
+            "example" : "PUBLICADO"
+          },
+          "sectores" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/SectorDisponible"
+            }
+          }
+        }
+      },
+      "SectorDisponible" : {
+        "type" : "object",
+        "properties" : {
+          "sectorId" : {
+            "type" : "string",
+            "format" : "uuid",
+            "example" : "b0000000-0000-4000-8000-000000000001"
+          },
+          "nombre" : {
+            "type" : "string",
+            "example" : "Platea"
+          },
+          "tipo" : {
+            "type" : "string",
+            "example" : "NUMERADO"
+          },
+          "precio" : {
+            "type" : "number",
+            "example" : 25000.0
+          },
+          "capacidad" : {
+            "type" : "integer",
+            "format" : "int32",
+            "example" : 20
+          },
+          "disponibles" : {
+            "type" : "integer",
+            "format" : "int32",
+            "example" : 20
+          }
+        }
+      }
+    }
+  }
+}

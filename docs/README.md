@@ -28,7 +28,7 @@
 | `../orders-service/README.md` | Responsabilidad, endpoints, modelo y comandos del servicio | P3 | Día 1 a 4 | Día 1 |
 | `../api-gateway/README.md` | Rutas, headers, variables y ejecución | P4 | Día 1 a 4 | Día 1 |
 | `../postman/TicketYa.postman_collection.json` | Colección de requests con assertions | P5 | Día 5 | Base (Día 1) |
-| `../openapi/*.json` | OpenAPI exportado de cada servicio | Cada dueño | Día 4 | Pendiente (2.6, 3.8, 4.11) |
+| `../openapi/*.json` | OpenAPI exportado de cada servicio | Cada dueño | Día 4 | Inventory listo (3.8); catalog y orders pendientes (2.6, 4.11) |
 
 ## 2. Estándares
 
