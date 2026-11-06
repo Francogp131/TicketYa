@@ -2,6 +2,7 @@ package ar.edu.unicen.ticketya.orders.servicio;
 
 import java.util.UUID;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 
@@ -21,5 +22,36 @@ public class InventoryRestClient implements InventoryClient {
                 .uri("/internal/reservations/{reservaId}", reservaId)
                 .retrieve()
                 .body(ReservationDto.class);
+    }
+
+    @Override
+    public void confirmarReserva(UUID reservaId) {
+        restClient.post()
+                .uri("/internal/reservations/{reservaId}/confirm", reservaId)
+                .retrieve()
+                .toBodilessEntity();
+    }
+
+    @Override
+    public void liberarReserva(UUID reservaId, String motivo) {
+        restClient.post()
+                .uri("/internal/reservations/{reservaId}/release", reservaId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(new ReleaseDto(motivo))
+                .retrieve()
+                .toBodilessEntity();
+    }
+
+    @Override
+    public void devolverItems(ReturnDto devolucion) {
+        restClient.post()
+                .uri("/internal/returns")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(devolucion)
+                .retrieve()
+                .toBodilessEntity();
+    }
+
+    private record ReleaseDto(String motivo) {
     }
 }
