@@ -18,13 +18,14 @@ Servicio de disponibilidad, reservas temporales y no doble venta de TicketYa.
 | GET | `/api/inventory/reservations/{reservaId}` | dueño | Consulta de una reserva |
 | GET | `/internal/reservations/{reservaId}` | interno | Reserva para orders, con nombre/fecha del evento |
 
-Vencimiento, límite por cliente, confirmación/liberación y devolución corresponden a las tareas 3.3–3.8 (Días 2–4).
+Vencimiento, confirmación/liberación y devolución corresponden a las tareas 3.5–3.8.
 
 ## Reserva y no doble venta
 
 - La reserva se ejecuta en una transacción.
 - Asientos numerados: se bloquean con `SELECT ... FOR UPDATE` ordenados por `asientoId`; si alguno no está `LIBRE`, se aborta toda la reserva con `409 SEAT_NOT_AVAILABLE`.
 - Zonas no numeradas: `UPDATE ... SET disponibles = disponibles - N WHERE disponibles >= N RETURNING disponibles`; si no hay filas, `409 INSUFFICIENT_AVAILABILITY`.
+- Límite por cliente: `pg_advisory_xact_lock(hashtext(evento_id || cliente_id))` y después se suman `cliente_evento.entradas_vendidas` más las cantidades de reservas `VIGENTE`. Si eso más lo pedido supera `limite_por_cliente`, se responde `422 CLIENT_LIMIT_EXCEEDED` y no se escribe la reserva. Al confirmar una venta (tarea 3.6) hay que incrementar `entradas_vendidas`, porque la reserva pasa a `CONFIRMADA` y deja de entrar en el conteo de vigentes.
 - La reserva vence a los 10 minutos (`expires_at`).
 - El alta de inventario es idempotente por `eventoId + version` y usa `ON CONFLICT DO NOTHING` para los asientos.
 
