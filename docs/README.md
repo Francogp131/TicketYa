@@ -21,13 +21,14 @@
 | [`arquitectura.md`](arquitectura.md) | Diagrama de módulos y secuencia de compra (aprobado/rechazado/vencido) | P4 | Día 3 a 5 | Listo (5.3, 5.4) |
 | `modelo-datos.md` | ER por microservicio, claves, relaciones y entidades solapadas | P1/P2/P3 | Día 5 | Pendiente (5.5) |
 | `decisiones.md` | ADR cortas: decisión, alternativas y consecuencias | P4 | Día 5 | Pendiente (5.9) |
-| [`pruebas.md`](pruebas.md) | Estrategia, comandos y evidencia de concurrencia y E2E | P5 | Día 5 y 6 | En progreso (5.11) |
+| [`pruebas.md`](pruebas.md) | Estrategia, comandos y evidencia de concurrencia y E2E | P5 | Día 5 y 6 | Evidencia Día 4; devolución pendiente (5.11) |
+| [`evidencia/`](evidencia/) | Salidas de suite y E2E del Día 4 | P5 | Día 4 | Listo |
 | `../openspec/changes/entrega-1-core/` | Propuesta, specs, diseño y tareas del cambio | Todos | Día 0 | Listo |
-| `../catalog-service/README.md` | Responsabilidad, endpoints, modelo y comandos del servicio | P1 | Día 1 a 4 | Día 1 |
-| `../inventory-service/README.md` | Responsabilidad, endpoints, modelo y comandos del servicio | P2 | Día 1 a 4 | Día 1 |
-| `../orders-service/README.md` | Responsabilidad, endpoints, modelo y comandos del servicio | P3 | Día 1 a 4 | Día 1 |
+| `../catalog-service/README.md` | Responsabilidad, endpoints, modelo y comandos del servicio | P1 | Día 1 a 4 | Día 4 |
+| `../inventory-service/README.md` | Responsabilidad, endpoints, modelo y comandos del servicio | P2 | Día 1 a 4 | Día 4 |
+| `../orders-service/README.md` | Responsabilidad, endpoints, modelo y comandos del servicio | P3 | Día 1 a 4 | Día 3; devoluciones pendientes |
 | `../api-gateway/README.md` | Rutas, headers, variables y ejecución | P4 | Día 1 a 4 | Día 1 |
-| `../postman/TicketYa.postman_collection.json` | Colección de requests con assertions | P5 | Día 5 | Flujos de compra, rechazo, vencimiento y cancelación |
+| `../postman/TicketYa.postman_collection.json` | Colección de requests con assertions | P5 | Día 5 | 34 requests, Newman verde (Día 4); falta devolución |
 | `../openapi/*.json` | OpenAPI exportado de cada servicio | Cada dueño | Día 4 | Inventory y catalog listos (2.6, 3.8); orders pendiente (4.11) |
 
 ## 2. Estándares

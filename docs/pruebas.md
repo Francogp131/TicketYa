@@ -1,6 +1,6 @@
 # Pruebas — TicketYa Entrega 1
 
-Este documento reúne la estrategia, los comandos y la evidencia de las pruebas de los Días 2 y 3.
+Este documento reúne la estrategia, los comandos y la evidencia de las pruebas de los Días 2 a 4.
 Los comandos se ejecutan desde `ticketya/` salvo que se indique otro directorio.
 
 ## 1. Estrategia
@@ -21,17 +21,17 @@ export JAVA_HOME=/Users/Franco/Library/Java/JavaVirtualMachines/temurin-21.0.12.
 ## 2. Comandos por servicio
 
 ```bash
-# Catálogo (incluye integración Testcontainers de sectores y asientos)
-cd catalog-service && mvn test
+# Catálogo (incluye búsqueda contra PostgreSQL real con Testcontainers)
+cd catalog-service && mvn clean test
 
 # Inventario (unitarios + concurrencia Testcontainers)
-cd inventory-service && mvn test
+cd inventory-service && mvn clean test
 
 # Órdenes (unitarios + idempotencia concurrente Testcontainers)
-cd orders-service && mvn test
+cd orders-service && mvn clean test
 
 # Gateway
-cd api-gateway && mvn test
+cd api-gateway && mvn clean test
 ```
 
 Los tests con Testcontainers se omiten automáticamente si Docker no está disponible
@@ -39,42 +39,45 @@ Los tests con Testcontainers se omiten automáticamente si Docker no está dispo
 
 ## 3. Evidencia de la suite
 
-Resultado de la última corrida local (5/11/2026):
+Resultado de la última corrida local (6/11/2026, `mvn clean test` con Docker):
 
 | Proyecto | Tests | Resultado |
 |---|---|---|
-| catalog-service | 47 | 0 fallos, 0 errores, 0 omitidos |
-| inventory-service | 23 | 0 fallos, 0 errores, 0 omitidos |
-| orders-service | 23 | 0 fallos, 0 errores, 0 omitidos |
+| catalog-service | 51 | 0 fallos, 0 errores, 0 omitidos |
+| inventory-service | 30 | 0 fallos, 0 errores, 0 omitidos |
+| orders-service | 24 | 0 fallos, 0 errores, 0 omitidos |
 | api-gateway | 5 | 0 fallos, 0 errores, 0 omitidos |
 
 Desglose relevante:
 
-- `EventServiceTest` (23): estados, cancelación con/sin orders, callback de disponibilidad,
+- `EventServiceTest` (22): estados, cancelación con/sin orders, callback de disponibilidad,
   scheduler de finalización, búsqueda por fecha/precio/relevancia, rango y orden inválidos.
-- `ReservaServiceTest` (16): asientos, zonas, límite por cliente, vencimiento, confirmación,
-  liberación y devoluciones idempotentes.
-- `ReservaConcurrencyIntegrationTest` (2): 100 hilos sobre el mismo asiento y 40 hilos sobre
-  el último lugar de una zona; en ambos casos exactamente un ganador.
+- `EventoBusquedaIntegrationTest` (3): búsqueda sin filtros, texto con mayúsculas y filtros
+  combinados contra PostgreSQL real (regresión del 500 por parámetros nulos).
+- `ReservaServiceTest` (6): asientos, zona sin disponibilidad, límite, vencimiento,
+  confirmación/liberación y devoluciones idempotentes.
+- `ConcurrenciaPostgresTest` (2): 100 hilos sobre el mismo asiento y 20 hilos sobre el último
+  lugar de una zona; en ambos casos exactamente un ganador.
 - `OrderServiceTest` (13): pago aprobado, rechazado, timeout, compensación por confirmación
   y por emisión de entradas, idempotencia y errores de reserva.
 - `IdempotencyServiceTest` (5): misma respuesta, 422 con cuerpo distinto, 409 en proceso,
   hash determinista.
 - `OrderIdempotencyIntegrationTest` (2): dos reintentos concurrentes crean una sola orden y
   el reintento secuencial devuelve la misma orden y las mismas entradas.
+- `TicketServiceTest` (1): una entrada con QR único por lugar confirmado.
 
 ## 4. Prueba de concurrencia (tarea 3.7)
 
 ```bash
 cd inventory-service
-mvn -Dtest=ReservaConcurrencyIntegrationTest test
+mvn -Dtest=ConcurrenciaPostgresTest test
 ```
 
 La prueba levanta PostgreSQL 16 con Testcontainers, crea un evento y:
 
 1. Lanza 100 hilos que intentan reservar el mismo asiento. Espera **1 éxito** y el resto
    `SEAT_NOT_AVAILABLE`; la base debe tener **una** reserva y el asiento `RESERVADO`.
-2. Lanza 40 hilos sobre una zona con un solo lugar. Espera **1 éxito**, el resto
+2. Lanza 20 hilos sobre una zona con un solo lugar. Espera **1 éxito**, el resto
    `INSUFFICIENT_AVAILABILITY`, y `disponibles = 0`.
 
 Salida esperada:
@@ -103,9 +106,11 @@ La colección Postman se ejecuta completa con Newman:
 npx -y newman run postman/TicketYa.postman_collection.json --reporters cli
 ```
 
-Resultado de la última corrida (5/11/2026): **34 requests, 34 assertions, 0 fallos**.
+Resultado de la última corrida (6/11/2026): **34 requests, 34 assertions, 0 fallos**.
 Incluye catálogo, búsqueda, publicación, reserva numerada y de zona, compra aprobada con QR,
 reintento idempotente, reuso de clave, pago rechazado, pago lento y cancelación.
+
+Evidencia: [`docs/evidencia/dia-4-newman.txt`](evidencia/dia-4-newman.txt).
 
 Levantar bases y servicios:
 
@@ -122,7 +127,7 @@ Variables del seed:
 
 ```bash
 GATEWAY=http://localhost:8080
-CLIENTE=2b3c4d5e-6f7a-4b8c-9d0e-1f2a3b4c5d6e
+CLIENTE=33333333-3333-4333-8333-333333333333
 EVENTO=d0000000-0000-4000-8000-000000000001
 SECTOR=b0000000-0000-4000-8000-000000000001
 ASIENTO=c0000000-0000-4000-8000-010101000000
@@ -183,7 +188,18 @@ Resultado observado: `estado: "CANCELADO"`, `cancelacionPendiente: false` y las 
 evento pasan a `EN_REINTEGRO` en `orders_db`. Repetir el endpoint interno devuelve la misma
 cantidad de entradas afectadas.
 
-## 7. OpenAPI
+## 7. Hallazgos del E2E
+
+La primera corrida completa (6/11/2026) encontró que **todos** los
+`GET /api/catalog/events` devolvían `500` por parámetros opcionales nulos en la consulta JPQL
+(`lower(bytea) does not exist`). Se corrigió en el PR
+[#10](https://github.com/Francogp131/TicketYa/pull/10), con un test de regresión contra
+PostgreSQL real (`EventoBusquedaIntegrationTest`). La colección volvió a correr completa:
+34/34 requests y 34/34 assertions.
+
+Evidencia de la suite: [`docs/evidencia/dia-4-suite.txt`](evidencia/dia-4-suite.txt).
+
+## 8. OpenAPI
 
 ```bash
 curl -s http://localhost:8081/v3/api-docs | jq '.paths | keys'
