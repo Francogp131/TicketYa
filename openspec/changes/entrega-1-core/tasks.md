@@ -42,8 +42,8 @@
 - [x] 4.7 Implementar la compensación cuando falla la confirmación de inventario o la emisión de entradas después del pago; verificar con tests que la orden no quede `PAGADA` y que se solicite el reintegro. _(compensación por confirmación y por emisión en OrderServiceTest)_
 - [x] 4.8 Implementar las devoluciones (US-22 y US-23): solicitud, aprobación y rechazo; verificar con tests 422 fuera de plazo, 409 ya resuelta, 403 entrada ajena, liberación + invalidación + refund al aprobar y entrada válida al rechazar. _(DevolucionServiceTest + ReturnControllerTest + E2E de devolución)_
 - [x] 4.9 Implementar la cancelación de evento (US-24): pasar todas las entradas vendidas a `EN_REINTEGRO` y solicitar el reintegro; verificar con tests de evento con y sin entradas y que el endpoint sea idempotente. _(OrderServiceTest + cancelación idempotente del E2E; pagos pasan a REINTEGRADO)_
-- [ ] 4.10 Implementar la consulta de entradas y órdenes propias (US-19); verificar con tests que el cliente solo vea las suyas y que una entrada ajena devuelva 403.
-- [ ] 4.11 Documentar el OpenAPI de orders-service con ejemplos y errores; verificar Swagger UI y los códigos 201/403/404/409/410/422.
+- [x] 4.10 Implementar la consulta de entradas y órdenes propias (US-19); verificar con tests que el cliente solo vea las suyas y que una entrada ajena devuelva 403. _(OrderQueryServiceTest + TicketControllerTest + E2E de listar órdenes/entradas)_
+- [x] 4.11 Documentar el OpenAPI de orders-service con ejemplos y errores; verificar Swagger UI y los códigos 201/403/404/409/410/422. _(`openapi/orders-openapi.json` exportado con descripciones y códigos; ejemplos de request en la colección Postman)_
 
 ## 5. Integración, datos y documentación
 

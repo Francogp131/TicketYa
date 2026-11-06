@@ -15,7 +15,7 @@ Resultados locales:
 |---|---|---|---|---|
 | catalog-service | 51 | 0 | 0 | 0 |
 | inventory-service | 30 | 0 | 0 | 0 |
-| orders-service | 38 | 0 | 0 | 0 |
+| orders-service | 46 | 0 | 0 | 0 |
 | api-gateway | 5 | 0 | 0 | 0 |
 
 Tests de integración relevantes:
@@ -28,6 +28,8 @@ Tests de integración relevantes:
   misma `Idempotency-Key` crean una sola orden; el reintento secuencial devuelve lo mismo.
 - `orders-service/DevolucionServiceTest` (8) y `ReturnControllerTest` (3): devolución dentro
   y fuera de plazo, aprobación con liberación + refund, rechazo y permisos de ADMIN.
+- `orders-service/OrderQueryServiceTest` (5) y `TicketControllerTest` (3): consultas propias,
+  paginación, filtro por evento, 403/404 y página inválida.
 
 Nota: usar `mvn clean test` al cambiar de rama. Si no se limpia `target/`, pueden quedar
 migraciones Flyway viejas copiadas y el contexto falla con “Found more than one migration”.

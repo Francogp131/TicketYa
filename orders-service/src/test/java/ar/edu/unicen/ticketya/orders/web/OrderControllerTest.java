@@ -10,6 +10,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import ar.edu.unicen.ticketya.orders.dominio.EstadoOrden;
 import ar.edu.unicen.ticketya.orders.dominio.MedioPago;
+import ar.edu.unicen.ticketya.orders.servicio.OrderQueryService;
 import ar.edu.unicen.ticketya.orders.servicio.OrderService;
 import ar.edu.unicen.ticketya.orders.web.dto.CrearOrdenRequest;
 import ar.edu.unicen.ticketya.orders.web.dto.OrderResponse;
@@ -34,6 +35,9 @@ class OrderControllerTest {
 
     @MockitoBean
     private OrderService orderService;
+
+    @MockitoBean
+    private OrderQueryService orderQueryService;
 
     @Test
     void crearSinIdentidadDevuelve401() throws Exception {

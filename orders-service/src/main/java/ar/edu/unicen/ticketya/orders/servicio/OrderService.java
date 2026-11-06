@@ -18,7 +18,6 @@ import ar.edu.unicen.ticketya.orders.web.dto.OrderResponse;
 import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.OffsetDateTime;
-import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -280,32 +279,7 @@ public class OrderService {
     }
 
     private OrderResponse toResponse(Orden orden, List<OrdenItem> items, List<Entrada> entradas) {
-        List<OrderResponse.Item> itemsResponse = items.stream()
-                .map(item -> new OrderResponse.Item(item.getSectorId(), item.getAsientoId(),
-                        item.getCantidad(), item.getPrecioUnitario(), item.getSubtotal()))
-                .toList();
-        List<OrderResponse.Entrada> entradasResponse = entradas.stream()
-                .map(entrada -> new OrderResponse.Entrada(entrada.getId(), entrada.getQrCode(),
-                        entrada.getEstado().name(), entrada.getSectorId(), entrada.getAsientoId()))
-                .toList();
-        return new OrderResponse(
-                orden.getId(),
-                orden.getClienteId(),
-                orden.getReservaId(),
-                orden.getEventoId(),
-                orden.getEventoNombre(),
-                aArgentina(orden.getEventoFecha()),
-                orden.getEstado(),
-                orden.getMedioPago(),
-                orden.getTotal(),
-                itemsResponse,
-                entradasResponse,
-                aArgentina(orden.getCreatedAt()));
-    }
-
-    private OffsetDateTime aArgentina(OffsetDateTime fecha) {
-        return fecha == null ? null
-                : fecha.atZoneSameInstant(ZoneId.of("America/Argentina/Buenos_Aires")).toOffsetDateTime();
+        return OrderResponse.from(orden, items, entradas);
     }
 
     private void validarIdempotencyKey(String idempotencyKey) {

@@ -45,7 +45,7 @@ Resultado de la última corrida local (6/11/2026, `mvn clean test` con Docker):
 |---|---|---|
 | catalog-service | 51 | 0 fallos, 0 errores, 0 omitidos |
 | inventory-service | 30 | 0 fallos, 0 errores, 0 omitidos |
-| orders-service | 38 | 0 fallos, 0 errores, 0 omitidos |
+| orders-service | 46 | 0 fallos, 0 errores, 0 omitidos |
 | api-gateway | 5 | 0 fallos, 0 errores, 0 omitidos |
 
 Desglose relevante:
@@ -65,6 +65,9 @@ Desglose relevante:
   aprobación con liberación + invalidación + refund, fallo de inventory deja PROCESANDO,
   rechazo mantiene la entrada VALIDA y resolución duplicada.
 - `ReturnControllerTest` (3): 401 sin identidad, 403 para cliente y 200 para ADMIN.
+- `OrderQueryServiceTest` (5): listado paginado del cliente, filtro por evento, 403/404 de
+  entrada y página inválida.
+- `TicketControllerTest` (3): 401 sin identidad, página de entradas y 403 de entrada ajena.
 - `IdempotencyServiceTest` (5): misma respuesta, 422 con cuerpo distinto, 409 en proceso,
   hash determinista.
 - `OrderIdempotencyIntegrationTest` (2): dos reintentos concurrentes crean una sola orden y
@@ -111,10 +114,10 @@ La colección Postman se ejecuta completa con Newman:
 npx -y newman run postman/TicketYa.postman_collection.json --reporters cli
 ```
 
-Resultado de la última corrida (6/11/2026): **40 requests, 40 assertions, 0 fallos**.
+Resultado de la última corrida (6/11/2026): **45 requests, 45 assertions, 0 fallos**.
 Incluye catálogo, búsqueda, publicación, reserva numerada y de zona, compra aprobada con QR,
-reintento idempotente, reuso de clave, pago rechazado, pago lento, devolución aprobada,
-devolución rechazada y cancelación.
+reintento idempotente, reuso de clave, pago rechazado, pago lento, consultas propias,
+devolución aprobada, devolución rechazada y cancelación.
 
 Evidencia: [`docs/evidencia/dia-4-newman.txt`](evidencia/dia-4-newman.txt).
 
@@ -207,6 +210,14 @@ Repetir el endpoint interno devuelve la misma cantidad de entradas afectadas.
 La colección Postman cubre los dos caminos (aprobar la primera entrada y rechazar la segunda)
 y verifica el estado final de cada entrada en el detalle de la orden.
 
+### 6.7 Consultas propias (4.10)
+
+- `GET /api/orders?page=0&size=5` devuelve solo las órdenes del `X-User-Id`.
+- `GET /api/orders/tickets?eventoId={uuid}&page=0&size=5` devuelve solo las entradas propias.
+- `GET /api/orders/tickets/{entradaId}` devuelve la entrada; con otro cliente responde
+  `403 NOT_TICKET_OWNER`.
+- `size=101` responde `400 VALIDATION_ERROR`.
+
 ## 7. Hallazgos del E2E
 
 La primera corrida completa (6/11/2026) encontró que **todos** los
@@ -214,7 +225,7 @@ La primera corrida completa (6/11/2026) encontró que **todos** los
 (`lower(bytea) does not exist`). Se corrigió en el PR
 [#10](https://github.com/Francogp131/TicketYa/pull/10), con un test de regresión contra
 PostgreSQL real (`EventoBusquedaIntegrationTest`). La colección volvió a correr completa:
-40/40 requests y 40/40 assertions.
+45/45 requests y 45/45 assertions.
 
 Evidencia de la suite: [`docs/evidencia/dia-4-suite.txt`](evidencia/dia-4-suite.txt).
 

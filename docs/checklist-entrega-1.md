@@ -9,13 +9,15 @@ Lista verificable de **todo** lo que pide el enunciado para la Entrega 1. Cada f
 | Área | Estado | Evidencia |
 |---|---|---|
 | CI de `main` | Verde después de #2, #8, #9 y #10 | GitHub Actions, HEAD `71a4164` |
-| Suite local | catalog 51, inventory 30, orders 38, gateway 5; 0 fallos | [`pruebas.md`](pruebas.md), [`evidencia/dia-4-suite.txt`](evidencia/dia-4-suite.txt) |
-| E2E por gateway | 40/40 requests y 40/40 assertions | [`evidencia/dia-4-newman.txt`](evidencia/dia-4-newman.txt) |
+| Suite local | catalog 51, inventory 30, orders 46, gateway 5; 0 fallos | [`pruebas.md`](pruebas.md), [`evidencia/dia-4-suite.txt`](evidencia/dia-4-suite.txt) |
+| E2E por gateway | 45/45 requests y 45/45 assertions | [`evidencia/dia-4-newman.txt`](evidencia/dia-4-newman.txt) |
 | Reserva de zonas (3.3) | Verificada con unitarios + concurrencia PostgreSQL | `ReservaServiceTest`, `ConcurrenciaPostgresTest` |
 | Devoluciones (4.8) y cancelación (4.9) | Aprobación/rechazo, liberación, refund y `EN_REINTEGRO` | `DevolucionServiceTest`, `OrderServiceTest`, E2E |
+| Consultas propias (4.10) | Órdenes/entradas del cliente, 403 para ajenas | `OrderQueryServiceTest`, `TicketControllerTest`, E2E |
+| OpenAPI orders (4.11) | Exportado con descripciones y códigos | `openapi/orders-openapi.json` |
 | OpenAPI catalog/inventory | Exportado y revisado (2.6, 3.8) | `openapi/catalog-openapi.json`, `openapi/inventory-openapi.json` |
-| Postman | Compra, búsqueda, rechazo, devolución y cancelación | `postman/TicketYa.postman_collection.json` |
-| Pendiente Día 4 | Consultas propias y OpenAPI de orders (4.10-4.11) | Caro (guía en `docs/equipo/caro-4.10.md`) |
+| Postman | Compra, búsqueda, rechazo, devolución, consultas y cancelación | `postman/TicketYa.postman_collection.json` |
+| Pendiente posterior | ER, índice/ADR, README limpio y checklist 100 % (5.5-5.10, 6.x) | Días 5-6 |
 | Pendiente posterior | ER, índice/ADR, README limpio, E2E de devolución y checklist 100 % (5.5-5.11, 6.x) | Días 5-6 |
 
 ## 1. Funcionalidad de la Entrega 1
@@ -81,8 +83,8 @@ Lista verificable de **todo** lo que pide el enunciado para la Entrega 1. Cada f
 - [ ] **Diagrama de secuencia de compra de entrada numerada (aprobado, rechazado y vencido):** Mermaid en `docs/arquitectura.md`. → 5.4
 - [ ] **ER por microservicio con claves, relaciones y entidades solapadas:** `docs/modelo-datos.md`. → 5.5
 - [ ] **Listado de endpoints con método, ruta, parámetros, códigos y ejemplos JSON:** `docs/api-contract.md`. → 1.3
-- [ ] **OpenAPI/Swagger con descripciones, ejemplos y códigos de error:** Swagger UI de los tres servicios + `openapi.json`. → 2.6, 3.8, 4.11, 5.8
-- [ ] **Implementación completa de la funcionalidad de la entrega:** grupos 2, 3 y 4 de `tasks.md`. → 2.1 a 4.11
+- [x] **OpenAPI/Swagger con descripciones, ejemplos y códigos de error:** Swagger UI de los tres servicios + `openapi.json`. → 2.6, 3.8, 4.11, 5.8
+- [x] **Implementación completa de la funcionalidad de la entrega:** grupos 2, 3 y 4 de `tasks.md`. → 2.1 a 4.11
 - [ ] **README con instrucciones de ejecución y documentación técnica adicional:** README raíz + `docs/arquitectura.md`. → 5.6, 5.7
 - [ ] **Índice de documentación y registro de decisiones:** `docs/README.md` y `docs/decisiones.md`. → 5.9
 - [ ] **README por microservicio:** responsabilidad, endpoints, modelo y comandos de test. → 5.10

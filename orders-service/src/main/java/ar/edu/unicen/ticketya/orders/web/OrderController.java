@@ -1,8 +1,10 @@
 package ar.edu.unicen.ticketya.orders.web;
 
+import ar.edu.unicen.ticketya.orders.servicio.OrderQueryService;
 import ar.edu.unicen.ticketya.orders.servicio.OrderService;
 import ar.edu.unicen.ticketya.orders.web.dto.CrearOrdenRequest;
 import ar.edu.unicen.ticketya.orders.web.dto.OrderResponse;
+import ar.edu.unicen.ticketya.orders.web.dto.PageResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -16,6 +18,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -24,9 +27,11 @@ import org.springframework.web.bind.annotation.RestController;
 public class OrderController {
 
     private final OrderService orderService;
+    private final OrderQueryService orderQueryService;
 
-    public OrderController(OrderService orderService) {
+    public OrderController(OrderService orderService, OrderQueryService orderQueryService) {
         this.orderService = orderService;
+        this.orderQueryService = orderQueryService;
     }
 
     @PostMapping
@@ -48,6 +53,20 @@ public class OrderController {
         RequestIdentity identity = RequestIdentity.require(userId, userRole);
         OrderResponse response = orderService.crear(request, identity.userId(), idempotencyKey);
         return ResponseEntity.created(URI.create("/api/orders/" + response.id())).body(response);
+    }
+
+    @GetMapping
+    @Operation(summary = "Listar mis órdenes",
+            description = "Paginado, más recientes primero. Solo las órdenes del cliente autenticado.")
+    @ApiResponse(responseCode = "200", description = "Página de órdenes del cliente")
+    @ApiResponse(responseCode = "400", description = "page/size inválidos (VALIDATION_ERROR)")
+    public PageResponse<OrderResponse> listar(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestHeader(value = "X-User-Id", required = false) String userId,
+            @RequestHeader(value = "X-User-Role", required = false) String userRole) {
+        RequestIdentity identity = RequestIdentity.require(userId, userRole);
+        return orderQueryService.ordenes(identity.userId(), page, size);
     }
 
     @GetMapping("/{ordenId}")
