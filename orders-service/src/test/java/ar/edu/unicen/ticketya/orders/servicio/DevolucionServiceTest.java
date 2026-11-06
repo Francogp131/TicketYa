@@ -69,6 +69,7 @@ class DevolucionServiceTest {
 
         assertThat(response.estado()).isEqualTo(EstadoDevolucion.PENDIENTE);
         assertThat(response.motivo()).isEqualTo("No puedo asistir");
+        assertThat(response.createdAt()).isNotNull();
         assertThat(response.resolvedAt()).isNull();
     }
 

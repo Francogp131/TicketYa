@@ -29,7 +29,7 @@ public class Devolucion {
     @Column(length = 500)
     private String motivo;
 
-    @Column(name = "created_at", insertable = false, updatable = false)
+    @Column(name = "created_at", insertable = true, updatable = false)
     private OffsetDateTime createdAt;
 
     @Column(name = "resolved_at")
@@ -69,6 +69,10 @@ public class Devolucion {
 
     public OffsetDateTime getCreatedAt() {
         return createdAt;
+    }
+
+    public void setCreatedAt(OffsetDateTime createdAt) {
+        this.createdAt = createdAt;
     }
 
     public OffsetDateTime getResolvedAt() {

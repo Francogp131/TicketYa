@@ -76,6 +76,7 @@ public class DevolucionService {
         devolucion.setEntradaId(entradaId);
         devolucion.setEstado(EstadoDevolucion.PENDIENTE);
         devolucion.setMotivo(motivo == null ? null : motivo.trim());
+        devolucion.setCreatedAt(OffsetDateTime.now(clock));
         devolucion = devolucionRepository.save(devolucion);
         return ReturnResponse.from(devolucion);
     }
