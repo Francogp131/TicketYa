@@ -1,11 +1,14 @@
 package ar.edu.unicen.ticketya.catalog.web;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import ar.edu.unicen.ticketya.catalog.config.OpenApiConfig;
 import ar.edu.unicen.ticketya.catalog.servicio.EventService;
 import ar.edu.unicen.ticketya.catalog.servicio.VenueService;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -47,6 +50,20 @@ class OpenApiExportTest {
                 .andReturn()
                 .getResponse()
                 .getContentAsString(StandardCharsets.UTF_8);
+
+        JsonNode documento = new ObjectMapper().readTree(json);
+        assertThat(documento.at("/paths").size()).isEqualTo(9);
+        assertThat(documento.at("/components/schemas/ProblemDetail").isMissingNode()).isFalse();
+        assertThat(documento.at("/components/securitySchemes/X-User-Id").isMissingNode()).isFalse();
+        assertThat(documento.at("/components/securitySchemes/X-User-Role").isMissingNode()).isFalse();
+        assertThat(documento.at("/paths/~1internal~1events~1{eventoId}~1availability/patch")
+                .isMissingNode()).isFalse();
+        assertThat(documento.at("/paths/~1api~1catalog~1events/post/responses/400/content/"
+                        + "application~1problem+json/schema/$ref").asText())
+                .isEqualTo("#/components/schemas/ProblemDetail");
+        assertThat(documento.at("/paths/~1api~1catalog~1events~1{eventoId}~1publish/post/responses/502/"
+                        + "content/application~1problem+json/examples/INVENTORY_UNAVAILABLE").isMissingNode())
+                .isFalse();
 
         Path destino = Path.of("..", "openapi", "catalog-openapi.json");
         Files.createDirectories(destino.getParent());

@@ -41,6 +41,9 @@ inventory:
 
 orders:
   url: ${ORDERS_URL:http://localhost:8083}
+  timeout:
+    connect-ms: ${ORDERS_CONNECT_TIMEOUT_MS:1000}
+    read-ms: ${ORDERS_READ_TIMEOUT_MS:2000}
 
 catalog:
   scheduler:

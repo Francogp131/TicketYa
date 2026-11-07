@@ -45,6 +45,8 @@ public class EventController {
     @Operation(summary = "Crear un evento", description = "El evento nace en BORRADOR. Requiere rol ORGANIZER.")
     @ApiResponse(responseCode = "201", description = "Evento creado")
     @ApiResponse(responseCode = "400", description = "Fecha pasada o datos inválidos (VALIDATION_ERROR)")
+    @ApiResponse(responseCode = "401", description = "Falta identidad (UNAUTHORIZED)")
+    @ApiResponse(responseCode = "403", description = "Rol insuficiente (FORBIDDEN)")
     @ApiResponse(responseCode = "404", description = "El lugar no existe (VENUE_NOT_FOUND)")
     public ResponseEntity<EventoResponse> crear(
             @Valid @RequestBody CrearEventoRequest request,
@@ -61,7 +63,8 @@ public class EventController {
             description = "Solo sobre eventos en BORRADOR y del organizador autenticado.")
     @ApiResponse(responseCode = "200", description = "Precio asignado")
     @ApiResponse(responseCode = "400", description = "Precio negativo (INVALID_PRICE) o sector ajeno (SECTOR_NOT_FROM_VENUE)")
-    @ApiResponse(responseCode = "403", description = "El evento es de otro organizador (NOT_EVENT_OWNER)")
+    @ApiResponse(responseCode = "401", description = "Falta identidad (UNAUTHORIZED)")
+    @ApiResponse(responseCode = "403", description = "Rol insuficiente o evento de otro organizador (FORBIDDEN, NOT_EVENT_OWNER)")
     @ApiResponse(responseCode = "404", description = "Evento o sector inexistente")
     @ApiResponse(responseCode = "409", description = "El evento ya no es editable (EVENT_NOT_EDITABLE)")
     public PrecioResponse asignarPrecio(
@@ -79,7 +82,8 @@ public class EventController {
     @Operation(summary = "Publicar un evento",
             description = "Envía el snapshot a inventory de forma idempotente. Si inventory falla, el evento sigue en BORRADOR.")
     @ApiResponse(responseCode = "200", description = "Evento publicado")
-    @ApiResponse(responseCode = "403", description = "El evento es de otro organizador (NOT_EVENT_OWNER)")
+    @ApiResponse(responseCode = "401", description = "Falta identidad (UNAUTHORIZED)")
+    @ApiResponse(responseCode = "403", description = "Rol insuficiente o evento de otro organizador (FORBIDDEN, NOT_EVENT_OWNER)")
     @ApiResponse(responseCode = "404", description = "El evento no existe (EVENT_NOT_FOUND)")
     @ApiResponse(responseCode = "409", description = "Evento incompleto (EVENT_INCOMPLETE) o no editable (EVENT_NOT_EDITABLE)")
     @ApiResponse(responseCode = "502", description = "Inventory no confirmó el snapshot (INVENTORY_UNAVAILABLE)")
@@ -96,6 +100,8 @@ public class EventController {
     @Operation(summary = "Cancelar un evento",
             description = "Requiere ADMIN. Si orders no responde, responde 200 con cancelacionPendiente=true.")
     @ApiResponse(responseCode = "200", description = "Evento cancelado")
+    @ApiResponse(responseCode = "401", description = "Falta identidad (UNAUTHORIZED)")
+    @ApiResponse(responseCode = "403", description = "Rol insuficiente (FORBIDDEN)")
     @ApiResponse(responseCode = "404", description = "El evento no existe (EVENT_NOT_FOUND)")
     @ApiResponse(responseCode = "409", description = "El evento ya está cancelado o finalizado (EVENT_NOT_CANCELLABLE)")
     public CancelacionResponse cancelar(

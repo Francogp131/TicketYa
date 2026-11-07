@@ -71,6 +71,8 @@ public class VenueController {
             description = "Un sector NUMERADO genera filas * asientosPorFila asientos. Requiere rol ADMIN.")
     @ApiResponse(responseCode = "201", description = "Sector creado y asientos generados")
     @ApiResponse(responseCode = "400", description = "Datos inválidos (VALIDATION_ERROR)")
+    @ApiResponse(responseCode = "401", description = "Falta identidad (UNAUTHORIZED)")
+    @ApiResponse(responseCode = "403", description = "Rol insuficiente (FORBIDDEN)")
     @ApiResponse(responseCode = "404", description = "El lugar no existe (VENUE_NOT_FOUND)")
     public ResponseEntity<SectorResponse> crearSector(
             @PathVariable UUID venueId,
