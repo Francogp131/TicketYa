@@ -1,0 +1,60 @@
+# Verificación RC de catálogo - Día 7 (7/11/2026)
+
+Verificación del candidato de release en un clone limpio del repositorio, sin reutilizar el
+working tree local.
+
+- Repositorio: `https://github.com/Francogp131/TicketYa.git`
+- Rama: `feat/catalog-dia-6` (PR #18)
+- Commit verificado: `fc25825fe696e3db936226b3eb3575208fa1990b`
+- Entorno: Windows, Java 21.0.13, Maven 3.9, sin Docker local.
+
+## Clone limpio
+
+```bash
+git clone --depth 1 --branch feat/catalog-dia-6 \
+  https://github.com/Francogp131/TicketYa.git ticketya-rc-dia7
+cd ticketya-rc-dia7
+git rev-parse HEAD
+# fc25825fe696e3db936226b3eb3575208fa1990b
+```
+
+## Suite de catálogo
+
+```bash
+cd catalog-service
+mvn test
+```
+
+Resultado:
+
+```
+[INFO] Tests run: 54, Failures: 0, Errors: 0, Skipped: 3
+[INFO] BUILD SUCCESS
+```
+
+Los 3 omitidos son `EventoBusquedaIntegrationTest` por no haber Docker local; en CI se
+ejecutan. Después de correr los tests, `git status` quedó limpio: el `OpenApiExportTest`
+regeneró `openapi/catalog-openapi.json` sin diferencias, por lo que el OpenAPI versionado está
+sincronizado con el código.
+
+## Build de los cuatro servicios
+
+```bash
+mvn -DskipTests package   # en catalog-service, inventory-service, orders-service y api-gateway
+```
+
+| Proyecto | Resultado |
+|---|---|
+| `catalog-service` | BUILD SUCCESS |
+| `inventory-service` | BUILD SUCCESS |
+| `orders-service` | BUILD SUCCESS |
+| `api-gateway` | BUILD SUCCESS |
+
+Los cuatro fat JAR se generaron correctamente en el clone limpio.
+
+## Estado del RC
+
+- Catálogo compila, pasa su suite y mantiene el OpenAPI sincronizado en un clone limpio.
+- El PR #18 sigue abierto a la espera de revisión y merge.
+- El tag `entrega-1-rc` debe crearse sobre `main` después de mergear el PR #18, no sobre esta
+  rama, para que apunte al commit entregado.

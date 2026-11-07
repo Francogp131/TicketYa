@@ -64,7 +64,7 @@
 - [x] 6.1 Ejecutar la suite completa (`mvn test`) de los cuatro proyectos y el CI sobre `main`; verificar todo verde y sin tests omitidos. _(catalog 54, inventory 30, orders 46, gateway 5: 135 tests, 0 fallos, 0 omitidos con Java 21 y Docker; CI verde en `e9ae4cb`; evidencia en `docs/evidencia/dia-5-suite.txt`)_
 - [x] 6.2 Ejecutar el E2E por el gateway de los seis flujos críticos (publicar, buscar, reservar, comprar, devolver y cancelar); verificar con Postman/Newman y dejar la salida como evidencia. _(corrida vigente 45/45 requests y 45/45 assertions sobre la colección sin cambios desde el Día 4; cobertura de los seis flujos auditada el Día 6 en `docs/evidencia/dia-6-e2e-catalogo.txt`)_
 - [x] 6.3 Completar `docs/checklist-entrega-1.md` al 100 %; verificar que no quede ningún ítem sin evidencia. _(todos los ítems con evidencia enlazada; el tag `entrega-1` se cierra en 6.4)_
-- [ ] 6.4 Probar un clone limpio, crear el tag `entrega-1`, verificar el acceso al repositorio y entregar el enlace; verificar que el tag apunte al commit entregado.
+- [ ] 6.4 Probar un clone limpio, crear el tag `entrega-1`, verificar el acceso al repositorio y entregar el enlace; verificar que el tag apunte al commit entregado. _(RC de catálogo verificado en clone limpio del PR #18: suite y build de los cuatro servicios en `docs/evidencia/dia-7-rc-catalog.txt`; falta revisión/merge y tag)_
 
 ## Workflow follow-up
 
