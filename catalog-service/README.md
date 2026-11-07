@@ -30,6 +30,10 @@ Las transiciones de estado permitidas son `BORRADOR → PUBLICADO`, `PUBLICADO �
 
 La integración con inventory usa timeout corto (`INVENTORY_CONNECT_TIMEOUT_MS`/`INVENTORY_READ_TIMEOUT_MS`) y hasta 3 intentos con backoff ante timeouts o 5xx; los 4xx no se reintentan. La publicación envía un snapshot idempotente por `eventoId + version`, por lo que un reintento o una republicación no duplica inventario. Inventory notifica los cambios de disponibilidad con `PATCH /internal/events/{eventoId}/availability`.
 
+La cancelación avisa a orders con timeout corto (`ORDERS_CONNECT_TIMEOUT_MS`/`ORDERS_READ_TIMEOUT_MS`). Como ese aviso es idempotente, si orders falla o demora el evento queda `CANCELADO` con `cancelacionPendiente: true` y el scheduler reintenta; esto es la base de la que dependen las devoluciones y la cancelación masiva de entradas.
+
+El OpenAPI documenta la identidad (`X-User-Id`, `X-User-Role`), los ejemplos de request y un esquema común `ProblemDetail` para todos los errores 4xx/5xx, con ejemplos de `VALIDATION_ERROR`, `EVENT_NOT_FOUND`, `EVENT_NOT_EDITABLE`, `INVENTORY_UNAVAILABLE` y `ORDERS_UNAVAILABLE` según el caso.
+
 ## Modelo
 
 Tablas Flyway en [`src/main/resources/db/migration`](src/main/resources/db/migration):
@@ -53,6 +57,8 @@ Al publicar, el servicio envía a inventory el snapshot del evento (sectores, pr
 | `INVENTORY_CONNECT_TIMEOUT_MS` | `2000` | Timeout de conexión contra inventory |
 | `INVENTORY_READ_TIMEOUT_MS` | `3000` | Timeout de lectura contra inventory |
 | `ORDERS_URL` | `http://localhost:8083` | Cliente interno hacia orders |
+| `ORDERS_CONNECT_TIMEOUT_MS` | `1000` | Timeout de conexión contra orders |
+| `ORDERS_READ_TIMEOUT_MS` | `2000` | Timeout de lectura contra orders |
 | `CATALOG_SCHEDULER_FINALIZACION_MS` | `60000` | Intervalo del scheduler de estados |
 
 ## Ejecutar y probar
