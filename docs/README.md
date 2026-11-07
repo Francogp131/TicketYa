@@ -19,7 +19,7 @@
 | [`features-y-user-stories.md`](features-y-user-stories.md) | Features y US-01 a US-38 con criterios de aceptación | P1/P2/P3 | Día 0 | Listo |
 | [`api-contract.md`](api-contract.md) | Contrato REST: método, ruta, parámetros, códigos y ejemplos JSON | P1/P2/P3 | Día 0 | Listo (1.3) |
 | [`arquitectura.md`](arquitectura.md) | Diagrama de módulos y secuencia de compra (aprobado/rechazado/vencido) | P4 | Día 3 a 5 | Listo (5.3, 5.4) |
-| `modelo-datos.md` | ER por microservicio, claves, relaciones y entidades solapadas | P1/P2/P3 | Día 5 | Pendiente (5.5) |
+| [`modelo-datos.md`](modelo-datos.md) | ER por microservicio, claves, relaciones y entidades solapadas | P1/P2/P3 | Día 5 | Catalog listo; inventory y orders pendientes (5.5) |
 | `decisiones.md` | ADR cortas: decisión, alternativas y consecuencias | P4 | Día 5 | Pendiente (5.9) |
 | [`pruebas.md`](pruebas.md) | Estrategia, comandos y evidencia de concurrencia y E2E | P5 | Día 5 y 6 | Evidencia Día 4 (45/45) |
 | [`evidencia/`](evidencia/) | Salidas de suite y E2E del Día 4 | P5 | Día 4 | Listo |

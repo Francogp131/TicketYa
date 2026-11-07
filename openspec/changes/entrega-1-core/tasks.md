@@ -51,7 +51,7 @@
 - [x] 5.2 Crear la colección Postman con los flujos de compra aprobada, rechazada, vencida, devolución y cancelación, con assertions; verificar que se ejecute completa contra el entorno local. _(40 requests / 40 assertions verdes por gateway, incluidos devolución aprobada y rechazada)_
 - [x] 5.3 Crear el diagrama de módulos en Mermaid; verificar que muestre gateway, los tres servicios, sus bases, el mock de pagos y las dependencias. _(docs/arquitectura.md)_
 - [x] 5.4 Crear el diagrama de secuencia de compra de una entrada numerada, incluyendo pago aprobado, pago rechazado y reserva vencida; verificar que coincida con los estados y llamadas del diseño. _(docs/arquitectura.md)_
-- [ ] 5.5 Crear el ER por microservicio, con claves, relaciones y entidades solapadas entre bases; verificar que coincida con las migraciones Flyway.
+- [ ] 5.5 Crear el ER por microservicio, con claves, relaciones y entidades solapadas entre bases; verificar que coincida con las migraciones Flyway. _(catalog: ER validado contra V1–V4 en `docs/modelo-datos.md`; faltan inventory y orders)_
 - [ ] 5.6 Escribir el README raíz con requisitos, cómo levantar bases y servicios, variables, URLs y datos de prueba; verificar siguiéndolo en un clone limpio.
 - [ ] 5.7 Escribir `docs/arquitectura.md` con decisiones, límites de servicio, estrategia de consistencia y compensaciones, enlazando `design.md`, contrato y diagramas; verificar la revisión cruzada del grupo.
 - [ ] 5.8 Revisar el OpenAPI agregado de los tres servicios (descripciones, ejemplos y códigos de error); verificar que Swagger UI de cada servicio muestre todos los endpoints del contrato.

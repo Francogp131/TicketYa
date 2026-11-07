@@ -41,8 +41,10 @@ Tablas Flyway en [`src/main/resources/db/migration`](src/main/resources/db/migra
 - `lugar` — nombre, dirección, ciudad, latitud/longitud.
 - `sector` — pertenece a un lugar; `NUMERADO` exige filas y asientos por fila.
 - `asiento` — se genera al crear un sector numerado (`filas × asientosPorFila`).
-- `evento` — estado `BORRADOR/PUBLICADO/AGOTADO/CANCELADO/FINALIZADO`, organizador y límite por cliente.
+- `evento` — estado `BORRADOR/PUBLICADO/AGOTADO/CANCELADO/FINALIZADO`, organizador, límite por cliente y `cancelacion_pendiente` para el reintento del aviso a orders.
 - `evento_participante` y `evento_sector_precio` — participantes y precio por sector.
+
+Las migraciones `V3` y `V4` agregan la cancelación pendiente y refuerzan en la base las reglas de `tipo` de evento y capacidad de sectores numerados. El ER validado está en [`docs/modelo-datos.md`](../docs/modelo-datos.md).
 
 Al publicar, el servicio envía a inventory el snapshot del evento (sectores, precios, capacidad y asientos) por `POST /internal/events/{id}/inventory`. Si inventory falla, el evento sigue en `BORRADOR` y se responde `502 INVENTORY_UNAVAILABLE`.
 
