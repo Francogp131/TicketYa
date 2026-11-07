@@ -1,0 +1,36 @@
+# Evidencia suite catalog - Día 6 (7/11/2026)
+
+Comando (desde `catalog-service/`, con Java 21):
+
+```bash
+mvn test
+```
+
+Entorno: Windows, Java 21.0.13, sin Docker local.
+
+Resultado:
+
+```
+[INFO] Tests run: 54, Failures: 0, Errors: 0, Skipped: 3
+[INFO] BUILD SUCCESS
+```
+
+Los 3 tests omitidos son `EventoBusquedaIntegrationTest`: ahora están anotados con
+`@Testcontainers(disabledWithoutDocker = true)`, por lo que se omiten si no hay Docker y se
+ejecutan en CI (donde el runner sí tiene Docker).
+
+Desglose:
+
+| Test | Ejecutados | Omitidos |
+|---|---|---|
+| `EventoBusquedaIntegrationTest` | 0 | 3 |
+| `EventoSchedulerTest` | 1 | 0 |
+| `EventServiceTest` | 22 | 0 |
+| `InventoryRestClientTest` | 4 | 0 |
+| `OrdersRestClientTest` | 3 | 0 |
+| `VenueServiceTest` | 3 | 0 |
+| `EventControllerTest` | 8 | 0 |
+| `InternalEventControllerTest` | 3 | 0 |
+| `OpenApiExportTest` | 1 | 0 |
+| `VenueControllerTest` | 6 | 0 |
+| **Total** | **51** | **3** |

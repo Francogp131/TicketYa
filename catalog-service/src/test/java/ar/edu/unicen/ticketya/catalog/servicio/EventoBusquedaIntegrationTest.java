@@ -20,7 +20,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
  * deben funcionar con parámetros nulos y con texto en mayúsculas/minúsculas.
  */
 @SpringBootTest
-@Testcontainers
+@Testcontainers(disabledWithoutDocker = true)
 class EventoBusquedaIntegrationTest {
 
     private static final UUID FESTIVAL = UUID.fromString("d0000000-0000-4000-8000-000000000001");

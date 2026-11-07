@@ -1,0 +1,32 @@
+# Verificación E2E de catálogo - Día 6 (7/11/2026)
+
+La colección Postman no cambió desde la corrida completa del Día 4 (6/11/2026), que terminó
+con **45/45 requests y 45/45 assertions**. Esta verificación del Día 6 audita que los seis
+flujos críticos siguen cubiertos por la colección vigente.
+
+- SHA-256 de `postman/TicketYa.postman_collection.json`:
+  `431BBFCD6DA43194A5DC01FFD596A81079E8AA3DDEBAD48F35C75EFFAD5218F2`
+- Último commit que modificó la colección: `b194c03` (6/11/2026).
+- Resultado de la corrida vigente: [`dia-4-newman.txt`](dia-4-newman.txt).
+
+Comando de reproducción (requiere Docker y los cuatro servicios levantados):
+
+```bash
+npx -y newman run postman/TicketYa.postman_collection.json \
+  -e postman/TicketYa.local.postman_environment.json --reporters cli
+```
+
+## Cobertura de los seis flujos
+
+| Flujo | Carpeta | Requests que lo cubren |
+|---|---|---|
+| Publicar | Catálogo | `Crear evento (ORGANIZER)`, `Asignar precio sector numerado`, `Asignar precio sector zona`, `Publicar evento`, `Detalle del evento publicado` |
+| Buscar | Catálogo | `Buscar eventos por ciudad y orden`, `Búsqueda con orden inválido devuelve 400` |
+| Reservar | Inventario | `Reservar 2 asientos numerados`, `Reservar los mismos asientos devuelve 409`, `Reservar 2 lugares de zona` |
+| Comprar | Órdenes | `Crear orden aprobada (paga y emite QR)`, `Consultar orden`, `Listar mis entradas`, `Detalle de entrada propia`, reintento idempotente y pago rechazado/lento |
+| Devolver | Devoluciones | Solicitud, aprobación, verificación `DEVUELTA`, segunda solicitud, rechazo y verificación `VALIDA` |
+| Cancelar | Cancelación | `Cancelar evento (ADMIN)`, cancelación interna en orders, repetición idempotente y detalle `404` |
+
+La corrida del Día 4 ya incluía catálogo, búsqueda, publicación, reserva numerada y de zona,
+compra aprobada, devolución aprobada y rechazada, y cancelación con reintegro. No hubo cambios
+en la colección ni en los contratos desde entonces.
