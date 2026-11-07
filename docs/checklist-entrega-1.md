@@ -4,21 +4,20 @@ Lista verificable de **todo** lo que pide el enunciado para la Entrega 1. Cada f
 
 **Leyenda:** `[ ]` pendiente · `[x]` verificado con evidencia.
 
-## 0. Estado de verificación (Día 4 — 6/11/2026)
+## 0. Estado de verificación (Día 5 — 7/11/2026)
 
 | Área | Estado | Evidencia |
 |---|---|---|
-| CI de `main` | Verde después de #2, #8, #9 y #10 | GitHub Actions, HEAD `71a4164` |
-| Suite local | catalog 51, inventory 30, orders 46, gateway 5; 0 fallos | [`pruebas.md`](pruebas.md), [`evidencia/dia-4-suite.txt`](evidencia/dia-4-suite.txt) |
-| E2E por gateway | 45/45 requests y 45/45 assertions | [`evidencia/dia-4-newman.txt`](evidencia/dia-4-newman.txt) |
-| Reserva de zonas (3.3) | Verificada con unitarios + concurrencia PostgreSQL | `ReservaServiceTest`, `ConcurrenciaPostgresTest` |
-| Devoluciones (4.8) y cancelación (4.9) | Aprobación/rechazo, liberación, refund y `EN_REINTEGRO` | `DevolucionServiceTest`, `OrderServiceTest`, E2E |
-| Consultas propias (4.10) | Órdenes/entradas del cliente, 403 para ajenas | `OrderQueryServiceTest`, `TicketControllerTest`, E2E |
-| OpenAPI orders (4.11) | Exportado con descripciones y códigos | `openapi/orders-openapi.json` |
-| OpenAPI catalog/inventory | Exportado y revisado (2.6, 3.8) | `openapi/catalog-openapi.json`, `openapi/inventory-openapi.json` |
-| Postman | Compra, búsqueda, rechazo, devolución, consultas y cancelación | `postman/TicketYa.postman_collection.json` |
-| Pendiente posterior | ER, índice/ADR, README limpio y checklist 100 % (5.5-5.10, 6.x) | Días 5-6 |
-| Pendiente posterior | ER, índice/ADR, README limpio, E2E de devolución y checklist 100 % (5.5-5.11, 6.x) | Días 5-6 |
+| CI de `main` | Verde después de #14 y #15 | GitHub Actions, HEAD `e9ae4cb` |
+| Suite completa (6.1) | catalog 54, inventory 30, orders 46, gateway 5; 135 tests, 0 fallos, 0 omitidos | [`pruebas.md`](pruebas.md), [`evidencia/dia-5-suite.txt`](evidencia/dia-5-suite.txt) |
+| E2E por gateway | 45/45 requests y 45/45 assertions (Día 4); se repite el Día 6 | [`evidencia/dia-4-newman.txt`](evidencia/dia-4-newman.txt) |
+| ER por servicio (5.5) | catalog, inventory y orders validados contra Flyway | [`modelo-datos.md`](modelo-datos.md) |
+| Índice y ADR (5.9) | Índice actualizado y 11 decisiones registradas | [`README.md`](README.md), [`decisiones.md`](decisiones.md) |
+| Arquitectura (5.7) | Límites, consistencia y compensaciones enlazados a `design.md` | [`arquitectura.md`](arquitectura.md) |
+| README raíz (5.6) | Clone limpio y build de los cuatro proyectos; CI valida el compose | `README.md`, run `e9ae4cb` |
+| OpenAPI agregado (5.8) | Los tres archivos exportados y revisados contra el contrato | `openapi/*.json` |
+| Postman | 45 requests con assertions; Newman verde (Día 4) | `postman/TicketYa.postman_collection.json` |
+| Pendiente | E2E final de los seis flujos, checklist al 100 %, tag y entrega (6.2-6.4) | Días 6-8 |
 
 ## 1. Funcionalidad de la Entrega 1
 
@@ -72,26 +71,26 @@ Lista verificable de **todo** lo que pide el enunciado para la Entrega 1. Cada f
 - [x] **Mecanismo contra la doble venta probado y multi-instancia:** locks/updates condicionales en PostgreSQL + test de concurrencia. → 3.7, `design.md` decisión 6
 - [x] **Pasarela de pagos simulada:** aprobado, rechazado y lento; interfaz reemplazable. → 4.3
 - [x] **Sin autenticación en Entrega 1:** identidad por `X-User-Id` y `X-User-Role` propagados por el gateway; 401/403 según corresponda. → 1.6
-- [ ] **Ejecución local:** README con Docker para las bases y Maven/IDE para los servicios. → 5.6
+- [x] **Ejecución local:** README con Docker para las bases y Maven/IDE para los servicios; clone limpio y build verificados. → 5.6
 - [x] **Consistencia y compensaciones:** flujo de compra con estados intermedios y reintentos idempotentes documentado; la estrategia completa de Saga/outbox queda para Entrega 2. → `design.md` decisión 7, 4.7
 
 ## 4. Tareas y entregables de la Entrega 1 (enunciado)
 
-- [ ] **Features y user stories de todo el sistema con criterios de aceptación:** `docs/features-y-user-stories.md` cubre las 12 funcionalidades y US-01 a US-38. → 1.8
-- [ ] **Definición de microservicios, responsabilidades y API pública:** `design.md` + `docs/api-contract.md`. → 1.3
-- [ ] **Diagrama de módulos de la arquitectura:** Mermaid en `docs/arquitectura.md`. → 5.3
-- [ ] **Diagrama de secuencia de compra de entrada numerada (aprobado, rechazado y vencido):** Mermaid en `docs/arquitectura.md`. → 5.4
-- [ ] **ER por microservicio con claves, relaciones y entidades solapadas:** `docs/modelo-datos.md`. → 5.5
-- [ ] **Listado de endpoints con método, ruta, parámetros, códigos y ejemplos JSON:** `docs/api-contract.md`. → 1.3
+- [x] **Features y user stories de todo el sistema con criterios de aceptación:** `docs/features-y-user-stories.md` cubre las 12 funcionalidades y US-01 a US-38. → 1.8
+- [x] **Definición de microservicios, responsabilidades y API pública:** `design.md` + `docs/api-contract.md` + límites en `docs/arquitectura.md`. → 1.3
+- [x] **Diagrama de módulos de la arquitectura:** Mermaid en `docs/arquitectura.md`. → 5.3
+- [x] **Diagrama de secuencia de compra de entrada numerada (aprobado, rechazado y vencido):** Mermaid en `docs/arquitectura.md`. → 5.4
+- [x] **ER por microservicio con claves, relaciones y entidades solapadas:** `docs/modelo-datos.md`. → 5.5
+- [x] **Listado de endpoints con método, ruta, parámetros, códigos y ejemplos JSON:** `docs/api-contract.md` + OpenAPI por servicio. → 1.3
 - [x] **OpenAPI/Swagger con descripciones, ejemplos y códigos de error:** Swagger UI de los tres servicios + `openapi.json`. → 2.6, 3.8, 4.11, 5.8
 - [x] **Implementación completa de la funcionalidad de la entrega:** grupos 2, 3 y 4 de `tasks.md`. → 2.1 a 4.11
-- [ ] **README con instrucciones de ejecución y documentación técnica adicional:** README raíz + `docs/arquitectura.md`. → 5.6, 5.7
-- [ ] **Índice de documentación y registro de decisiones:** `docs/README.md` y `docs/decisiones.md`. → 5.9
-- [ ] **README por microservicio:** responsabilidad, endpoints, modelo y comandos de test. → 5.10
+- [x] **README con instrucciones de ejecución y documentación técnica adicional:** README raíz + `docs/arquitectura.md`. → 5.6, 5.7
+- [x] **Índice de documentación y registro de decisiones:** `docs/README.md` y `docs/decisiones.md` (ADR-001 a ADR-011). → 5.9
+- [x] **README por microservicio:** responsabilidad, endpoints, modelo y comandos de test en los cuatro servicios. → 5.10
 - [x] **Evidencia de pruebas:** estrategia, comandos y resultados de concurrencia/E2E en `docs/pruebas.md`. → 5.11
 - [x] **Pruebas unitarias de compra, devoluciones y búsqueda:** → 2.5, 4.4, 4.5, 4.7, 4.8, 4.9
 - [x] **Prueba de compras simultáneas del mismo asiento o último lugar de zona:** → 3.7
-- [ ] **Repositorio con código, especificaciones, documentación de diseño, README, datos de prueba y colección Postman:** → 5.1, 5.2, 6.3, 6.4
+- [x] **Repositorio con código, especificaciones, documentación de diseño, README, datos de prueba y colección Postman:** todo versionado en `main`; el tag y el enlace final se cierran en 6.4. → 5.1, 5.2, 6.3, 6.4
 
 ## 5. Fuera de alcance (Entrega 2)
 
@@ -107,10 +106,10 @@ No se exige en esta entrega; no debe consumir tiempo del cronograma:
 ## 6. Puerta de salida (no se entrega si falla)
 
 - [ ] El repositorio es accesible y el tag `entrega-1` apunta al commit entregado.
-- [ ] `main` tiene el CI verde y la suite `mvn test` pasa en los cuatro proyectos.
-- [ ] Un clone limpio sigue el README y levanta el sistema.
-- [ ] La prueba de no doble venta pasa de forma reproducible.
-- [ ] Los seis flujos E2E de Postman pasan por el gateway.
-- [ ] `docs/README.md` no tiene enlaces rotos y el contrato está sincronizado con el OpenAPI.
+- [x] `main` tiene el CI verde y la suite `mvn test` pasa en los cuatro proyectos (135 tests, 0 omitidos).
+- [x] Un clone limpio sigue el README y levanta el sistema (3 bases healthy, 4 health 200, gateway 200/401).
+- [x] La prueba de no doble venta pasa de forma reproducible (`ConcurrenciaPostgresTest`: 100 hilos, 1 ganador).
+- [ ] Los seis flujos E2E de Postman pasan por el gateway (última corrida 45/45 del Día 4; se repite el Día 6).
+- [x] `docs/README.md` no tiene enlaces rotos y el contrato está sincronizado con el OpenAPI (26 operaciones en `openapi/*.json`).
 - [ ] Cada ítem de este checklist tiene evidencia enlazada en el PR o en `docs/`.
 - [ ] No quedan tareas P0 abiertas en `openspec/changes/entrega-1-core/tasks.md`.

@@ -1,8 +1,9 @@
 # Arquitectura — TicketYa Entrega 1
 
-Este documento resume los límites de servicio, las dependencias y el flujo de compra.
-El detalle técnico completo está en [`../openspec/changes/entrega-1-core/design.md`](../openspec/changes/entrega-1-core/design.md)
-y el contrato en [`api-contract.md`](api-contract.md).
+Este documento resume los límites de servicio, las dependencias, la estrategia de consistencia y el flujo de compra.
+El detalle técnico completo está en [`../openspec/changes/entrega-1-core/design.md`](../openspec/changes/entrega-1-core/design.md),
+el contrato en [`api-contract.md`](api-contract.md), el modelo de cada base en [`modelo-datos.md`](modelo-datos.md)
+y las decisiones con sus alternativas en [`decisiones.md`](decisiones.md).
 
 ## 1. Diagrama de módulos
 
@@ -58,6 +59,17 @@ flowchart LR
 - El cliente nunca llama a los servicios por dentro: todo entra por el gateway.
 - Cada servicio es dueño de su base y no comparte tablas.
 - Las dependencias internas son REST y usan los endpoints `/internal/**`.
+
+### Límites de servicio y dueño del dato
+
+| Servicio | Responsabilidad | Datos propios | No hace |
+|---|---|---|---|
+| `catalog-service` | Lugares, sectores, asientos, eventos, precios, publicación, estados y búsqueda | `lugar`, `sector`, `asiento`, `evento`, `evento_participante`, `evento_sector_precio` | No escribe disponibilidad ni emite entradas |
+| `inventory-service` | Disponibilidad, reservas temporales, límite por cliente y no doble venta | `evento_inventario`, `sector_inventario`, `asiento_inventario`, `reserva`, `reserva_item`, `cliente_evento` | No conoce el catálogo completo ni los pagos |
+| `orders-service` | Órdenes, pago mock, entradas/QR, devoluciones y reintegros | `orden`, `orden_item`, `pago`, `entrada`, `devolucion`, `idempotency_key` | No modifica catálogo ni disponibilidad por su cuenta |
+| `api-gateway` | Ruteo, identidad de Entrega 1 y correlación | Sin datos | No contiene reglas de negocio |
+
+Los cruces usan IDs y snapshots: catalog publica hacia inventory, inventory confirma o libera ante orders y orders emite las entradas. Ninguna base tiene claves foráneas contra otra; el detalle está en [`modelo-datos.md`](modelo-datos.md).
 
 ## 2. Secuencia de compra de una entrada numerada
 
@@ -190,3 +202,5 @@ de zonas no numeradas sea idempotente.
 | Pago aprobado con fallo posterior | Orden `REINTEGRO_PENDIENTE`, pago `REINTEGRADO` y liberación/devolución |
 | Cancelación sin orders | `cancelacion_pendiente` + scheduler de reintento |
 | Reserva vencida | Scheduler cada 30 s y validación perezosa al consultar/pagar |
+
+La consistencia entre servicios es **eventual y explícita**: catalog publica un snapshot y solo confirma si inventory lo aceptó; inventory avisa los cambios de disponibilidad con reintento; orders nunca marca `PAGADA` sin la confirmación de inventory. Los snapshots congelan nombre, fecha y precio para que la compra y la devolución no dependan de una llamada en vivo. Cada llamada interna es idempotente para que un reintento no duplique inventario, entradas ni reintegros. Las alternativas y consecuencias de cada mecanismo están en [`decisiones.md`](decisiones.md) (ADR-005 a ADR-010).
