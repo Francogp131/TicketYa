@@ -2,7 +2,7 @@
 
 ## 1. Fundaciones, contrato y gateway
 
-- [ ] 1.1 Configurar el repositorio privado `Francogp131/TicketYa`, `main` protegida, `.gitignore`, plantilla de PR y convención de ramas `feat/*`; verificar con un clone limpio y un PR de prueba. _(repo creado; falta agregar colaboradores y activar branch protection)_
+- [x] 1.1 Configurar el repositorio privado `Francogp131/TicketYa`, `main` protegida, `.gitignore`, plantilla de PR y convención de ramas `feat/*`; verificar con un clone limpio y un PR de prueba. _(5 colaboradores con Write; branch protection con 1 aprobación y los 5 checks del CI; clone limpio verificado en `docs/evidencia/dia-5-clone-limpio.txt`)_
 - [x] 1.2 Crear los cuatro proyectos Spring Boot independientes (`catalog-service`, `inventory-service`, `orders-service`, `api-gateway`) con Java 21, Maven y Actuator; verificar `mvn -q -DskipTests package` y `/actuator/health` en cada uno.
 - [x] 1.3 Congelar el contrato REST v1 en `docs/api-contract.md` (método, ruta, parámetros, códigos y ejemplos JSON); verificar que cada US-01 a US-24 tenga endpoint y códigos definidos.
 - [x] 1.4 Implementar el manejo global de errores RFC 7807 (`application/problem+json`) y las validaciones comunes; verificar con tests que 400/401/403/404/409 devuelvan el formato acordado. _(handlers en los tres servicios y filtro del gateway; tests de 400/401/403/404/409 en catalog/inventory/orders/gateway)_
