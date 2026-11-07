@@ -9,7 +9,7 @@
 - [x] 1.5 Crear `docker-compose.dev.yml` con una base PostgreSQL por servicio y migraciones Flyway; verificar que `docker compose up -d` levante las tres bases y que las tablas existan.
 - [x] 1.6 Configurar el gateway con rutas `/api/catalog/**`, `/api/inventory/**` y `/api/orders/**`, y propagación de `X-User-Id`/`X-User-Role`; verificar con `curl` que llegue a los tres servicios.
 - [x] 1.7 Configurar CI con GitHub Actions (build + tests por servicio) y validación de PR; verificar que el workflow quede verde en un PR de prueba. _(workflow verde en el PR #1: 4 builds + validación de docker compose)_
-- [ ] 1.8 Revisar `docs/features-y-user-stories.md` contra los 12 ítems del enunciado y las 38 user stories; verificar que cada US tenga criterios de aceptación y esté referenciada en `docs/checklist-entrega-1.md`.
+- [x] 1.8 Revisar `docs/features-y-user-stories.md` contra los 12 ítems del enunciado y las 38 user stories; verificar que cada US tenga criterios de aceptación y esté referenciada en `docs/checklist-entrega-1.md`. _(12 funcionalidades y US-01 a US-38 con criterios; las US-01 a US-24 de la Entrega 1 están trazadas en el checklist)_
 
 ## 2. catalog-service: lugares, eventos, publicación y búsqueda
 
@@ -48,20 +48,20 @@
 ## 5. Integración, datos y documentación
 
 - [x] 5.1 Crear los datos de prueba con Flyway (lugares, eventos publicados, precios e inventario); verificar que se puedan consultar por API después de levantar el entorno. _(V2__seed.sql en catalog e inventory; verificado por gateway)_
-- [x] 5.2 Crear la colección Postman con los flujos de compra aprobada, rechazada, vencida, devolución y cancelación, con assertions; verificar que se ejecute completa contra el entorno local. _(40 requests / 40 assertions verdes por gateway, incluidos devolución aprobada y rechazada)_
+- [x] 5.2 Crear la colección Postman con los flujos de compra aprobada, rechazada, vencida, devolución y cancelación, con assertions; verificar que se ejecute completa contra el entorno local. _(45 requests / 45 assertions verdes por gateway, incluidos devolución aprobada y rechazada)_
 - [x] 5.3 Crear el diagrama de módulos en Mermaid; verificar que muestre gateway, los tres servicios, sus bases, el mock de pagos y las dependencias. _(docs/arquitectura.md)_
 - [x] 5.4 Crear el diagrama de secuencia de compra de una entrada numerada, incluyendo pago aprobado, pago rechazado y reserva vencida; verificar que coincida con los estados y llamadas del diseño. _(docs/arquitectura.md)_
-- [ ] 5.5 Crear el ER por microservicio, con claves, relaciones y entidades solapadas entre bases; verificar que coincida con las migraciones Flyway. _(catalog: ER validado contra V1–V4 en `docs/modelo-datos.md`; faltan inventory y orders)_
-- [ ] 5.6 Escribir el README raíz con requisitos, cómo levantar bases y servicios, variables, URLs y datos de prueba; verificar siguiéndolo en un clone limpio.
-- [ ] 5.7 Escribir `docs/arquitectura.md` con decisiones, límites de servicio, estrategia de consistencia y compensaciones, enlazando `design.md`, contrato y diagramas; verificar la revisión cruzada del grupo.
-- [ ] 5.8 Revisar el OpenAPI agregado de los tres servicios (descripciones, ejemplos y códigos de error); verificar que Swagger UI de cada servicio muestre todos los endpoints del contrato.
-- [ ] 5.9 Crear `docs/README.md` como índice de documentación y `docs/decisiones.md` con las ADR cortas (decisión, alternativas y consecuencias); verificar que todos los enlaces resuelvan y que el índice refleje el estado real.
-- [ ] 5.10 Documentar cada servicio en su `README.md` (responsabilidad, endpoints, modelo, variables y comandos de test); verificar que otra persona pueda levantarlo siguiendo solo ese README.
-- [x] 5.11 Crear `docs/pruebas.md` con la estrategia, los comandos y la evidencia de la prueba de concurrencia y del E2E; verificar que los comandos documentados se ejecuten tal cual. _(suite 51/30/38/5 y Newman 40/40; evidencia en `docs/evidencia/`)_
+- [x] 5.5 Crear el ER por microservicio, con claves, relaciones y entidades solapadas entre bases; verificar que coincida con las migraciones Flyway. _(catalog validado por P1 contra V1–V4; inventory y orders revisados contra V1/V3 y V1 en `docs/modelo-datos.md`; los tests de esquema con Testcontainers corren en CI)_
+- [x] 5.6 Escribir el README raíz con requisitos, cómo levantar bases y servicios, variables, URLs y datos de prueba; verificar siguiéndolo en un clone limpio. _(clone limpio: compose healthy, health 200 en los cuatro servicios y smoke por gateway; evidencia en `docs/evidencia/dia-5-clone-limpio.txt`)_
+- [x] 5.7 Escribir `docs/arquitectura.md` con decisiones, límites de servicio, estrategia de consistencia y compensaciones, enlazando `design.md`, contrato y diagramas; verificar la revisión cruzada del grupo. _(límites, consistencia y compensaciones + enlaces a design, contrato, ER y ADR)_
+- [x] 5.8 Revisar el OpenAPI agregado de los tres servicios (descripciones, ejemplos y códigos de error); verificar que Swagger UI de cada servicio muestre todos los endpoints del contrato. _(tres archivos en `openapi/`; catalog reforzado con ProblemDetail y orders regenerado en 4.11)_
+- [x] 5.9 Crear `docs/README.md` como índice de documentación y `docs/decisiones.md` con las ADR cortas (decisión, alternativas y consecuencias); verificar que todos los enlaces resuelvan y que el índice refleje el estado real. _(índice actualizado y ADR-001 a ADR-011 en `docs/decisiones.md`; enlaces verificados)_
+- [x] 5.10 Documentar cada servicio en su `README.md` (responsabilidad, endpoints, modelo, variables y comandos de test); verificar que otra persona pueda levantarlo siguiendo solo ese README. _(catalog, inventory, orders y gateway con endpoints, modelo, variables y comandos)_
+- [x] 5.11 Crear `docs/pruebas.md` con la estrategia, los comandos y la evidencia de la prueba de concurrencia y del E2E; verificar que los comandos documentados se ejecuten tal cual. _(suite 135 tests y Newman 45/45 del Día 4; evidencia en `docs/evidencia/`)_
 
 ## 6. Verificación y entrega
 
-- [ ] 6.1 Ejecutar la suite completa (`mvn test`) de los cuatro proyectos y el CI sobre `main`; verificar todo verde y sin tests omitidos.
+- [x] 6.1 Ejecutar la suite completa (`mvn test`) de los cuatro proyectos y el CI sobre `main`; verificar todo verde y sin tests omitidos. _(catalog 54, inventory 30, orders 46, gateway 5: 135 tests, 0 fallos, 0 omitidos con Java 21 y Docker; CI verde en `e9ae4cb`; evidencia en `docs/evidencia/dia-5-suite.txt`)_
 - [ ] 6.2 Ejecutar el E2E por el gateway de los seis flujos críticos (publicar, buscar, reservar, comprar, devolver y cancelar); verificar con Postman/Newman y dejar la salida como evidencia.
 - [ ] 6.3 Completar `docs/checklist-entrega-1.md` al 100 %; verificar que no quede ningún ítem sin evidencia.
 - [ ] 6.4 Probar un clone limpio, crear el tag `entrega-1`, verificar el acceso al repositorio y entregar el enlace; verificar que el tag apunte al commit entregado.

@@ -185,6 +185,8 @@ openspec status --change entrega-1-core
 
 **Día 4 (6/11):** cerrada la reserva de zonas (3.3) con unitarios y concurrencia; orders 4.3-4.7 extraído a `main`; devoluciones (4.8), cancelación con reintegro (4.9), consultas propias (4.10) y OpenAPI de orders (4.11) implementados; búsqueda de catalog corregida (500 por parámetros nulos) con test de regresión; suite local 51/30/46/5 y E2E 45/45 por gateway. El Día 4 queda completo.
 
+**Día 5 (7/11):** ER de las tres bases validado contra Flyway en [`docs/modelo-datos.md`](docs/modelo-datos.md); decisiones en [`docs/decisiones.md`](docs/decisiones.md) (ADR-001 a ADR-011); [`docs/arquitectura.md`](docs/arquitectura.md) con límites de servicio, consistencia y compensaciones; índice de documentación actualizado. Suite completa **135 tests** (catalog 54, inventory 30, orders 46, gateway 5) **sin fallos ni omitidos** con Java 21 y Docker, y CI verde en `main`. El README se verificó en un clone limpio: las tres bases quedan `healthy`, los cuatro servicios responden `200` y el gateway devuelve `200`/`401` según corresponda.
+
 El avance verificable está en [`tasks.md`](openspec/changes/entrega-1-core/tasks.md).
 
 ## Datos de prueba

@@ -1,0 +1,33 @@
+TicketYa — verificación de README en clone limpio (2026-11-07 09:41:06)
+Origen: git@github.com:Francogp131/TicketYa.git (main)
+Java: openjdk version "21.0.12.1" 2026-08-18 LTS
+
+Cloning into '/private/var/folders/08/3rrl6xgd2sd42hxk5f_dczfc0000gn/T/opencode/ticketya-clean-clone'...
+
+== docker compose up -d ==
+ Container ticketya-orders-db Starting 
+ Container ticketya-catalog-db Starting 
+ Container ticketya-orders-db Started 
+ Container ticketya-inventory-db Started 
+ Container ticketya-catalog-db Started 
+NAME                    IMAGE                COMMAND                  SERVICE        CREATED        STATUS                   PORTS
+ticketya-catalog-db     postgres:16-alpine   "docker-entrypoint.s…"   catalog-db     25 hours ago   Up 6 seconds (healthy)   0.0.0.0:5433->5432/tcp, [::]:5433->5432/tcp
+ticketya-inventory-db   postgres:16-alpine   "docker-entrypoint.s…"   inventory-db   25 hours ago   Up 6 seconds (healthy)   0.0.0.0:5434->5432/tcp, [::]:5434->5432/tcp
+ticketya-orders-db      postgres:16-alpine   "docker-entrypoint.s…"   orders-db      25 hours ago   Up 6 seconds (healthy)   0.0.0.0:5435->5432/tcp, [::]:5435->5432/tcp
+
+== servicios ==
+health :8081 -> 200
+health :8082 -> 200
+health :8083 -> 200
+health :8080 -> 200
+
+== smoke por gateway ==
+GET /api/catalog/events -> 200
+POST /api/inventory/reservations sin identidad -> 401
+GET /api/catalog/venues -> 200
+
+== limpieza ==
+ Container ticketya-orders-db Removed 
+ Network ticketya_default Removing 
+ Network ticketya_default Removed 
+Fin: 2026-11-07 09:41:33

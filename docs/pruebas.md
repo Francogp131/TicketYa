@@ -1,6 +1,6 @@
 # Pruebas — TicketYa Entrega 1
 
-Este documento reúne la estrategia, los comandos y la evidencia de las pruebas de los Días 2 a 4.
+Este documento reúne la estrategia, los comandos y la evidencia de las pruebas de los Días 2 a 5.
 Los comandos se ejecutan desde `ticketya/` salvo que se indique otro directorio.
 
 ## 1. Estrategia
@@ -39,14 +39,17 @@ Los tests con Testcontainers se omiten automáticamente si Docker no está dispo
 
 ## 3. Evidencia de la suite
 
-Resultado de la última corrida local (6/11/2026, `mvn clean test` con Docker):
+Suite completa del Día 5 (7/11/2026, `mvn clean test` con Java 21 y Docker encendido):
 
 | Proyecto | Tests | Resultado |
 |---|---|---|
-| catalog-service | 51 | 0 fallos, 0 errores, 0 omitidos |
+| catalog-service | 54 | 0 fallos, 0 errores, 0 omitidos |
 | inventory-service | 30 | 0 fallos, 0 errores, 0 omitidos |
 | orders-service | 46 | 0 fallos, 0 errores, 0 omitidos |
 | api-gateway | 5 | 0 fallos, 0 errores, 0 omitidos |
+| **Total** | **135** | **0 fallos, 0 errores, 0 omitidos** |
+
+Evidencia: [`docs/evidencia/dia-5-suite.txt`](evidencia/dia-5-suite.txt). Incluye los tests de Testcontainers de catalog (búsqueda), inventory (concurrencia, vencimiento, límite y confirmación) y orders (idempotencia), por lo que ningún test quedó omitido.
 
 Desglose relevante:
 
@@ -54,6 +57,8 @@ Desglose relevante:
   scheduler de finalización, búsqueda por fecha/precio/relevancia, rango y orden inválidos.
 - `EventoBusquedaIntegrationTest` (3): búsqueda sin filtros, texto con mayúsculas y filtros
   combinados contra PostgreSQL real (regresión del 500 por parámetros nulos).
+- `OrdersRestClientTest` (3): contrato interno de cancelación, propagación de 5xx sin reintentos
+  y corte por timeout del cliente de catalog hacia orders.
 - `ReservaServiceTest` (6): asientos, zona sin disponibilidad, límite, vencimiento,
   confirmación/liberación y devoluciones idempotentes.
 - `ConcurrenciaPostgresTest` (2): 100 hilos sobre el mismo asiento y 20 hilos sobre el último
