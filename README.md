@@ -3,7 +3,7 @@
 TP grupal de Arquitectura Web (TUDAI 2026): plataforma de venta de entradas con microservicios Spring Boot.
 Enunciado: [`docs/TPE-ArqWeb-TicketYa-2026.pdf`](docs/TPE-ArqWeb-TicketYa-2026.pdf).
 
-Repositorio privado: <https://github.com/Francogp131/TicketYa> (rama `main`).
+Repositorio público para lectura: <https://github.com/Francogp131/TicketYa> (rama `main`; escritura por colaboradores).
 
 ## Arquitectura
 
@@ -186,6 +186,10 @@ openspec status --change entrega-1-core
 **Día 4 (6/11):** cerrada la reserva de zonas (3.3) con unitarios y concurrencia; orders 4.3-4.7 extraído a `main`; devoluciones (4.8), cancelación con reintegro (4.9), consultas propias (4.10) y OpenAPI de orders (4.11) implementados; búsqueda de catalog corregida (500 por parámetros nulos) con test de regresión; suite local 51/30/46/5 y E2E 45/45 por gateway. El Día 4 queda completo.
 
 **Día 5 (7/11):** ER de las tres bases validado contra Flyway en [`docs/modelo-datos.md`](docs/modelo-datos.md); decisiones en [`docs/decisiones.md`](docs/decisiones.md) (ADR-001 a ADR-011); [`docs/arquitectura.md`](docs/arquitectura.md) con límites de servicio, consistencia y compensaciones; índice de documentación actualizado. Suite completa **135 tests** (catalog 54, inventory 30, orders 46, gateway 5) **sin fallos ni omitidos** con Java 21 y Docker, y CI verde en `main`. El README se verificó en un clone limpio: las tres bases quedan `healthy`, los cuatro servicios responden `200` y el gateway devuelve `200`/`401` según corresponda.
+
+**Día 6 (8/11):** E2E real de los seis flujos críticos por el gateway con Newman: **45/45 requests y 45/45 assertions**, con salida completa en [`docs/evidencia/dia-6-newman.txt`](docs/evidencia/dia-6-newman.txt). Suite de control: **135 tests, 0 fallos, 0 omitidos** ([`docs/evidencia/dia-6-suite.txt`](docs/evidencia/dia-6-suite.txt)). Checklist de la Entrega 1 completo en [`docs/checklist-entrega-1.md`](docs/checklist-entrega-1.md).
+
+**Día 7 (8/11):** release candidate verificado en clone limpio y tag `entrega-1-rc`; evidencia en [`docs/evidencia/dia-7-rc.txt`](docs/evidencia/dia-7-rc.txt). Queda para el Día 8 el tag final `entrega-1` y la entrega del enlace.
 
 El avance verificable está en [`tasks.md`](openspec/changes/entrega-1-core/tasks.md).
 

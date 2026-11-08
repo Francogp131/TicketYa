@@ -1,0 +1,317 @@
+# Verificación del release candidate — Día 7 (8/11/2026)
+
+Verificación del candidato en un **clone limpio** desde GitHub, con bases nuevas y sin
+reutilizar el working tree local.
+
+- Repositorio: `git@github.com:Francogp131/TicketYa.git`
+- Rama: `docs/p5-dia-6-7` (PR #19)
+- Commit verificado: `fde94a1cbd83fa91b53aa93cfb9f03e261a0835e`
+- Los commits posteriores de la rama solo agregan evidencia y documentación; no cambian
+  código de servicios, tests ni contrato.
+- Tag: `entrega-1-rc` sobre el merge de este PR en `main` (mismo árbol que el commit verificado
+  más la evidencia agregada después).
+- Entorno: macOS 27.2 arm64, Eclipse Temurin 21.0.12.1, Maven 3.9.16, Docker 29.7.2,
+  Node 26.13.0 y Newman 6.2.3.
+
+## 1. Clone limpio
+
+```bash
+git clone --depth 1 --branch docs/p5-dia-6-7 \
+  git@github.com:Francogp131/TicketYa.git ticketya-rc-dia7
+cd ticketya-rc-dia7
+git rev-parse HEAD
+# fde94a1cbd83fa91b53aa93cfb9f03e261a0835e
+git status --short
+# (sin cambios)
+```
+
+## 2. Bases nuevas
+
+Se eliminaron los volúmenes de prueba y se levantó el compose desde el clone:
+
+```bash
+docker compose -f docker-compose.dev.yml down -v
+docker compose -f docker-compose.dev.yml up -d
+docker compose -f docker-compose.dev.yml ps
+```
+
+Resultado: `ticketya-catalog-db`, `ticketya-inventory-db` y `ticketya-orders-db`
+`healthy` en los puertos 5433, 5434 y 5435.
+
+## 3. Suite completa en el clone
+
+```bash
+export JAVA_HOME=/Users/Franco/Library/Java/JavaVirtualMachines/temurin-21.0.12.1/Contents/Home
+cd catalog-service    && mvn clean test
+cd ../inventory-service && mvn clean test
+cd ../orders-service  && mvn clean test
+cd ../api-gateway     && mvn clean test
+```
+
+| Proyecto | Tests | Fallos | Errores | Omitidos | Resultado |
+|---|---|---|---|---|---|
+| catalog-service | 54 | 0 | 0 | 0 | BUILD SUCCESS |
+| inventory-service | 30 | 0 | 0 | 0 | BUILD SUCCESS |
+| orders-service | 46 | 0 | 0 | 0 | BUILD SUCCESS |
+| api-gateway | 5 | 0 | 0 | 0 | BUILD SUCCESS |
+| **Total** | **135** | **0** | **0** | **0** | |
+
+Incluye los tests de Testcontainers de catálogo, inventory y orders: no quedó ningún test
+omitido. Después de correr la suite, `git status` siguió limpio.
+
+## 4. Servicios y smoke por gateway
+
+Los cuatro servicios se levantaron desde el clone con Java 21:
+
+```bash
+(cd catalog-service  && mvn spring-boot:run)
+(cd inventory-service && mvn spring-boot:run)
+(cd orders-service   && mvn spring-boot:run)
+(cd api-gateway      && mvn spring-boot:run)
+```
+
+```bash
+curl http://localhost:8081/actuator/health   # 200
+curl http://localhost:8082/actuator/health   # 200
+curl http://localhost:8083/actuator/health   # 200
+curl http://localhost:8080/actuator/health   # 200
+
+curl http://localhost:8080/api/catalog/events              # 200
+curl http://localhost:8080/api/orders                      # 401 sin identidad
+```
+
+## 5. E2E de los seis flujos en el clone
+
+```bash
+npx -y newman run postman/TicketYa.postman_collection.json \
+  -e postman/TicketYa.local.postman_environment.json --reporters cli
+```
+
+Resultado: **45 requests, 45 assertions, 0 fallos**. Salida completa:
+
+```
+newman
+
+TicketYa — Entrega 1 (flujos E2E)
+
+❏ Catálogo
+↳ Listar lugares (público)
+  GET http://localhost:8080/api/catalog/venues [200 OK, 592B, 90ms]
+  ✓  200 y página de lugares
+
+↳ Crear lugar (ADMIN)
+  POST http://localhost:8080/api/catalog/venues [201 Created, 420B, 46ms]
+  ✓  201 y guarda venueId
+
+↳ Crear sector numerado (ADMIN)
+  POST http://localhost:8080/api/catalog/venues/fdafe75f-bbbb-406b-87b4-81161794ad65/sectors [201 Created, 496B, 27ms]
+  ✓  201, 10 asientos generados y guarda sector
+
+↳ Crear sector no numerado (ADMIN)
+  POST http://localhost:8080/api/catalog/venues/fdafe75f-bbbb-406b-87b4-81161794ad65/sectors [201 Created, 503B, 8ms]
+  ✓  201 y guarda sector de zona
+
+↳ Crear evento (ORGANIZER)
+  POST http://localhost:8080/api/catalog/events [201 Created, 694B, 23ms]
+  ✓  201 en BORRADOR y guarda eventoId
+
+↳ Asignar precio sector numerado
+  PUT http://localhost:8080/api/catalog/events/347c075d-7e19-49c7-a523-4de597558507/prices/8d747d9b-5ac1-4ecb-99c2-a84485a4c777 [200 OK, 291B, 15ms]
+  ✓  200 con precio 15000
+
+↳ Asignar precio sector zona
+  PUT http://localhost:8080/api/catalog/events/347c075d-7e19-49c7-a523-4de597558507/prices/10ab5d25-6c77-4a1a-a8b2-6c9cb8ccb6ac [200 OK, 290B, 11ms]
+  ✓  200 con precio 9000
+
+↳ Publicar evento
+  POST http://localhost:8080/api/catalog/events/347c075d-7e19-49c7-a523-4de597558507/publish [200 OK, 860B, 141ms]
+  ✓  200 PUBLICADO y snapshot en inventory
+
+↳ Detalle del evento publicado
+  GET http://localhost:8080/api/catalog/events/347c075d-7e19-49c7-a523-4de597558507 [200 OK, 915B, 35ms]
+  ✓  200 con dos sectores y disponibilidad
+
+↳ Detalle de evento del seed
+  GET http://localhost:8080/api/catalog/events/d0000000-0000-4000-8000-000000000002 [200 OK, 923B, 20ms]
+  ✓  200 para el evento sembrado
+
+↳ Buscar eventos por ciudad y orden
+  GET http://localhost:8080/api/catalog/events?ciudad=Tandil&orden=PRECIO_ASC&page=0&size=5 [200 OK, 1.24kB, 23ms]
+  ✓  200 con página y precioDesde
+
+↳ Búsqueda con orden inválido devuelve 400
+  GET http://localhost:8080/api/catalog/events?orden=NO_EXISTE [400 Bad Request, 389B, 6ms]
+  ✓  400 INVALID_SORT
+
+❏ Inventario
+↳ Disponibilidad del evento
+  GET http://localhost:8080/api/inventory/events/347c075d-7e19-49c7-a523-4de597558507/availability [200 OK, 550B, 10ms]
+  ✓  200 con los dos sectores
+
+↳ Mapa de asientos numerados
+  GET http://localhost:8080/api/inventory/events/347c075d-7e19-49c7-a523-4de597558507/seats?sectorId=8d747d9b-5ac1-4ecb-99c2-a84485a4c777 [200 OK, 1.07kB, 14ms]
+  ✓  200 con 10 asientos LIBRE y guarda dos
+
+↳ Reservar 2 asientos numerados
+  POST http://localhost:8080/api/inventory/reservations [201 Created, 901B, 52ms]
+  ✓  201 VIGENTE, total 30000 y guarda reservaId
+
+↳ Reservar los mismos asientos devuelve 409
+  POST http://localhost:8080/api/inventory/reservations [409 Conflict, 440B, 18ms]
+  ✓  409 SEAT_NOT_AVAILABLE
+
+↳ Reservar 2 lugares de zona
+  POST http://localhost:8080/api/inventory/reservations [201 Created, 704B, 16ms]
+  ✓  201, total 18000 y guarda zonaReservaId
+
+↳ Consultar reserva
+  GET http://localhost:8080/api/inventory/reservations/c46b8bd3-91bb-4434-966d-89154f6f33ef [200 OK, 820B, 16ms]
+  ✓  200 con la reserva creada
+
+↳ Disponibilidad del evento del seed
+  GET http://localhost:8080/api/inventory/events/d0000000-0000-4000-8000-000000000002/availability [200 OK, 538B, 9ms]
+  ✓  200 y sector Platea disponible
+
+❏ Órdenes
+↳ Crear orden aprobada (paga y emite QR)
+  POST http://localhost:8080/api/orders [201 Created, 1.4kB, 158ms]
+  ✓  201 PAGADA, total 30000, 2 entradas y QR único
+
+↳ Consultar orden
+  GET http://localhost:8080/api/orders/c93b4223-efc4-4b91-8eb5-5dfa9891176a [200 OK, 1.33kB, 38ms]
+  ✓  200 con la orden creada
+
+↳ Listar mis órdenes
+  GET http://localhost:8080/api/orders?page=0&size=5 [200 OK, 1.4kB, 13ms]
+  ✓  200 con la página del cliente
+
+↳ Listar mis entradas
+  GET http://localhost:8080/api/orders/tickets?eventoId=347c075d-7e19-49c7-a523-4de597558507&page=0&size=5 [200 OK, 1.01kB, 8ms]
+  ✓  200 con las entradas del evento
+
+↳ Detalle de entrada propia
+  GET http://localhost:8080/api/orders/tickets/f23680c6-a12a-4f3f-a4ed-e0a1c7c57cbb [200 OK, 556B, 7ms]
+  ✓  200 con la entrada pedida
+
+↳ Entrada ajena devuelve 403
+  GET http://localhost:8080/api/orders/tickets/f23680c6-a12a-4f3f-a4ed-e0a1c7c57cbb [403 Forbidden, 432B, 9ms]
+  ✓  403 NOT_TICKET_OWNER
+
+↳ Órdenes con size inválido devuelve 400
+  GET http://localhost:8080/api/orders?size=101 [400 Bad Request, 385B, 3ms]
+  ✓  400 VALIDATION_ERROR
+
+↳ Reintento idempotente devuelve la misma orden
+  POST http://localhost:8080/api/orders [201 Created, 1.4kB, 17ms]
+  ✓  201 con la misma orden y las mismas entradas
+
+↳ Misma clave con otro cuerpo devuelve 422
+  POST http://localhost:8080/api/orders [422 Unprocessable Entity, 438B, 8ms]
+  ✓  422 IDEMPOTENCY_KEY_REUSED
+
+↳ Pago rechazado deja la orden RECHAZADA y libera
+  POST http://localhost:8080/api/orders [201 Created, 777B, 40ms]
+  ✓  201 RECHAZADA sin entradas
+
+↳ Disponibilidad de zona tras rechazo
+  GET http://localhost:8080/api/inventory/events/347c075d-7e19-49c7-a523-4de597558507/availability [200 OK, 549B, 14ms]
+  ✓  la zona vuelve a 50 lugares
+
+↳ Reservar 1 lugar de zona para pago lento
+  POST http://localhost:8080/api/inventory/reservations [201 Created, 701B, 16ms]
+  ✓  201 VIGENTE y guarda zonaLentaId
+
+↳ Pago lento devuelve 502 y libera
+  POST http://localhost:8080/api/orders [502 Bad Gateway, 418B, 41ms]
+  ✓  502 PAYMENT_GATEWAY_ERROR
+
+↳ Disponibilidad de zona tras pago lento
+  GET http://localhost:8080/api/inventory/events/347c075d-7e19-49c7-a523-4de597558507/availability [200 OK, 549B, 8ms]
+  ✓  la zona vuelve a 50 lugares
+
+❏ Devoluciones
+↳ Solicitar devolución de la primera entrada
+  POST http://localhost:8080/api/orders/tickets/f23680c6-a12a-4f3f-a4ed-e0a1c7c57cbb/returns [201 Created, 387B, 14ms]
+  ✓  201 PENDIENTE y guarda devolucionId
+
+↳ Aprobar la devolución (ADMIN)
+  POST http://localhost:8080/api/orders/returns/510fb9b6-3677-4aaf-a096-bb208ff19c67/approve [200 OK, 405B, 21ms]
+  ✓  200 APROBADA
+
+↳ La entrada aprobada queda DEVUELTA
+  GET http://localhost:8080/api/orders/c93b4223-efc4-4b91-8eb5-5dfa9891176a [200 OK, 1.33kB, 7ms]
+  ✓  la entrada aprobada quedó DEVUELTA
+
+↳ Solicitar devolución de la segunda entrada
+  POST http://localhost:8080/api/orders/tickets/6be4c621-de3c-47b4-8fc2-bccbb227ec37/returns [201 Created, 387B, 7ms]
+  ✓  201 PENDIENTE para la segunda entrada
+
+↳ Rechazar la devolución (ADMIN)
+  POST http://localhost:8080/api/orders/returns/3fba296a-57ce-46c5-acba-2f003b8bc86b/reject [200 OK, 407B, 5ms]
+  ✓  200 RECHAZADA
+
+↳ La entrada rechazada sigue VALIDA
+  GET http://localhost:8080/api/orders/c93b4223-efc4-4b91-8eb5-5dfa9891176a [200 OK, 1.33kB, 7ms]
+  ✓  la entrada rechazada sigue VALIDA
+
+❏ Errores
+↳ Crear orden sin identidad devuelve 401
+  POST http://localhost:8080/api/orders [401 Unauthorized, 296B, 6ms]
+  ✓  401 UNAUTHORIZED en RFC 7807
+
+↳ Evento inexistente devuelve 404
+  GET http://localhost:8080/api/catalog/events/00000000-0000-4000-8000-000000000000 [404 Not Found, 451B, 10ms]
+  ✓  404 EVENT_NOT_FOUND
+
+❏ Cancelación
+↳ Cancelar evento (ADMIN)
+  POST http://localhost:8080/api/catalog/events/347c075d-7e19-49c7-a523-4de597558507/cancel [200 OK, 273B, 50ms]
+  ✓  200 CANCELADO y aviso a orders
+
+↳ Cancelación interna idempotente en orders
+  POST http://localhost:8083/internal/events/347c075d-7e19-49c7-a523-4de597558507/cancel [200 OK, 263B, 9ms]
+  ✓  200 con las entradas ya en reintegro
+
+↳ Repetir cancelación interna no duplica
+  POST http://localhost:8083/internal/events/347c075d-7e19-49c7-a523-4de597558507/cancel [200 OK, 263B, 14ms]
+  ✓  200 con la misma cantidad
+
+↳ Detalle de evento cancelado devuelve 404
+  GET http://localhost:8080/api/catalog/events/347c075d-7e19-49c7-a523-4de597558507 [404 Not Found, 466B, 8ms]
+  ✓  404 EVENT_NOT_FOUND
+
+┌─────────────────────────┬───────────────────┬──────────────────┐
+│                         │          executed │           failed │
+├─────────────────────────┼───────────────────┼──────────────────┤
+│              iterations │                 1 │                0 │
+├─────────────────────────┼───────────────────┼──────────────────┤
+│                requests │                45 │                0 │
+├─────────────────────────┼───────────────────┼──────────────────┤
+│            test-scripts │                45 │                0 │
+├─────────────────────────┼───────────────────┼──────────────────┤
+│      prerequest-scripts │                 1 │                0 │
+├─────────────────────────┼───────────────────┼──────────────────┤
+│              assertions │                45 │                0 │
+├─────────────────────────┴───────────────────┴──────────────────┤
+│ total run duration: 1605ms                                     │
+├────────────────────────────────────────────────────────────────┤
+│ total data received: 21.62kB (approx)                          │
+├────────────────────────────────────────────────────────────────┤
+│ average response time: 24ms [min: 3ms, max: 158ms, s.d.: 31ms] │
+└────────────────────────────────────────────────────────────────┘
+```
+
+## 6. Control de documentación
+
+- 100 enlaces relativos revisados en `README.md`, `CONTRIBUTING.md`, `docs/` y `openspec/`: **0 rotos**.
+- OpenAPI versionado: **26 paths y 30 operaciones** (24 públicas + 6 internas). Los 24 endpoints públicos de los flujos de la Entrega 1 están cubiertos.
+- Discrepancia detectada y reportada a P2: `DELETE /api/inventory/reservations/{reservaId}` figura en el contrato 4.5 pero no está implementado ni en el OpenAPI. No afecta los seis flujos ni las US-12 a US-15 (detalle en `docs/pruebas.md` §7.1).
+- `openspec validate entrega-1-core`: **Change 'entrega-1-core' is valid**.
+- `docs/checklist-entrega-1.md`: todos los ítems verificables con evidencia; solo queda abierto el tag final `entrega-1` del Día 8.
+
+## 7. Resultado
+
+El candidato compila, pasa la suite completa y los seis flujos E2E en un clone limpio con
+bases nuevas. El ensayo de demo se hizo con esa misma corrida E2E (publicar, buscar, reservar,
+comprar, devolver y cancelar) y no hubo errores. Está listo para el tag `entrega-1-rc` y para
+el cierre del Día 8.

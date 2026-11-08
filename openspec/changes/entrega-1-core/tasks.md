@@ -2,7 +2,7 @@
 
 ## 1. Fundaciones, contrato y gateway
 
-- [x] 1.1 Configurar el repositorio privado `Francogp131/TicketYa`, `main` protegida, `.gitignore`, plantilla de PR y convención de ramas `feat/*`; verificar con un clone limpio y un PR de prueba. _(5 colaboradores con Write; branch protection con 1 aprobación y los 5 checks del CI; clone limpio verificado en `docs/evidencia/dia-5-clone-limpio.txt`)_
+- [x] 1.1 Configurar el repositorio `Francogp131/TicketYa` (público para lectura, escritura por colaboradores), `main` protegida, `.gitignore`, plantilla de PR y convención de ramas `feat/*`; verificar con un clone limpio y un PR de prueba. _(5 colaboradores con Write; branch protection con 1 aprobación y los 5 checks del CI; clone limpio verificado en `docs/evidencia/dia-5-clone-limpio.txt`)_
 - [x] 1.2 Crear los cuatro proyectos Spring Boot independientes (`catalog-service`, `inventory-service`, `orders-service`, `api-gateway`) con Java 21, Maven y Actuator; verificar `mvn -q -DskipTests package` y `/actuator/health` en cada uno.
 - [x] 1.3 Congelar el contrato REST v1 en `docs/api-contract.md` (método, ruta, parámetros, códigos y ejemplos JSON); verificar que cada US-01 a US-24 tenga endpoint y códigos definidos.
 - [x] 1.4 Implementar el manejo global de errores RFC 7807 (`application/problem+json`) y las validaciones comunes; verificar con tests que 400/401/403/404/409 devuelvan el formato acordado. _(handlers en los tres servicios y filtro del gateway; tests de 400/401/403/404/409 en catalog/inventory/orders/gateway)_
@@ -57,14 +57,14 @@
 - [x] 5.8 Revisar el OpenAPI agregado de los tres servicios (descripciones, ejemplos y códigos de error); verificar que Swagger UI de cada servicio muestre todos los endpoints del contrato. _(tres archivos en `openapi/`; catalog reforzado con ProblemDetail y orders regenerado en 4.11)_
 - [x] 5.9 Crear `docs/README.md` como índice de documentación y `docs/decisiones.md` con las ADR cortas (decisión, alternativas y consecuencias); verificar que todos los enlaces resuelvan y que el índice refleje el estado real. _(índice actualizado y ADR-001 a ADR-011 en `docs/decisiones.md`; enlaces verificados)_
 - [x] 5.10 Documentar cada servicio en su `README.md` (responsabilidad, endpoints, modelo, variables y comandos de test); verificar que otra persona pueda levantarlo siguiendo solo ese README. _(catalog, inventory, orders y gateway con endpoints, modelo, variables y comandos)_
-- [x] 5.11 Crear `docs/pruebas.md` con la estrategia, los comandos y la evidencia de la prueba de concurrencia y del E2E; verificar que los comandos documentados se ejecuten tal cual. _(suite 135 tests y Newman 45/45 del Día 4; evidencia en `docs/evidencia/`)_
+- [x] 5.11 Crear `docs/pruebas.md` con la estrategia, los comandos y la evidencia de la prueba de concurrencia y del E2E; verificar que los comandos documentados se ejecuten tal cual. _(suite 135 tests del Día 6/7 y Newman 45/45 del Día 6; evidencia en `docs/evidencia/dia-6-suite.txt` y `docs/evidencia/dia-6-newman.txt`)_
 
 ## 6. Verificación y entrega
 
-- [x] 6.1 Ejecutar la suite completa (`mvn test`) de los cuatro proyectos y el CI sobre `main`; verificar todo verde y sin tests omitidos. _(catalog 54, inventory 30, orders 46, gateway 5: 135 tests, 0 fallos, 0 omitidos con Java 21 y Docker; CI verde en `e9ae4cb`; evidencia en `docs/evidencia/dia-5-suite.txt`)_
-- [x] 6.2 Ejecutar el E2E por el gateway de los seis flujos críticos (publicar, buscar, reservar, comprar, devolver y cancelar); verificar con Postman/Newman y dejar la salida como evidencia. _(corrida vigente 45/45 requests y 45/45 assertions sobre la colección sin cambios desde el Día 4; cobertura de los seis flujos auditada el Día 6 en `docs/evidencia/dia-6-e2e-catalogo.txt`)_
-- [x] 6.3 Completar `docs/checklist-entrega-1.md` al 100 %; verificar que no quede ningún ítem sin evidencia. _(todos los ítems con evidencia enlazada; el tag `entrega-1` se cierra en 6.4)_
-- [ ] 6.4 Probar un clone limpio, crear el tag `entrega-1`, verificar el acceso al repositorio y entregar el enlace; verificar que el tag apunte al commit entregado. _(RC de catálogo verificado en clone limpio del PR #18: suite y build de los cuatro servicios en `docs/evidencia/dia-7-rc-catalog.txt`; falta revisión/merge y tag)_
+- [x] 6.1 Ejecutar la suite completa (`mvn test`) de los cuatro proyectos y el CI sobre `main`; verificar todo verde y sin tests omitidos. _(catalog 54, inventory 30, orders 46, gateway 5: 135 tests, 0 fallos, 0 omitidos con Java 21 y Docker; CI verde en el merge del PR #18 `08ba5c5`; evidencia en `docs/evidencia/dia-6-suite.txt`)_
+- [x] 6.2 Ejecutar el E2E por el gateway de los seis flujos críticos (publicar, buscar, reservar, comprar, devolver y cancelar); verificar con Postman/Newman y dejar la salida como evidencia. _(corrida real del Día 6: 45/45 requests y 45/45 assertions por gateway sobre `08ba5c5`; salida completa en `docs/evidencia/dia-6-newman.txt`)_
+- [x] 6.3 Completar `docs/checklist-entrega-1.md` al 100 %; verificar que no quede ningún ítem sin evidencia. _(todos los ítems verificables con evidencia enlazada; solo queda abierto el tag final `entrega-1` de 6.4)_
+- [ ] 6.4 Probar un clone limpio, crear el tag `entrega-1`, verificar el acceso al repositorio y entregar el enlace; verificar que el tag apunte al commit entregado. _(Día 7: tag `entrega-1-rc` y clone limpio verificados en `docs/evidencia/dia-7-rc.txt`; falta el tag final `entrega-1` y la entrega del Día 8)_
 
 ## Workflow follow-up
 

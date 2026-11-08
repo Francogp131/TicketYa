@@ -1,6 +1,6 @@
 # Pruebas — TicketYa Entrega 1
 
-Este documento reúne la estrategia, los comandos y la evidencia de las pruebas de los Días 2 a 5.
+Este documento reúne la estrategia, los comandos y la evidencia de las pruebas de los Días 2 a 7.
 Los comandos se ejecutan desde `ticketya/` salvo que se indique otro directorio.
 
 ## 1. Estrategia
@@ -51,6 +51,10 @@ Suite completa del Día 5 (7/11/2026, `mvn clean test` con Java 21 y Docker ence
 | **Total** | **135** | **0 fallos, 0 errores, 0 omitidos** |
 
 Evidencia: [`docs/evidencia/dia-5-suite.txt`](evidencia/dia-5-suite.txt). Incluye los tests de Testcontainers de catalog (búsqueda), inventory (concurrencia, vencimiento, límite y confirmación) y orders (idempotencia), por lo que ningún test quedó omitido.
+
+Suite de control del Día 6/7 (8/11/2026, `mvn clean test` sobre `08ba5c5`, Java 21 y Docker):
+**135 tests, 0 fallos, 0 errores, 0 omitidos**. Evidencia:
+[`evidencia/dia-6-suite.txt`](evidencia/dia-6-suite.txt).
 
 Sin Docker, la suite de catalog también queda verde: 54 tests, 0 fallos y solo los 3 de
 `EventoBusquedaIntegrationTest` omitidos (evidencia:
@@ -124,12 +128,14 @@ La colección Postman se ejecuta completa con Newman:
 npx -y newman run postman/TicketYa.postman_collection.json --reporters cli
 ```
 
-Resultado de la última corrida (6/11/2026): **45 requests, 45 assertions, 0 fallos**.
-Incluye catálogo, búsqueda, publicación, reserva numerada y de zona, compra aprobada con QR,
-reintento idempotente, reuso de clave, pago rechazado, pago lento, consultas propias,
-devolución aprobada, devolución rechazada y cancelación.
+Resultado de la corrida del Día 6 (8/11/2026, `08ba5c5`): **45 requests, 45 assertions,
+0 fallos**. Incluye catálogo, búsqueda, publicación, reserva numerada y de zona, compra
+aprobada con QR, reintento idempotente, reuso de clave, pago rechazado, pago lento, consultas
+propias, devolución aprobada, devolución rechazada y cancelación. Los seis flujos críticos
+pasaron por el gateway.
 
-Evidencia: [`docs/evidencia/dia-4-newman.txt`](evidencia/dia-4-newman.txt).
+Evidencia: [`docs/evidencia/dia-6-newman.txt`](evidencia/dia-6-newman.txt). La corrida
+anterior del Día 4 queda en [`docs/evidencia/dia-4-newman.txt`](evidencia/dia-4-newman.txt).
 
 Los seis flujos críticos quedan cubiertos así:
 
@@ -142,8 +148,8 @@ Los seis flujos críticos quedan cubiertos así:
 | Devolver | Devoluciones | Solicitud, aprobación, verificación `DEVUELTA`, rechazo y verificación `VALIDA` |
 | Cancelar | Cancelación | Cancelación `ADMIN`, cancelación interna idempotente y detalle `404` |
 
-La colección no cambió desde la corrida 45/45 del Día 4. La auditoría del Día 6, con el hash
-de la colección y el detalle de cobertura, está en
+La corrida del Día 6 usó la colección vigente sin cambios y pasó completa. La auditoría de
+cobertura de catálogo, con el hash de la colección, está en
 [`docs/evidencia/dia-6-e2e-catalogo.txt`](evidencia/dia-6-e2e-catalogo.txt).
 
 Levantar bases y servicios:
@@ -243,6 +249,15 @@ y verifica el estado final de cada entrada en el detalle de la orden.
   `403 NOT_TICKET_OWNER`.
 - `size=101` responde `400 VALIDATION_ERROR`.
 
+### 6.8 Clone limpio del RC (Día 7)
+
+Se clonó la rama `docs/p5-dia-6-7` en `fde94a1` desde GitHub, se eliminaron los volúmenes de
+prueba y se levantó el compose desde cero. En ese clone corrieron la suite completa
+(**135 tests, 0 fallos, 0 omitidos**) y la colección completa (**45/45 requests y
+45/45 assertions**), con los cuatro health en `200` y el gateway devolviendo `200`/`401`
+según corresponda. Evidencia:
+[`docs/evidencia/dia-7-rc.txt`](evidencia/dia-7-rc.txt).
+
 ## 7. Hallazgos del E2E
 
 La primera corrida completa (6/11/2026) encontró que **todos** los
@@ -253,6 +268,28 @@ PostgreSQL real (`EventoBusquedaIntegrationTest`). La colección volvió a corre
 45/45 requests y 45/45 assertions.
 
 Evidencia de la suite: [`docs/evidencia/dia-4-suite.txt`](evidencia/dia-4-suite.txt).
+
+### 7.1 Discrepancia de contrato detectada en el control del Día 7
+
+`docs/api-contract.md` (sección 4.5) documenta `DELETE /api/inventory/reservations/{reservaId}`,
+pero inventory no tiene ese endpoint y no aparece en `openapi/inventory-openapi.json`. No lo
+usan los seis flujos E2E ni las US-12 a US-15, por lo que **no bloquea el RC**. Queda reportado
+a P2 para que decida, antes de la entrega final, si implementa la cancelación de reserva o
+retira la fila del contrato.
+
+Control ejecutado en el clone del RC:
+
+```bash
+curl -s -o /dev/null -w '%{http_code}\n' -X DELETE \
+  http://localhost:8080/api/inventory/reservations/00000000-0000-4000-8000-000000000000 \
+  -H 'X-User-Id: 33333333-3333-4333-8333-333333333333' -H 'X-User-Role: CLIENT'
+# 405 METHOD_NOT_ALLOWED
+
+curl -s -o /dev/null -w '%{http_code}\n' \
+  http://localhost:8080/api/inventory/reservations/00000000-0000-4000-8000-000000000000 \
+  -H 'X-User-Id: 33333333-3333-4333-8333-333333333333' -H 'X-User-Role: CLIENT'
+# 404 RESERVATION_NOT_FOUND (control: el GET sí existe)
+```
 
 ## 8. OpenAPI
 

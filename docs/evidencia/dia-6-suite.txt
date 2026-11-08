@@ -1,0 +1,47 @@
+TicketYa — suite completa Día 6/7 (2026-11-08 09:38:58)
+Java: openjdk version "21.0.12.1" 2026-08-18 LTS
+Docker: 29.7.2
+Commit: 08ba5c50d8ab5bac4eebe716c68b0b1555fe01cb
+
+===== catalog-service =====
+[INFO] Tests run: 6, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.337 s -- in ar.edu.unicen.ticketya.catalog.web.VenueControllerTest
+[INFO] Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.278 s -- in ar.edu.unicen.ticketya.catalog.web.InternalEventControllerTest
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.529 s -- in ar.edu.unicen.ticketya.catalog.web.OpenApiExportTest
+[INFO] Tests run: 8, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.115 s -- in ar.edu.unicen.ticketya.catalog.web.EventControllerTest
+[INFO] Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.121 s -- in ar.edu.unicen.ticketya.catalog.servicio.VenueServiceTest
+[INFO] Tests run: 22, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.143 s -- in ar.edu.unicen.ticketya.catalog.servicio.EventServiceTest
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.003 s -- in ar.edu.unicen.ticketya.catalog.servicio.EventoSchedulerTest
+[INFO] Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 3.199 s -- in ar.edu.unicen.ticketya.catalog.servicio.EventoBusquedaIntegrationTest
+[INFO] Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.575 s -- in ar.edu.unicen.ticketya.catalog.servicio.OrdersRestClientTest
+[INFO] Tests run: 4, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.704 s -- in ar.edu.unicen.ticketya.catalog.servicio.InventoryRestClientTest
+[INFO] Tests run: 54, Failures: 0, Errors: 0, Skipped: 0
+[INFO] BUILD SUCCESS
+===== inventory-service =====
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 4.642 s -- in ar.edu.unicen.ticketya.inventory.web.OpenApiDocumentoTest
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.499 s -- in ar.edu.unicen.ticketya.inventory.web.InventoryControllerTest
+[INFO] Tests run: 5, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 2.003 s -- in ar.edu.unicen.ticketya.inventory.servicio.VencimientoPostgresTest
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.877 s -- in ar.edu.unicen.ticketya.inventory.servicio.ConcurrenciaPostgresTest
+[INFO] Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.243 s -- in ar.edu.unicen.ticketya.inventory.servicio.InventarioServiceTest
+[INFO] Tests run: 5, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.623 s -- in ar.edu.unicen.ticketya.inventory.servicio.ConfirmacionPostgresTest
+[INFO] Tests run: 4, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.560 s -- in ar.edu.unicen.ticketya.inventory.servicio.LimitePorClientePostgresTest
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.014 s -- in ar.edu.unicen.ticketya.inventory.servicio.LimitePorClienteTest
+[INFO] Tests run: 6, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.153 s -- in ar.edu.unicen.ticketya.inventory.servicio.ReservaServiceTest
+[INFO] Tests run: 30, Failures: 0, Errors: 0, Skipped: 0
+[INFO] BUILD SUCCESS
+===== orders-service =====
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.717 s -- in ar.edu.unicen.ticketya.orders.web.OpenApiExportTest
+[INFO] Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.182 s -- in ar.edu.unicen.ticketya.orders.web.TicketControllerTest
+[INFO] Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.144 s -- in ar.edu.unicen.ticketya.orders.web.OrderControllerTest
+[INFO] Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.113 s -- in ar.edu.unicen.ticketya.orders.web.ReturnControllerTest
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 3.206 s -- in ar.edu.unicen.ticketya.orders.servicio.OrderIdempotencyIntegrationTest
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.121 s -- in ar.edu.unicen.ticketya.orders.servicio.TicketServiceTest
+[INFO] Tests run: 15, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.180 s -- in ar.edu.unicen.ticketya.orders.servicio.OrderServiceTest
+[INFO] Tests run: 5, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.011 s -- in ar.edu.unicen.ticketya.orders.servicio.OrderQueryServiceTest
+[INFO] Tests run: 5, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.105 s -- in ar.edu.unicen.ticketya.orders.servicio.IdempotencyServiceTest
+[INFO] Tests run: 8, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.043 s -- in ar.edu.unicen.ticketya.orders.servicio.DevolucionServiceTest
+[INFO] Tests run: 46, Failures: 0, Errors: 0, Skipped: 0
+[INFO] BUILD SUCCESS
+===== api-gateway =====
+[INFO] Tests run: 5, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 2.127 s -- in ar.edu.unicen.ticketya.gateway.web.IdentityHeaderFilterTest
+[INFO] Tests run: 5, Failures: 0, Errors: 0, Skipped: 0
+[INFO] BUILD SUCCESS
