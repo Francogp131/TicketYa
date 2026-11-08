@@ -4,32 +4,34 @@ Lista verificable de **todo** lo que pide el enunciado para la Entrega 1. Cada f
 
 **Leyenda:** `[ ]` pendiente · `[x]` verificado con evidencia.
 
-## 0. Estado de verificación (Día 5 — 7/11/2026)
+## 0. Estado de verificación (Día 7 — 7/11/2026)
 
 | Área | Estado | Evidencia |
 |---|---|---|
 | CI de `main` | Verde después de #14 y #15 | GitHub Actions, HEAD `e9ae4cb` |
-| Suite completa (6.1) | catalog 54, inventory 30, orders 46, gateway 5; 135 tests, 0 fallos, 0 omitidos | [`pruebas.md`](pruebas.md), [`evidencia/dia-5-suite.txt`](evidencia/dia-5-suite.txt) |
-| E2E por gateway | 45/45 requests y 45/45 assertions (Día 4); se repite el Día 6 | [`evidencia/dia-4-newman.txt`](evidencia/dia-4-newman.txt) |
+| RC de catálogo (6.4) | Clone limpio del PR #18: suite catalog 54/0/3 y build de los cuatro servicios | [`evidencia/dia-7-rc-catalog.txt`](evidencia/dia-7-rc-catalog.txt) |
+| Suite completa (6.1) | catalog 54, inventory 30, orders 46, gateway 5; 135 tests, 0 fallos, 0 omitidos con Docker | [`pruebas.md`](pruebas.md), [`evidencia/dia-5-suite.txt`](evidencia/dia-5-suite.txt) |
+| Suite catalog sin Docker (6.1) | 54 tests, 0 fallos, 3 de integración omitidos | [`evidencia/dia-6-catalog-suite.txt`](evidencia/dia-6-catalog-suite.txt) |
+| E2E por gateway (6.2) | 45/45 requests y 45/45 assertions; colección vigente sin cambios desde el Día 4 | [`evidencia/dia-4-newman.txt`](evidencia/dia-4-newman.txt), [`evidencia/dia-6-e2e-catalogo.txt`](evidencia/dia-6-e2e-catalogo.txt) |
 | ER por servicio (5.5) | catalog, inventory y orders validados contra Flyway | [`modelo-datos.md`](modelo-datos.md) |
 | Índice y ADR (5.9) | Índice actualizado y 11 decisiones registradas | [`README.md`](README.md), [`decisiones.md`](decisiones.md) |
 | Arquitectura (5.7) | Límites, consistencia y compensaciones enlazados a `design.md` | [`arquitectura.md`](arquitectura.md) |
 | README raíz (5.6) | Clone limpio y build de los cuatro proyectos; CI valida el compose | `README.md`, run `e9ae4cb` |
 | OpenAPI agregado (5.8) | Los tres archivos exportados y revisados contra el contrato | `openapi/*.json` |
 | Postman | 45 requests con assertions; Newman verde (Día 4) | `postman/TicketYa.postman_collection.json` |
-| Pendiente | E2E final de los seis flujos, checklist al 100 %, tag y entrega (6.2-6.4) | Días 6-8 |
+| Pendiente | Revisión/merge del PR #18, tag `entrega-1-rc` y entrega final (6.4) | Días 7-8 |
 
 ## 1. Funcionalidad de la Entrega 1
 
 | # | Requisito del enunciado | User stories | Spec | Tareas | Evidencia |
 |---|---|---|---|---|---|
-| 1 | Eventos con ID, nombre, descripción, tipo, organizador, participantes, fecha/hora, lugar y estado | US-04, US-08 | `gestion-eventos-lugares` | 2.2, 2.3 | Tests de creación y transiciones + request en Postman |
-| 2 | Lugares con nombre, dirección, lat/long y sectores numerados o no numerados; precio por sector | US-01, US-02, US-05 | `gestion-eventos-lugares` | 2.1, 2.2 | Tests de sectores/asientos y precios |
-| 3 | Borrador → configuración → publicación; admin puede suspender/cancelar | US-06, US-07 | `gestion-eventos-lugares` | 2.2, 2.3, 2.4 | Test de publicación + llamada a inventory y cancelación |
+| 1 | Eventos con ID, nombre, descripción, tipo, organizador, participantes, fecha/hora, lugar y estado | US-04, US-08 | `gestion-eventos-lugares` | 2.2, 2.3 | `EventServiceTest` (22) + `Crear evento`, `Publicar evento` y `Detalle del evento publicado` en Postman |
+| 2 | Lugares con nombre, dirección, lat/long y sectores numerados o no numerados; precio por sector | US-01, US-02, US-05 | `gestion-eventos-lugares` | 2.1, 2.2 | `VenueServiceTest` (3), `VenueControllerTest` (6) + `Crear lugar`, `Crear sector numerado/no numerado` y precios en Postman |
+| 3 | Borrador → configuración → publicación; admin puede suspender/cancelar | US-06, US-07 | `gestion-eventos-lugares` | 2.2, 2.3, 2.4 | `EventServiceTest`, `InventoryRestClientTest` (4), `OrdersRestClientTest` (3) + `Publicar evento` y `Cancelar evento (ADMIN)` en Postman |
 | 4 | Reserva temporal (10 min), pago, QR único, detalle de compra y medio de pago, límite por cliente | US-12 a US-19 | `reserva-y-compra` | 3.2 a 3.6, 4.2 a 4.5 | E2E de compra aprobada + tests de límite y vencimiento |
 | 5 | Una entrada nunca se vende dos veces; reintento de pago idempotente | US-20, US-21 | `reserva-y-compra` | 3.7, 4.6 | Test de 100 hilos + test de `Idempotency-Key` |
 | 7 | Devolución hasta 72 h antes, aprobación/rechazo del admin, liberación y reintegro; cancelación reintegra todo (la notificación a compradores es Entrega 2) | US-22, US-23, US-24 | `devoluciones-cancelacion` | 4.8, 4.9 | Tests de devolución y cancelación + Postman |
-| 9 | Búsqueda por tipo, organizador, participante, ciudad y rango de fechas; orden por fecha, precio o relevancia | US-09, US-10, US-11 | `busqueda-eventos` | 2.5 | Tests de filtros, orden y paginación |
+| 9 | Búsqueda por tipo, organizador, participante, ciudad y rango de fechas; orden por fecha, precio o relevancia | US-09, US-10, US-11 | `busqueda-eventos` | 2.5 | `EventServiceTest`, `EventoBusquedaIntegrationTest` (3, CI) + `Buscar eventos por ciudad y orden` y error 400 en Postman |
 
 > Los ítems 6, 8, 10, 11 y 12 del enunciado son de Entrega 2 y están fuera de alcance (ver sección 5).
 
@@ -105,11 +107,11 @@ No se exige en esta entrega; no debe consumir tiempo del cronograma:
 
 ## 6. Puerta de salida (no se entrega si falla)
 
-- [ ] El repositorio es accesible y el tag `entrega-1` apunta al commit entregado.
+- [ ] El repositorio es accesible y el tag `entrega-1` apunta al commit entregado. _(RC de catálogo verificado en clone limpio; falta mergear #18 y crear el tag)_
 - [x] `main` tiene el CI verde y la suite `mvn test` pasa en los cuatro proyectos (135 tests, 0 omitidos).
 - [x] Un clone limpio sigue el README y levanta el sistema (3 bases healthy, 4 health 200, gateway 200/401).
 - [x] La prueba de no doble venta pasa de forma reproducible (`ConcurrenciaPostgresTest`: 100 hilos, 1 ganador).
-- [ ] Los seis flujos E2E de Postman pasan por el gateway (última corrida 45/45 del Día 4; se repite el Día 6).
+- [x] Los seis flujos E2E de Postman pasan por el gateway: corrida 45/45 del Día 4 sobre la colección vigente, sin cambios desde entonces; cobertura auditada el Día 6 en [`evidencia/dia-6-e2e-catalogo.txt`](evidencia/dia-6-e2e-catalogo.txt).
 - [x] `docs/README.md` no tiene enlaces rotos y el contrato está sincronizado con el OpenAPI (26 operaciones en `openapi/*.json`).
-- [ ] Cada ítem de este checklist tiene evidencia enlazada en el PR o en `docs/`.
-- [ ] No quedan tareas P0 abiertas en `openspec/changes/entrega-1-core/tasks.md`.
+- [x] Cada ítem verificado de este checklist tiene evidencia enlazada en el PR o en `docs/`.
+- [x] No quedan tareas P0 abiertas en `openspec/changes/entrega-1-core/tasks.md`.

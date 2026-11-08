@@ -34,8 +34,9 @@ cd orders-service && mvn clean test
 cd api-gateway && mvn clean test
 ```
 
-Los tests con Testcontainers se omiten automáticamente si Docker no está disponible
-(`@Testcontainers(disabledWithoutDocker = true)`), salvo en CI, donde el runner lo tiene.
+Los tests de integración de catalog y orders se omiten automáticamente si Docker no está
+disponible (`@Testcontainers(disabledWithoutDocker = true)`). Los tests de PostgreSQL de
+inventory requieren Docker. En CI el runner tiene Docker y se ejecutan todos.
 
 ## 3. Evidencia de la suite
 
@@ -50,6 +51,10 @@ Suite completa del Día 5 (7/11/2026, `mvn clean test` con Java 21 y Docker ence
 | **Total** | **135** | **0 fallos, 0 errores, 0 omitidos** |
 
 Evidencia: [`docs/evidencia/dia-5-suite.txt`](evidencia/dia-5-suite.txt). Incluye los tests de Testcontainers de catalog (búsqueda), inventory (concurrencia, vencimiento, límite y confirmación) y orders (idempotencia), por lo que ningún test quedó omitido.
+
+Sin Docker, la suite de catalog también queda verde: 54 tests, 0 fallos y solo los 3 de
+`EventoBusquedaIntegrationTest` omitidos (evidencia:
+[`evidencia/dia-6-catalog-suite.txt`](evidencia/dia-6-catalog-suite.txt)).
 
 Desglose relevante:
 
@@ -125,6 +130,21 @@ reintento idempotente, reuso de clave, pago rechazado, pago lento, consultas pro
 devolución aprobada, devolución rechazada y cancelación.
 
 Evidencia: [`docs/evidencia/dia-4-newman.txt`](evidencia/dia-4-newman.txt).
+
+Los seis flujos críticos quedan cubiertos así:
+
+| Flujo | Carpeta | Requests principales |
+|---|---|---|
+| Publicar | Catálogo | `Crear evento`, precios por sector, `Publicar evento`, `Detalle del evento publicado` |
+| Buscar | Catálogo | `Buscar eventos por ciudad y orden`, `Búsqueda con orden inválido devuelve 400` |
+| Reservar | Inventario | Reserva numerada, doble reserva `409` y reserva de zona |
+| Comprar | Órdenes | Compra aprobada con QR, consultas propias, idempotencia, rechazo y pago lento |
+| Devolver | Devoluciones | Solicitud, aprobación, verificación `DEVUELTA`, rechazo y verificación `VALIDA` |
+| Cancelar | Cancelación | Cancelación `ADMIN`, cancelación interna idempotente y detalle `404` |
+
+La colección no cambió desde la corrida 45/45 del Día 4. La auditoría del Día 6, con el hash
+de la colección y el detalle de cobertura, está en
+[`docs/evidencia/dia-6-e2e-catalogo.txt`](evidencia/dia-6-e2e-catalogo.txt).
 
 Levantar bases y servicios:
 

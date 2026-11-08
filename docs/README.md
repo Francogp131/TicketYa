@@ -21,8 +21,8 @@
 | [`arquitectura.md`](arquitectura.md) | Diagrama de módulos, secuencia de compra (aprobado/rechazado/vencido), límites de servicio y consistencia | P4/P5 | Día 3 a 5 | Listo (5.3, 5.4, 5.7) |
 | [`modelo-datos.md`](modelo-datos.md) | ER por microservicio, claves, relaciones y entidades solapadas | P1/P2/P3/P5 | Día 5 | Listo (5.5) |
 | [`decisiones.md`](decisiones.md) | ADR cortas: decisión, alternativas y consecuencias | P4/P5 | Día 5 | Listo (5.9) |
-| [`pruebas.md`](pruebas.md) | Estrategia, comandos y evidencia de concurrencia, suite y E2E | P5 | Día 5 y 6 | Suite Día 5 (135 tests) |
-| [`evidencia/`](evidencia/) | Salidas de suite y E2E de los Días 4 y 5 | P5 | Día 4 y 5 | Listo |
+| [`pruebas.md`](pruebas.md) | Estrategia, comandos y evidencia de concurrencia, suite y E2E | P5 | Día 5 y 6 | Suite Día 5 y cobertura E2E Día 6 |
+| [`evidencia/`](evidencia/) | Salidas de suite y E2E de los Días 4 a 7 | P5 | Día 4 a 7 | Listo |
 | `../openspec/changes/entrega-1-core/` | Propuesta, specs, diseño y tareas del cambio | Todos | Día 0 | Listo |
 | `../catalog-service/README.md` | Responsabilidad, endpoints, modelo y comandos del servicio | P1 | Día 1 a 4 | Día 4 |
 | `../inventory-service/README.md` | Responsabilidad, endpoints, modelo y comandos del servicio | P2 | Día 1 a 4 | Día 4 |
