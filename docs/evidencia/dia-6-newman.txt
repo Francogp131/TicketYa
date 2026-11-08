@@ -1,0 +1,243 @@
+# Evidencia E2E por gateway — Día 6 (8/11/2026)
+
+Corrida real de la colección completa contra `main` (`08ba5c5`), con las tres bases
+PostgreSQL 16 y los cuatro servicios levantados en local.
+
+- Entorno: macOS, Java 21.0.12.1 (Temurin), Maven 3.9.16, Docker 29.7.2, Node 26.13.0.
+- Newman: 6.2.3.
+- Gateway: `http://localhost:8080`; servicios internos 8081/8082/8083 y bases 5433/5434/5435.
+- Comando:
+
+```bash
+npx -y newman run postman/TicketYa.postman_collection.json \
+  -e postman/TicketYa.local.postman_environment.json --reporters cli
+```
+
+Resultado: **45 requests, 45 assertions, 0 fallos**. Los seis flujos críticos
+(publicar, buscar, reservar, comprar, devolver y cancelar) se ejecutaron de punta a punta
+por el gateway.
+
+Salida completa:
+
+```
+newman
+
+TicketYa — Entrega 1 (flujos E2E)
+
+❏ Catálogo
+↳ Listar lugares (público)
+  GET http://localhost:8080/api/catalog/venues [200 OK, 1.85kB, 43ms]
+  ✓  200 y página de lugares
+
+↳ Crear lugar (ADMIN)
+  POST http://localhost:8080/api/catalog/venues [201 Created, 420B, 54ms]
+  ✓  201 y guarda venueId
+
+↳ Crear sector numerado (ADMIN)
+  POST http://localhost:8080/api/catalog/venues/9c5a0f42-d4af-4d76-bfd3-cc463f2929e4/sectors [201 Created, 496B, 31ms]
+  ✓  201, 10 asientos generados y guarda sector
+
+↳ Crear sector no numerado (ADMIN)
+  POST http://localhost:8080/api/catalog/venues/9c5a0f42-d4af-4d76-bfd3-cc463f2929e4/sectors [201 Created, 503B, 8ms]
+  ✓  201 y guarda sector de zona
+
+↳ Crear evento (ORGANIZER)
+  POST http://localhost:8080/api/catalog/events [201 Created, 694B, 24ms]
+  ✓  201 en BORRADOR y guarda eventoId
+
+↳ Asignar precio sector numerado
+  PUT http://localhost:8080/api/catalog/events/437897af-f861-4ef4-9456-59adba1e4a1d/prices/b78643c4-88a8-419f-b755-555f03e35400 [200 OK, 291B, 17ms]
+  ✓  200 con precio 15000
+
+↳ Asignar precio sector zona
+  PUT http://localhost:8080/api/catalog/events/437897af-f861-4ef4-9456-59adba1e4a1d/prices/df532557-99bc-4c3f-9a55-19484f776847 [200 OK, 290B, 12ms]
+  ✓  200 con precio 9000
+
+↳ Publicar evento
+  POST http://localhost:8080/api/catalog/events/437897af-f861-4ef4-9456-59adba1e4a1d/publish [200 OK, 860B, 176ms]
+  ✓  200 PUBLICADO y snapshot en inventory
+
+↳ Detalle del evento publicado
+  GET http://localhost:8080/api/catalog/events/437897af-f861-4ef4-9456-59adba1e4a1d [200 OK, 915B, 37ms]
+  ✓  200 con dos sectores y disponibilidad
+
+↳ Detalle de evento del seed
+  GET http://localhost:8080/api/catalog/events/d0000000-0000-4000-8000-000000000002 [200 OK, 923B, 21ms]
+  ✓  200 para el evento sembrado
+
+↳ Buscar eventos por ciudad y orden
+  GET http://localhost:8080/api/catalog/events?ciudad=Tandil&orden=PRECIO_ASC&page=0&size=5 [200 OK, 1.24kB, 11ms]
+  ✓  200 con página y precioDesde
+
+↳ Búsqueda con orden inválido devuelve 400
+  GET http://localhost:8080/api/catalog/events?orden=NO_EXISTE [400 Bad Request, 389B, 8ms]
+  ✓  400 INVALID_SORT
+
+❏ Inventario
+↳ Disponibilidad del evento
+  GET http://localhost:8080/api/inventory/events/437897af-f861-4ef4-9456-59adba1e4a1d/availability [200 OK, 550B, 11ms]
+  ✓  200 con los dos sectores
+
+↳ Mapa de asientos numerados
+  GET http://localhost:8080/api/inventory/events/437897af-f861-4ef4-9456-59adba1e4a1d/seats?sectorId=b78643c4-88a8-419f-b755-555f03e35400 [200 OK, 1.07kB, 13ms]
+  ✓  200 con 10 asientos LIBRE y guarda dos
+
+↳ Reservar 2 asientos numerados
+  POST http://localhost:8080/api/inventory/reservations [201 Created, 901B, 50ms]
+  ✓  201 VIGENTE, total 30000 y guarda reservaId
+
+↳ Reservar los mismos asientos devuelve 409
+  POST http://localhost:8080/api/inventory/reservations [409 Conflict, 440B, 18ms]
+  ✓  409 SEAT_NOT_AVAILABLE
+
+↳ Reservar 2 lugares de zona
+  POST http://localhost:8080/api/inventory/reservations [201 Created, 704B, 14ms]
+  ✓  201, total 18000 y guarda zonaReservaId
+
+↳ Consultar reserva
+  GET http://localhost:8080/api/inventory/reservations/5b4f4047-e386-4832-9dc3-5ad4d4bf4eee [200 OK, 820B, 22ms]
+  ✓  200 con la reserva creada
+
+↳ Disponibilidad del evento del seed
+  GET http://localhost:8080/api/inventory/events/d0000000-0000-4000-8000-000000000002/availability [200 OK, 538B, 10ms]
+  ✓  200 y sector Platea disponible
+
+❏ Órdenes
+↳ Crear orden aprobada (paga y emite QR)
+  POST http://localhost:8080/api/orders [201 Created, 1.4kB, 199ms]
+  ✓  201 PAGADA, total 30000, 2 entradas y QR único
+
+↳ Consultar orden
+  GET http://localhost:8080/api/orders/698a7a32-5362-4cd7-8c80-780ae87901ad [200 OK, 1.33kB, 42ms]
+  ✓  200 con la orden creada
+
+↳ Listar mis órdenes
+  GET http://localhost:8080/api/orders?page=0&size=5 [200 OK, 4.82kB, 29ms]
+  ✓  200 con la página del cliente
+
+↳ Listar mis entradas
+  GET http://localhost:8080/api/orders/tickets?eventoId=437897af-f861-4ef4-9456-59adba1e4a1d&page=0&size=5 [200 OK, 1.01kB, 9ms]
+  ✓  200 con las entradas del evento
+
+↳ Detalle de entrada propia
+  GET http://localhost:8080/api/orders/tickets/e642d77c-9860-438d-86ce-0d2a390ebf3b [200 OK, 556B, 6ms]
+  ✓  200 con la entrada pedida
+
+↳ Entrada ajena devuelve 403
+  GET http://localhost:8080/api/orders/tickets/e642d77c-9860-438d-86ce-0d2a390ebf3b [403 Forbidden, 432B, 10ms]
+  ✓  403 NOT_TICKET_OWNER
+
+↳ Órdenes con size inválido devuelve 400
+  GET http://localhost:8080/api/orders?size=101 [400 Bad Request, 385B, 3ms]
+  ✓  400 VALIDATION_ERROR
+
+↳ Reintento idempotente devuelve la misma orden
+  POST http://localhost:8080/api/orders [201 Created, 1.4kB, 19ms]
+  ✓  201 con la misma orden y las mismas entradas
+
+↳ Misma clave con otro cuerpo devuelve 422
+  POST http://localhost:8080/api/orders [422 Unprocessable Entity, 438B, 8ms]
+  ✓  422 IDEMPOTENCY_KEY_REUSED
+
+↳ Pago rechazado deja la orden RECHAZADA y libera
+  POST http://localhost:8080/api/orders [201 Created, 777B, 42ms]
+  ✓  201 RECHAZADA sin entradas
+
+↳ Disponibilidad de zona tras rechazo
+  GET http://localhost:8080/api/inventory/events/437897af-f861-4ef4-9456-59adba1e4a1d/availability [200 OK, 549B, 9ms]
+  ✓  la zona vuelve a 50 lugares
+
+↳ Reservar 1 lugar de zona para pago lento
+  POST http://localhost:8080/api/inventory/reservations [201 Created, 702B, 15ms]
+  ✓  201 VIGENTE y guarda zonaLentaId
+
+↳ Pago lento devuelve 502 y libera
+  POST http://localhost:8080/api/orders [502 Bad Gateway, 418B, 56ms]
+  ✓  502 PAYMENT_GATEWAY_ERROR
+
+↳ Disponibilidad de zona tras pago lento
+  GET http://localhost:8080/api/inventory/events/437897af-f861-4ef4-9456-59adba1e4a1d/availability [200 OK, 549B, 8ms]
+  ✓  la zona vuelve a 50 lugares
+
+❏ Devoluciones
+↳ Solicitar devolución de la primera entrada
+  POST http://localhost:8080/api/orders/tickets/e642d77c-9860-438d-86ce-0d2a390ebf3b/returns [201 Created, 387B, 29ms]
+  ✓  201 PENDIENTE y guarda devolucionId
+
+↳ Aprobar la devolución (ADMIN)
+  POST http://localhost:8080/api/orders/returns/414feefa-cfa0-4e56-a85a-0ac9c5156b87/approve [200 OK, 406B, 31ms]
+  ✓  200 APROBADA
+
+↳ La entrada aprobada queda DEVUELTA
+  GET http://localhost:8080/api/orders/698a7a32-5362-4cd7-8c80-780ae87901ad [200 OK, 1.33kB, 8ms]
+  ✓  la entrada aprobada quedó DEVUELTA
+
+↳ Solicitar devolución de la segunda entrada
+  POST http://localhost:8080/api/orders/tickets/1cef81d3-12a8-4345-9b03-8803379597d2/returns [201 Created, 387B, 10ms]
+  ✓  201 PENDIENTE para la segunda entrada
+
+↳ Rechazar la devolución (ADMIN)
+  POST http://localhost:8080/api/orders/returns/1730b29c-9aef-42e4-abbe-66b872c0650e/reject [200 OK, 407B, 7ms]
+  ✓  200 RECHAZADA
+
+↳ La entrada rechazada sigue VALIDA
+  GET http://localhost:8080/api/orders/698a7a32-5362-4cd7-8c80-780ae87901ad [200 OK, 1.33kB, 9ms]
+  ✓  la entrada rechazada sigue VALIDA
+
+❏ Errores
+↳ Crear orden sin identidad devuelve 401
+  POST http://localhost:8080/api/orders [401 Unauthorized, 296B, 1ms]
+  ✓  401 UNAUTHORIZED en RFC 7807
+
+↳ Evento inexistente devuelve 404
+  GET http://localhost:8080/api/catalog/events/00000000-0000-4000-8000-000000000000 [404 Not Found, 451B, 9ms]
+  ✓  404 EVENT_NOT_FOUND
+
+❏ Cancelación
+↳ Cancelar evento (ADMIN)
+  POST http://localhost:8080/api/catalog/events/437897af-f861-4ef4-9456-59adba1e4a1d/cancel [200 OK, 273B, 25ms]
+  ✓  200 CANCELADO y aviso a orders
+
+↳ Cancelación interna idempotente en orders
+  POST http://localhost:8083/internal/events/437897af-f861-4ef4-9456-59adba1e4a1d/cancel [200 OK, 263B, 9ms]
+  ✓  200 con las entradas ya en reintegro
+
+↳ Repetir cancelación interna no duplica
+  POST http://localhost:8083/internal/events/437897af-f861-4ef4-9456-59adba1e4a1d/cancel [200 OK, 263B, 9ms]
+  ✓  200 con la misma cantidad
+
+↳ Detalle de evento cancelado devuelve 404
+  GET http://localhost:8080/api/catalog/events/437897af-f861-4ef4-9456-59adba1e4a1d [404 Not Found, 466B, 7ms]
+  ✓  404 EVENT_NOT_FOUND
+
+┌─────────────────────────┬───────────────────┬──────────────────┐
+│                         │          executed │           failed │
+├─────────────────────────┼───────────────────┼──────────────────┤
+│              iterations │                 1 │                0 │
+├─────────────────────────┼───────────────────┼──────────────────┤
+│                requests │                45 │                0 │
+├─────────────────────────┼───────────────────┼──────────────────┤
+│            test-scripts │                45 │                0 │
+├─────────────────────────┼───────────────────┼──────────────────┤
+│      prerequest-scripts │                 1 │                0 │
+├─────────────────────────┼───────────────────┼──────────────────┤
+│              assertions │                45 │                0 │
+├─────────────────────────┴───────────────────┴──────────────────┤
+│ total run duration: 1634ms                                     │
+├────────────────────────────────────────────────────────────────┤
+│ total data received: 26.31kB (approx)                          │
+├────────────────────────────────────────────────────────────────┤
+│ average response time: 26ms [min: 1ms, max: 199ms, s.d.: 37ms] │
+└────────────────────────────────────────────────────────────────┘
+```
+
+## Cobertura de los seis flujos en esta corrida
+
+| Flujo | Evidencia en la salida |
+|---|---|
+| Publicar | `Crear lugar`, sectores, `Crear evento`, precios, `Publicar evento` y `Detalle del evento publicado` |
+| Buscar | `Buscar eventos por ciudad y orden` y `Búsqueda con orden inválido devuelve 400` |
+| Reservar | `Reservar 2 asientos numerados`, doble reserva `409` y `Reservar 2 lugares de zona` |
+| Comprar | `Crear orden aprobada`, `Consultar orden`, consultas propias, idempotencia, rechazo y pago lento |
+| Devolver | Solicitud, aprobación, entrada `DEVUELTA`, rechazo y entrada `VALIDA` |
+| Cancelar | `Cancelar evento (ADMIN)`, cancelación interna idempotente y detalle `404` |

@@ -1,6 +1,6 @@
 # Pruebas — TicketYa Entrega 1
 
-Este documento reúne la estrategia, los comandos y la evidencia de las pruebas de los Días 2 a 5.
+Este documento reúne la estrategia, los comandos y la evidencia de las pruebas de los Días 2 a 7.
 Los comandos se ejecutan desde `ticketya/` salvo que se indique otro directorio.
 
 ## 1. Estrategia
@@ -51,6 +51,10 @@ Suite completa del Día 5 (7/11/2026, `mvn clean test` con Java 21 y Docker ence
 | **Total** | **135** | **0 fallos, 0 errores, 0 omitidos** |
 
 Evidencia: [`docs/evidencia/dia-5-suite.txt`](evidencia/dia-5-suite.txt). Incluye los tests de Testcontainers de catalog (búsqueda), inventory (concurrencia, vencimiento, límite y confirmación) y orders (idempotencia), por lo que ningún test quedó omitido.
+
+Suite de control del Día 6/7 (8/11/2026, `mvn clean test` sobre `08ba5c5`, Java 21 y Docker):
+**135 tests, 0 fallos, 0 errores, 0 omitidos**. Evidencia:
+[`evidencia/dia-6-suite.txt`](evidencia/dia-6-suite.txt).
 
 Sin Docker, la suite de catalog también queda verde: 54 tests, 0 fallos y solo los 3 de
 `EventoBusquedaIntegrationTest` omitidos (evidencia:
@@ -124,12 +128,14 @@ La colección Postman se ejecuta completa con Newman:
 npx -y newman run postman/TicketYa.postman_collection.json --reporters cli
 ```
 
-Resultado de la última corrida (6/11/2026): **45 requests, 45 assertions, 0 fallos**.
-Incluye catálogo, búsqueda, publicación, reserva numerada y de zona, compra aprobada con QR,
-reintento idempotente, reuso de clave, pago rechazado, pago lento, consultas propias,
-devolución aprobada, devolución rechazada y cancelación.
+Resultado de la corrida del Día 6 (8/11/2026, `08ba5c5`): **45 requests, 45 assertions,
+0 fallos**. Incluye catálogo, búsqueda, publicación, reserva numerada y de zona, compra
+aprobada con QR, reintento idempotente, reuso de clave, pago rechazado, pago lento, consultas
+propias, devolución aprobada, devolución rechazada y cancelación. Los seis flujos críticos
+pasaron por el gateway.
 
-Evidencia: [`docs/evidencia/dia-4-newman.txt`](evidencia/dia-4-newman.txt).
+Evidencia: [`docs/evidencia/dia-6-newman.txt`](evidencia/dia-6-newman.txt). La corrida
+anterior del Día 4 queda en [`docs/evidencia/dia-4-newman.txt`](evidencia/dia-4-newman.txt).
 
 Los seis flujos críticos quedan cubiertos así:
 
@@ -142,8 +148,8 @@ Los seis flujos críticos quedan cubiertos así:
 | Devolver | Devoluciones | Solicitud, aprobación, verificación `DEVUELTA`, rechazo y verificación `VALIDA` |
 | Cancelar | Cancelación | Cancelación `ADMIN`, cancelación interna idempotente y detalle `404` |
 
-La colección no cambió desde la corrida 45/45 del Día 4. La auditoría del Día 6, con el hash
-de la colección y el detalle de cobertura, está en
+La corrida del Día 6 usó la colección vigente sin cambios y pasó completa. La auditoría de
+cobertura de catálogo, con el hash de la colección, está en
 [`docs/evidencia/dia-6-e2e-catalogo.txt`](evidencia/dia-6-e2e-catalogo.txt).
 
 Levantar bases y servicios:
