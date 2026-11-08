@@ -3,7 +3,7 @@
 TP grupal de Arquitectura Web (TUDAI 2026): plataforma de venta de entradas con microservicios Spring Boot.
 Enunciado: [`docs/TPE-ArqWeb-TicketYa-2026.pdf`](docs/TPE-ArqWeb-TicketYa-2026.pdf).
 
-Repositorio privado: <https://github.com/Francogp131/TicketYa> (rama `main`).
+Repositorio público para lectura: <https://github.com/Francogp131/TicketYa> (rama `main`; escritura por colaboradores).
 
 ## Arquitectura
 
