@@ -269,6 +269,14 @@ PostgreSQL real (`EventoBusquedaIntegrationTest`). La colección volvió a corre
 
 Evidencia de la suite: [`docs/evidencia/dia-4-suite.txt`](evidencia/dia-4-suite.txt).
 
+### 7.1 Discrepancia de contrato detectada en el control del Día 7
+
+`docs/api-contract.md` (sección 4.5) documenta `DELETE /api/inventory/reservations/{reservaId}`,
+pero inventory no tiene ese endpoint y no aparece en `openapi/inventory-openapi.json`. No lo
+usan los seis flujos E2E ni las US-12 a US-15, por lo que **no bloquea el RC**. Queda reportado
+a P2 para que decida, antes de la entrega final, si implementa la cancelación de reserva o
+retira la fila del contrato.
+
 ## 8. OpenAPI
 
 ```bash

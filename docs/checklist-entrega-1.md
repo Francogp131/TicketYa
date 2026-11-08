@@ -20,6 +20,7 @@ Lista verificable de **todo** lo que pide el enunciado para la Entrega 1. Cada f
 | OpenAPI agregado (5.8) | Los tres archivos exportados y revisados contra el contrato | `openapi/*.json` |
 | Postman | 45 requests con assertions; Newman 45/45 (Día 6) | `postman/TicketYa.postman_collection.json` |
 | RC (6.4) | Tag `entrega-1-rc` y clone limpio del candidato | [`evidencia/dia-7-rc.txt`](evidencia/dia-7-rc.txt) |
+| Discrepancia de contrato (no bloqueante) | `DELETE /api/inventory/reservations/{reservaId}` documentado en 4.5 pero no implementado; reportado a P2 | [`pruebas.md` §7.1](pruebas.md#71-discrepancia-de-contrato-detectada-en-el-control-del-día-7) |
 | Pendiente | Tag final `entrega-1`, verificación de accesos y entrega (Día 8) | 6.4 |
 
 ## 1. Funcionalidad de la Entrega 1
@@ -113,6 +114,6 @@ No se exige en esta entrega; no debe consumir tiempo del cronograma:
 - [x] Un clone limpio sigue el README y levanta el sistema (3 bases healthy, 4 health 200, gateway 200/401). Evidencia: [`evidencia/dia-5-clone-limpio.txt`](evidencia/dia-5-clone-limpio.txt) y [`evidencia/dia-7-rc.txt`](evidencia/dia-7-rc.txt).
 - [x] La prueba de no doble venta pasa de forma reproducible (`ConcurrenciaPostgresTest`: 100 hilos, 1 ganador).
 - [x] Los seis flujos E2E de Postman pasan por el gateway: corrida real 45/45 requests y 45/45 assertions del Día 6 en [`evidencia/dia-6-newman.txt`](evidencia/dia-6-newman.txt).
-- [x] `docs/README.md` no tiene enlaces rotos y el contrato está sincronizado con el OpenAPI (26 operaciones en `openapi/*.json`).
+- [x] `docs/README.md` no tiene enlaces rotos y los endpoints de los flujos de la Entrega 1 están en el contrato y en el OpenAPI (26 paths / 30 operaciones, incluidos los internos). Queda una discrepancia no bloqueante: `DELETE /api/inventory/reservations/{reservaId}` figura en el contrato 4.5 pero no está implementado ni en el OpenAPI; ver [`pruebas.md` §7.1](pruebas.md#71-discrepancia-de-contrato-detectada-en-el-control-del-día-7).
 - [x] Cada ítem verificado de este checklist tiene evidencia enlazada en el PR o en `docs/`.
 - [x] No quedan tareas P0 abiertas en `openspec/changes/entrega-1-core/tasks.md`.

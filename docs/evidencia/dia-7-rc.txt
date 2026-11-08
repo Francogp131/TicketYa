@@ -301,7 +301,8 @@ TicketYa — Entrega 1 (flujos E2E)
 ## 6. Control de documentación
 
 - 88 enlaces relativos revisados en `README.md`, `CONTRIBUTING.md`, `docs/` y `openspec/`: **0 rotos**.
-- OpenAPI versionado: **26 operaciones** (catalog 9, inventory 9, orders 8), sincronizadas con el contrato.
+- OpenAPI versionado: **26 paths y 30 operaciones** (24 públicas + 6 internas). Los 24 endpoints públicos de los flujos de la Entrega 1 están cubiertos.
+- Discrepancia detectada y reportada a P2: `DELETE /api/inventory/reservations/{reservaId}` figura en el contrato 4.5 pero no está implementado ni en el OpenAPI. No afecta los seis flujos ni las US-12 a US-15 (detalle en `docs/pruebas.md` §7.1).
 - `openspec validate entrega-1-core`: **Change 'entrega-1-core' is valid**.
 - `docs/checklist-entrega-1.md`: todos los ítems verificables con evidencia; solo queda abierto el tag final `entrega-1` del Día 8.
 

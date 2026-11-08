@@ -54,7 +54,7 @@
 ## 4. Verificación de la documentación
 
 - [x] Todos los enlaces de este índice resuelven (88 enlaces relativos verificados el Día 7).
-- [x] Cada endpoint del contrato aparece en el OpenAPI y en el README del servicio (26 operaciones en `openapi/*.json`).
+- [x] Cada endpoint del contrato aparece en el OpenAPI y en el README del servicio (26 paths y 30 operaciones en `openapi/*.json`).
 - [x] Los diagramas Mermaid renderizan en GitHub.
 - [x] El README raíz se probó en un clone limpio (Días 5 y 7).
 - [x] `docs/pruebas.md` tiene comandos que se ejecutan tal cual (suite y Newman corridos el Día 6).
