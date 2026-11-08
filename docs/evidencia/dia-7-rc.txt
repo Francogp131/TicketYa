@@ -309,4 +309,6 @@ TicketYa — Entrega 1 (flujos E2E)
 ## 7. Resultado
 
 El candidato compila, pasa la suite completa y los seis flujos E2E en un clone limpio con
-bases nuevas. Está listo para el tag `entrega-1-rc` y para el cierre del Día 8.
+bases nuevas. El ensayo de demo se hizo con esa misma corrida E2E (publicar, buscar, reservar,
+comprar, devolver y cancelar) y no hubo errores. Está listo para el tag `entrega-1-rc` y para
+el cierre del Día 8.
