@@ -6,7 +6,10 @@ reutilizar el working tree local.
 - Repositorio: `git@github.com:Francogp131/TicketYa.git`
 - Rama: `docs/p5-dia-6-7` (PR #19)
 - Commit verificado: `fde94a1cbd83fa91b53aa93cfb9f03e261a0835e`
-- Tag: `entrega-1-rc` sobre el merge de este PR en `main` (mismo árbol que el commit verificado).
+- Los commits posteriores de la rama solo agregan evidencia y documentación; no cambian
+  código de servicios, tests ni contrato.
+- Tag: `entrega-1-rc` sobre el merge de este PR en `main` (mismo árbol que el commit verificado
+  más la evidencia agregada después).
 - Entorno: macOS 27.2 arm64, Eclipse Temurin 21.0.12.1, Maven 3.9.16, Docker 29.7.2,
   Node 26.13.0 y Newman 6.2.3.
 
