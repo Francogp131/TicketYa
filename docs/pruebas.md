@@ -249,6 +249,15 @@ y verifica el estado final de cada entrada en el detalle de la orden.
   `403 NOT_TICKET_OWNER`.
 - `size=101` responde `400 VALIDATION_ERROR`.
 
+### 6.8 Clone limpio del RC (Día 7)
+
+Se clonó la rama `docs/p5-dia-6-7` en `fde94a1` desde GitHub, se eliminaron los volúmenes de
+prueba y se levantó el compose desde cero. En ese clone corrieron la suite completa
+(**135 tests, 0 fallos, 0 omitidos**) y la colección completa (**45/45 requests y
+45/45 assertions**), con los cuatro health en `200` y el gateway devolviendo `200`/`401`
+según corresponda. Evidencia:
+[`docs/evidencia/dia-7-rc.txt`](evidencia/dia-7-rc.txt).
+
 ## 7. Hallazgos del E2E
 
 La primera corrida completa (6/11/2026) encontró que **todos** los
