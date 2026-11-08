@@ -277,6 +277,20 @@ usan los seis flujos E2E ni las US-12 a US-15, por lo que **no bloquea el RC**. 
 a P2 para que decida, antes de la entrega final, si implementa la cancelación de reserva o
 retira la fila del contrato.
 
+Control ejecutado en el clone del RC:
+
+```bash
+curl -s -o /dev/null -w '%{http_code}\n' -X DELETE \
+  http://localhost:8080/api/inventory/reservations/00000000-0000-4000-8000-000000000000 \
+  -H 'X-User-Id: 33333333-3333-4333-8333-333333333333' -H 'X-User-Role: CLIENT'
+# 405 METHOD_NOT_ALLOWED
+
+curl -s -o /dev/null -w '%{http_code}\n' \
+  http://localhost:8080/api/inventory/reservations/00000000-0000-4000-8000-000000000000 \
+  -H 'X-User-Id: 33333333-3333-4333-8333-333333333333' -H 'X-User-Role: CLIENT'
+# 404 RESERVATION_NOT_FOUND (control: el GET sí existe)
+```
+
 ## 8. OpenAPI
 
 ```bash
