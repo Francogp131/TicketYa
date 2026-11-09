@@ -1,13 +1,13 @@
 # Cómo trabajamos
 
-## Reparto inicial (completar nombres)
-| Persona | Rol | Servicio / foco | Ítems del enunciado |
-|---|---|---|---|
-| P1 | Catalog | `catalog-service` | 1, 2, 3, 9 |
-| P2 | Inventory | `inventory-service` | 4, 5 |
-| P3 | Orders | `orders-service` | 4, 7 |
-| P4 | Gateway + infraestructura | `api-gateway`, Docker, CI, diagramas | transversal |
-| P5 | Calidad e integración | Datos de prueba, Postman, E2E, evidencia, índice y checklist | transversal |
+## Reparto
+| Persona | Nombre | Rol | Servicio / foco | Ítems del enunciado |
+|---|---|---|---|---|
+| P1 | Iván | Catalog | `catalog-service` | 1, 2, 3, 9 |
+| P2 | Pablo | Inventory | `inventory-service` | 4, 5 |
+| P3 | Caro | Orders | `orders-service` | 4, 7 |
+| P4 | Thiago | Gateway + infraestructura | `api-gateway`, Docker, CI, diagramas | transversal |
+| P5 | Franco | Calidad e integración | Datos de prueba, Postman, E2E, evidencia, índice y checklist | transversal |
 
 Un solo dueño por carpeta de microservicio. P5 no edita código de un servicio sin acordarlo con su dueño; su foco es la verificación y la documentación.
 
