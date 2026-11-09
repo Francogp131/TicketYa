@@ -261,9 +261,11 @@ Sin cuerpo. **200**
 }
 ```
 
+Antes de marcar el evento, catalog frena la venta en inventory con `PATCH /internal/events/{eventoId}/state`; si inventory no responde, la cancelación no se persiste.
+
 `cancelacionPendiente: true` si catalog ya marcó el evento pero orders no respondió; un scheduler reintenta el aviso.
 
-Errores: `404 EVENT_NOT_FOUND`, `409 EVENT_NOT_CANCELLABLE` (ya cancelado o finalizado).
+Errores: `404 EVENT_NOT_FOUND`, `409 EVENT_NOT_CANCELLABLE` (ya cancelado o finalizado), `502 INVENTORY_UNAVAILABLE` (inventory no frenó la venta; el evento no se cancela).
 
 ### 3.10 Buscar eventos — `GET /api/catalog/events` (público)
 
@@ -496,6 +498,16 @@ Errores: `400 VALIDATION_ERROR`, `404 EVENT_NOT_FOUND`/`SECTOR_NOT_FOUND`, `409 
 ```
 
 Idempotente por `eventoId` + `version`: reintentar no duplica filas ni reinicia disponibilidad ya vendida.
+
+### 4.6.1 Interno — cambiar estado del evento
+
+`PATCH /internal/events/{eventoId}/state`
+
+```json
+{ "estado": "CANCELADO" }
+```
+
+**204 No Content**. Catalog lo llama antes de cancelar (`CANCELADO`) o finalizar (`FINALIZADO`) para que inventory deje de vender. Idempotente.
 
 ### 4.7 Interno — consultar reserva para orders
 

@@ -239,6 +239,16 @@ public class EventService {
                     "No se puede cancelar un evento " + evento.getEstado().name().toLowerCase());
         }
 
+        if (evento.getEstado() == EstadoEvento.PUBLICADO || evento.getEstado() == EstadoEvento.AGOTADO) {
+            try {
+                inventoryClient.cambiarEstado(eventoId, EstadoEvento.CANCELADO.name());
+            } catch (RuntimeException ex) {
+                log.warn("No se pudo frenar la venta del evento {} en inventory; no se cancela", eventoId, ex);
+                throw new ApiException(HttpStatus.BAD_GATEWAY, "INVENTORY_UNAVAILABLE",
+                        "No se pudo frenar la venta en inventory; el evento no se canceló", List.of());
+            }
+        }
+
         evento.setEstado(EstadoEvento.CANCELADO);
         boolean pendiente = false;
         try {
@@ -281,9 +291,22 @@ public class EventService {
     public int finalizarEventosVencidos() {
         List<Evento> vencidos = eventoRepository.findByEstadoInAndFechaBefore(
                 List.of(EstadoEvento.PUBLICADO, EstadoEvento.AGOTADO), OffsetDateTime.now(clock));
-        vencidos.forEach(evento -> evento.setEstado(EstadoEvento.FINALIZADO));
-        eventoRepository.saveAll(vencidos);
-        return vencidos.size();
+        List<Evento> finalizados = new ArrayList<>();
+        for (Evento evento : vencidos) {
+            try {
+                inventoryClient.cambiarEstado(evento.getId(), EstadoEvento.FINALIZADO.name());
+            } catch (RuntimeException ex) {
+                log.warn("No se pudo finalizar el evento {} en inventory; se reintenta en la próxima corrida",
+                        evento.getId(), ex);
+                continue;
+            }
+            evento.setEstado(EstadoEvento.FINALIZADO);
+            finalizados.add(evento);
+        }
+        if (!finalizados.isEmpty()) {
+            eventoRepository.saveAll(finalizados);
+        }
+        return finalizados.size();
     }
 
     @Transactional
