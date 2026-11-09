@@ -14,6 +14,7 @@ import ar.edu.unicen.ticketya.orders.servicio.OrderQueryService;
 import ar.edu.unicen.ticketya.orders.servicio.OrderService;
 import ar.edu.unicen.ticketya.orders.web.dto.CrearOrdenRequest;
 import ar.edu.unicen.ticketya.orders.web.dto.OrderResponse;
+import ar.edu.unicen.ticketya.orders.web.dto.PageResponse;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -91,5 +92,81 @@ class OrderControllerTest {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").value(ordenId.toString()))
                 .andExpect(jsonPath("$.estado").value("PENDIENTE_PAGO"));
+    }
+
+    @Test
+    void crearConReservaAjenaDevuelve403() throws Exception {
+        when(orderService.crear(any(CrearOrdenRequest.class), any(), eq("compra-0001")))
+                .thenThrow(ApiException.forbidden("NOT_RESERVATION_OWNER",
+                        "La reserva pertenece a otro cliente"));
+
+        mockMvc.perform(post("/api/orders")
+                        .header("Idempotency-Key", "compra-0001")
+                        .header("X-User-Id", CLIENTE)
+                        .header("X-User-Role", "CLIENT")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"reservaId":"11111111-1111-4111-8111-111111111111",
+                                 "medioPago":"TARJETA","token":"APROBADO"}
+                                """))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("NOT_RESERVATION_OWNER"));
+    }
+
+    @Test
+    void crearConReservaInexistenteDevuelve404() throws Exception {
+        when(orderService.crear(any(CrearOrdenRequest.class), any(), eq("compra-0001")))
+                .thenThrow(ApiException.notFound("RESERVATION_NOT_FOUND",
+                        "No existe la reserva 11111111-1111-4111-8111-111111111111"));
+
+        mockMvc.perform(post("/api/orders")
+                        .header("Idempotency-Key", "compra-0001")
+                        .header("X-User-Id", CLIENTE)
+                        .header("X-User-Role", "CLIENT")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"reservaId":"11111111-1111-4111-8111-111111111111",
+                                 "medioPago":"TARJETA","token":"APROBADO"}
+                                """))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("RESERVATION_NOT_FOUND"));
+    }
+
+    @Test
+    void crearConReservaVencidaDevuelve410() throws Exception {
+        when(orderService.crear(any(CrearOrdenRequest.class), any(), eq("compra-0001")))
+                .thenThrow(ApiException.gone("RESERVATION_EXPIRED",
+                        "La reserva está vencida y no se puede pagar"));
+
+        mockMvc.perform(post("/api/orders")
+                        .header("Idempotency-Key", "compra-0001")
+                        .header("X-User-Id", CLIENTE)
+                        .header("X-User-Role", "CLIENT")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"reservaId":"11111111-1111-4111-8111-111111111111",
+                                 "medioPago":"TARJETA","token":"APROBADO"}
+                                """))
+                .andExpect(status().isGone())
+                .andExpect(jsonPath("$.code").value("RESERVATION_EXPIRED"));
+    }
+
+    @Test
+    void crearConClaveReusadaDevuelve422() throws Exception {
+        when(orderService.crear(any(CrearOrdenRequest.class), any(), eq("compra-0001")))
+                .thenThrow(ApiException.unprocessable("IDEMPOTENCY_KEY_REUSED",
+                        "La Idempotency-Key ya se usó con un cuerpo distinto"));
+
+        mockMvc.perform(post("/api/orders")
+                        .header("Idempotency-Key", "compra-0001")
+                        .header("X-User-Id", CLIENTE)
+                        .header("X-User-Role", "CLIENT")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"reservaId":"22222222-2222-4222-8222-222222222222",
+                                 "medioPago":"TARJETA","token":"APROBADO"}
+                                """))
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.code").value("IDEMPOTENCY_KEY_REUSED"));
     }
 }
