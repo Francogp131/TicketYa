@@ -67,4 +67,41 @@ class TicketControllerTest {
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.code").value("NOT_TICKET_OWNER"));
     }
+
+    @Test
+    void listarConEventoYPaginacion() throws Exception {
+        UUID eventoId = UUID.randomUUID();
+        TicketResponse ticket = new TicketResponse(UUID.randomUUID(), eventoId,
+                "Recital", OffsetDateTime.parse("2027-01-15T21:00:00-03:00"),
+                UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), "VALIDA",
+                OffsetDateTime.parse("2026-11-06T12:00:00-03:00"));
+        when(orderQueryService.entradas(eq(UUID.fromString(CLIENTE)), eq(eventoId), eq(1), eq(5)))
+                .thenReturn(new PageResponse<>(List.of(ticket), 1, 5, 6, 2));
+
+        mockMvc.perform(get("/api/orders/tickets")
+                        .param("eventoId", eventoId.toString())
+                        .param("page", "1")
+                        .param("size", "5")
+                        .header("X-User-Id", CLIENTE)
+                        .header("X-User-Role", "CLIENT"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content[0].id").value(ticket.id().toString()))
+                .andExpect(jsonPath("$.page").value(1))
+                .andExpect(jsonPath("$.size").value(5))
+                .andExpect(jsonPath("$.totalElements").value(6))
+                .andExpect(jsonPath("$.totalPages").value(2));
+    }
+
+    @Test
+    void obtenerEntradaInexistenteDevuelve404() throws Exception {
+        UUID entradaId = UUID.randomUUID();
+        when(orderQueryService.entrada(entradaId, UUID.fromString(CLIENTE)))
+                .thenThrow(ApiException.notFound("TICKET_NOT_FOUND", "No existe la entrada " + entradaId));
+
+        mockMvc.perform(get("/api/orders/tickets/{entradaId}", entradaId)
+                        .header("X-User-Id", CLIENTE)
+                        .header("X-User-Role", "CLIENT"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("TICKET_NOT_FOUND"));
+    }
 }
