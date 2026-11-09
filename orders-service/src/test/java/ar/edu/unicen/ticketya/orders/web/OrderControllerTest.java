@@ -169,4 +169,56 @@ class OrderControllerTest {
                 .andExpect(status().isUnprocessableEntity())
                 .andExpect(jsonPath("$.code").value("IDEMPOTENCY_KEY_REUSED"));
     }
+
+    @Test
+    void listarDevuelveLaPaginaDelCliente() throws Exception {
+        OrderResponse orden = new OrderResponse(
+                UUID.randomUUID(), UUID.fromString(CLIENTE), UUID.randomUUID(), UUID.randomUUID(),
+                "Recital", OffsetDateTime.parse("2027-01-15T21:00:00-03:00"),
+                EstadoOrden.PAGADA, MedioPago.TARJETA, new BigDecimal("15000.00"),
+                List.of(new OrderResponse.Item(UUID.randomUUID(), UUID.randomUUID(), 1,
+                        new BigDecimal("15000.00"), new BigDecimal("15000.00"))),
+                List.of(),
+                OffsetDateTime.parse("2026-11-03T12:00:00-03:00"));
+        when(orderQueryService.ordenes(eq(UUID.fromString(CLIENTE)), eq(0), eq(20)))
+                .thenReturn(new PageResponse<>(List.of(orden), 0, 20, 1, 1));
+
+        mockMvc.perform(get("/api/orders")
+                        .header("X-User-Id", CLIENTE)
+                        .header("X-User-Role", "CLIENT"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content[0].id").value(orden.id().toString()))
+                .andExpect(jsonPath("$.content[0].estado").value("PAGADA"))
+                .andExpect(jsonPath("$.totalElements").value(1))
+                .andExpect(jsonPath("$.page").value(0));
+    }
+
+    @Test
+    void obtenerOrdenAjenaDevuelve403() throws Exception {
+        UUID ordenId = UUID.randomUUID();
+        when(orderService.obtener(ordenId, UUID.fromString(CLIENTE)))
+                .thenThrow(ApiException.forbidden("ORDER_NOT_OWNER",
+                        "La orden pertenece a otro cliente"));
+
+        mockMvc.perform(get("/api/orders/{ordenId}", ordenId)
+                        .header("X-User-Id", CLIENTE)
+                        .header("X-User-Role", "CLIENT"))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("ORDER_NOT_OWNER"));
+    }
+
+    @Test
+    void listarConPageInvalidaDevuelve400() throws Exception {
+        when(orderQueryService.ordenes(eq(UUID.fromString(CLIENTE)), eq(-1), eq(20)))
+                .thenThrow(ApiException.badRequest("VALIDATION_ERROR",
+                        "page debe ser mayor o igual a 0"));
+
+        mockMvc.perform(get("/api/orders")
+                        .param("page", "-1")
+                        .param("size", "20")
+                        .header("X-User-Id", CLIENTE)
+                        .header("X-User-Role", "CLIENT"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("VALIDATION_ERROR"));
+    }
 }
