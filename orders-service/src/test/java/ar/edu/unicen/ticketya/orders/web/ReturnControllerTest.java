@@ -1,5 +1,6 @@
 package ar.edu.unicen.ticketya.orders.web;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -63,5 +64,74 @@ class ReturnControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(devolucionId.toString()))
                 .andExpect(jsonPath("$.estado").value("APROBADA"));
+    }
+
+    @Test
+    void solicitarDevolucionValidaDevuelve201() throws Exception {
+        UUID entradaId = UUID.randomUUID();
+        UUID devolucionId = UUID.randomUUID();
+        when(devolucionService.solicitar(eq(entradaId), eq(UUID.fromString(CLIENT)),
+                eq("No puedo")))
+                .thenReturn(new ReturnResponse(devolucionId, entradaId,
+                        EstadoDevolucion.PENDIENTE, "No puedo",
+                        OffsetDateTime.parse("2026-11-06T12:00:00-03:00"),
+                        null));
+
+        mockMvc.perform(post("/api/orders/tickets/{entradaId}/returns", entradaId)
+                        .header("X-User-Id", CLIENT)
+                        .header("X-User-Role", "CLIENT")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"motivo\":\"No puedo\"}"))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.id").value(devolucionId.toString()))
+                .andExpect(jsonPath("$.estado").value("PENDIENTE"));
+    }
+
+    @Test
+    void solicitarFueraDePlazoDevuelve422() throws Exception {
+        UUID entradaId = UUID.randomUUID();
+        when(devolucionService.solicitar(any(), any(), any()))
+                .thenThrow(ApiException.unprocessable("RETURN_WINDOW_CLOSED",
+                        "Solo se puede devolver hasta 72 horas antes del evento"));
+
+        mockMvc.perform(post("/api/orders/tickets/{entradaId}/returns", entradaId)
+                        .header("X-User-Id", CLIENT)
+                        .header("X-User-Role", "CLIENT")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"motivo\":\"No puedo\"}"))
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.code").value("RETURN_WINDOW_CLOSED"));
+    }
+
+    @Test
+    void solicitarEntradaAjenaDevuelve403() throws Exception {
+        UUID entradaId = UUID.randomUUID();
+        when(devolucionService.solicitar(any(), any(), any()))
+                .thenThrow(ApiException.forbidden("NOT_TICKET_OWNER",
+                        "La entrada pertenece a otro cliente"));
+
+        mockMvc.perform(post("/api/orders/tickets/{entradaId}/returns", entradaId)
+                        .header("X-User-Id", CLIENT)
+                        .header("X-User-Role", "CLIENT")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"motivo\":\"No puedo\"}"))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("NOT_TICKET_OWNER"));
+    }
+
+    @Test
+    void solicitarDevolucionDuplicadaDevuelve409() throws Exception {
+        UUID entradaId = UUID.randomUUID();
+        when(devolucionService.solicitar(any(), any(), any()))
+                .thenThrow(ApiException.conflict("RETURN_ALREADY_EXISTS",
+                        "Ya existe una devolucion abierta para esta entrada"));
+
+        mockMvc.perform(post("/api/orders/tickets/{entradaId}/returns", entradaId)
+                        .header("X-User-Id", CLIENT)
+                        .header("X-User-Role", "CLIENT")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"motivo\":\"No puedo\"}"))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("RETURN_ALREADY_EXISTS"));
     }
 }
