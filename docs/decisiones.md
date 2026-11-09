@@ -70,3 +70,29 @@ y los diagramas en [`arquitectura.md`](arquitectura.md).
 - **Decisión:** cada PR incluye código, tests, OpenAPI, README del servicio y la marca en `tasks.md`. `docs/README.md` es el índice y `docs/checklist-entrega-1.md` la lista verificable.
 - **Alternativas:** documentar todo al final (el riesgo detectado en el plan: llegar al Día 9 con documentación atrasada).
 - **Consecuencias:** los PRs son más grandes, pero el estado del proyecto siempre es verificable. OpenSpec (`entrega-1-core`) es la fuente de verdad del alcance.
+
+## ADR-012 — “Suspender” en la Entrega 1 se resuelve como cancelar
+
+- **Contexto:** el enunciado (ítem 3) y US-07 hablan de “suspender o cancelar”, pero el modelo
+  de estados de la Entrega 1 no tiene `SUSPENDIDO`.
+- **Decisión:** en la Entrega 1, “suspender” se implementa como **cancelación** (`CANCELADO`):
+  el evento deja de venderse y las entradas vendidas pasan a reintegro. El estado `SUSPENDIDO`
+  y la reactivación quedan para la Entrega 2.
+- **Alternativas:** agregar `SUSPENDIDO` ahora (migración, transiciones, sincronización con
+  inventory y orders) o no cubrir el caso (peor).
+- **Consecuencias:** se cumple el bloqueo de ventas y el reintegro; no se puede reanudar un
+  evento suspendido. La decisión se valida con la cátedra.
+
+## ADR-013 — Consistencia de compra y deuda de saga/outbox
+
+- **Contexto:** la compra involucra orders, inventory y la pasarela. La implementación de la
+  Entrega 1 usa una transacción local con llamadas HTTP y compensaciones best-effort.
+- **Decisión:** mantener la orquestación síncrona de la Entrega 1 y documentar la limitación:
+  si la transacción queda rollback-only después de un fallo de emisión, la compensación puede
+  no persistirse. La saga/outbox formal y la separación de transacciones se encaran en la
+  Entrega 2.
+- **Alternativas:** 2PC (sobredimensionado), coreografía con eventos (Entrega 2) o dejar el
+  comportamiento implícito (peor).
+- **Consecuencias:** el flujo feliz y los rechazos están cubiertos; los fallos extremos
+  requieren un test de integración y seguimiento. No se debe declarar la consistencia como
+  total hasta implementar la saga.

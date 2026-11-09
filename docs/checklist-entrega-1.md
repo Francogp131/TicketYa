@@ -4,7 +4,11 @@ Lista verificable de **todo** lo que pide el enunciado para la Entrega 1. Cada f
 
 **Leyenda:** `[ ]` pendiente · `[x]` verificado con evidencia.
 
-## 0. Estado de verificación (Día 8 — 9/11/2026)
+**Estado 9/11:** checklist en revisión por observaciones externas. No entregar hasta cerrar
+los P0 de cancelación/ventas, callback de disponibilidad, devolución parcial, sector cruzado,
+cupo de zona y reintegros. El detalle está en `tasks.md` (2.4) y en el seguimiento del equipo.
+
+## 0. Estado de verificación (Día 9 — 9/11/2026, en revisión)
 
 | Área | Estado | Evidencia |
 |---|---|---|
@@ -22,6 +26,7 @@ Lista verificable de **todo** lo que pide el enunciado para la Entrega 1. Cada f
 | RC (6.4) | Tag `entrega-1-rc` y clone limpio del candidato | [`evidencia/dia-7-rc.txt`](evidencia/dia-7-rc.txt) |
 | Discrepancia de contrato (no bloqueante) | `DELETE /api/inventory/reservations/{reservaId}` documentado en 4.5 pero no implementado; reportado a P2 | [`pruebas.md` §7.1](pruebas.md#71-discrepancia-de-contrato-detectada-en-el-control-del-día-7) |
 | Cierre (6.4) | Tag final `entrega-1` sobre `5874fdf`, repo público y 5 colaboradores con Write | [`evidencia/dia-8-entrega.txt`](evidencia/dia-8-entrega.txt) |
+| Revisión externa (9/11) | En corrección: cancelación/ventas, callback de disponibilidad, devolución parcial, sector cruzado, cupo de zona y reintegros | [`tasks.md`](../openspec/changes/entrega-1-core/tasks.md) |
 
 ## 1. Funcionalidad de la Entrega 1
 
@@ -116,4 +121,4 @@ No se exige en esta entrega; no debe consumir tiempo del cronograma:
 - [x] Los seis flujos E2E de Postman pasan por el gateway: corrida real 45/45 requests y 45/45 assertions del Día 6 en [`evidencia/dia-6-newman.txt`](evidencia/dia-6-newman.txt).
 - [x] `docs/README.md` no tiene enlaces rotos y los endpoints de los flujos de la Entrega 1 están en el contrato y en el OpenAPI (26 paths / 30 operaciones, incluidos los internos). Queda una discrepancia no bloqueante: `DELETE /api/inventory/reservations/{reservaId}` figura en el contrato 4.5 pero no está implementado ni en el OpenAPI; ver [`pruebas.md` §7.1](pruebas.md#71-discrepancia-de-contrato-detectada-en-el-control-del-día-7).
 - [x] Cada ítem verificado de este checklist tiene evidencia enlazada en el PR o en `docs/`.
-- [x] No quedan tareas P0 abiertas en `openspec/changes/entrega-1-core/tasks.md`.
+- [ ] No quedan tareas P0 abiertas en `openspec/changes/entrega-1-core/tasks.md`. _(2.4 y las observaciones del 9/11 están en corrección)_
