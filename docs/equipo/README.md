@@ -7,7 +7,7 @@ Esta carpeta tiene un brief por integrante. La idea es que cada uno pueda clonar
 | P1 | Iván | Catalog | [`compa-1.md`](compa-1.md) |
 | P2 | Pablo | Inventory | [`compa-2.md`](compa-2.md) |
 | P3 | Caro | Orders | [`compa-3.md`](compa-3.md) |
-| P4 | Thiago | Gateway + infraestructura | [`compa-4.md`](compa-4.md) |
+| P4 | Tiago | Gateway + infraestructura | [`compa-4.md`](compa-4.md) |
 | P5 | Franco | Calidad, integración y documentación | [`franco-p5.md`](franco-p5.md) |
 
 **Guía puntual Día 4:** [`caro-4.10.md`](caro-4.10.md) — la tarea 4.10 ya está implementada; pasos simples para verificarla y aprobar el PR.
