@@ -93,6 +93,20 @@ class EventServiceTest {
     }
 
     @Test
+    void noSePuedePublicarUnEventoConFechaPasada() {
+        Evento evento = evento(UUID.randomUUID(), UUID.randomUUID(), "Vencido",
+                OffsetDateTime.parse("2026-10-01T21:00:00-03:00"), EstadoEvento.BORRADOR);
+        when(eventoRepository.findById(evento.getId())).thenReturn(Optional.of(evento));
+
+        assertThatThrownBy(() -> eventService.publicar(evento.getId(), evento.getOrganizadorId()))
+                .isInstanceOfSatisfying(ApiException.class, ex -> {
+                    assertThat(ex.getStatus().value()).isEqualTo(400);
+                    assertThat(ex.getCode()).isEqualTo("VALIDATION_ERROR");
+                });
+        verify(inventoryClient, never()).publicarInventario(any());
+    }
+
+    @Test
     void publicarSinPreciosDevuelveEventoIncompleto() {
         Evento evento = evento(UUID.randomUUID(), UUID.randomUUID());
         when(eventoRepository.findById(evento.getId())).thenReturn(Optional.of(evento));

@@ -146,6 +146,9 @@ public class EventService {
         if (evento.getEstado() != EstadoEvento.BORRADOR) {
             throw ApiException.conflict("EVENT_NOT_EDITABLE", "Solo se puede publicar un evento en borrador");
         }
+        if (!evento.getFecha().isAfter(OffsetDateTime.now(clock))) {
+            throw validacion("fecha", "el evento ya pasó y no se puede publicar");
+        }
 
         List<Sector> sectores = sectorRepository.findByLugarIdOrderByNombreAsc(evento.getLugarId());
         Map<UUID, EventoSectorPrecio> precios = precioRepository.findByEventoId(eventoId).stream()
