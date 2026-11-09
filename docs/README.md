@@ -6,7 +6,7 @@
 
 | Documento | Qué contiene | Dueño | Cuándo | Estado |
 |---|---|---|---|---|
-| [`../README.md`](../README.md) | Presentación, requisitos, cómo ejecutar y datos de prueba | P4 | Día 0 a 7 | Listo (5.6; verificado en el RC) |
+| [`../README.md`](../README.md) | Presentación, requisitos, cómo ejecutar y datos de prueba | P4 | Día 0 a 8 | Listo (5.6; verificado en el RC y en el tag final) |
 | [`equipo/README.md`](equipo/README.md) | Briefs por integrante, setup común, flujo de ramas y definición de terminado | P5 | Día 0 | Listo |
 | [`equipo/primer-pr.md`](equipo/primer-pr.md) | Guía paso a paso para el primer PR (GitHub Desktop, terminal y web) | P5 | Día 1 | Listo |
 | [`equipo/compa-1.md`](equipo/compa-1.md) | Brief de catalog (P1) | P5 | Día 0 | Listo |
@@ -15,14 +15,14 @@
 | [`equipo/compa-4.md`](equipo/compa-4.md) | Brief de gateway e infraestructura (P4) | P5 | Día 0 | Listo |
 | [`equipo/franco-p5.md`](equipo/franco-p5.md) | Brief de calidad, integración y documentación (P5) | P5 | Día 0 | Listo |
 | [`plan-entrega-1.md`](plan-entrega-1.md) | Cronograma día por día, responsables y riesgos | P4 | Día 0 | Listo |
-| [`checklist-entrega-1.md`](checklist-entrega-1.md) | Verificación de todo lo pedido para la Entrega 1 | P4 | Día 0 a 7 | 100 % verificado (6.3) |
+| [`checklist-entrega-1.md`](checklist-entrega-1.md) | Verificación de todo lo pedido para la Entrega 1 | P4 | Día 0 a 8 | 100 % verificado y cerrado (6.3, 6.4) |
 | [`features-y-user-stories.md`](features-y-user-stories.md) | Features y US-01 a US-38 con criterios de aceptación | P1/P2/P3 | Día 0 | Listo |
 | [`api-contract.md`](api-contract.md) | Contrato REST: método, ruta, parámetros, códigos y ejemplos JSON | P1/P2/P3 | Día 0 | Listo (1.3) |
 | [`arquitectura.md`](arquitectura.md) | Diagrama de módulos, secuencia de compra (aprobado/rechazado/vencido), límites de servicio y consistencia | P4/P5 | Día 3 a 5 | Listo (5.3, 5.4, 5.7) |
 | [`modelo-datos.md`](modelo-datos.md) | ER por microservicio, claves, relaciones y entidades solapadas | P1/P2/P3/P5 | Día 5 | Listo (5.5) |
 | [`decisiones.md`](decisiones.md) | ADR cortas: decisión, alternativas y consecuencias | P4/P5 | Día 5 | Listo (5.9) |
-| [`pruebas.md`](pruebas.md) | Estrategia, comandos y evidencia de concurrencia, suite y E2E | P5 | Día 5 a 7 | Suite y E2E reales del Día 6 |
-| [`evidencia/`](evidencia/) | Salidas de suite, E2E y clone limpio de los Días 4 a 7 | P5 | Día 4 a 7 | Listo, incluido el RC |
+| [`pruebas.md`](pruebas.md) | Estrategia, comandos y evidencia de concurrencia, suite y E2E | P5 | Día 5 a 8 | Suite y E2E reales; verificación del tag final |
+| [`evidencia/`](evidencia/) | Salidas de suite, E2E y clone limpio de los Días 4 a 8 | P5 | Día 4 a 8 | Listo, incluido el tag final |
 | `../openspec/changes/entrega-1-core/` | Propuesta, specs, diseño y tareas del cambio | Todos | Día 0 | Listo |
 | `../catalog-service/README.md` | Responsabilidad, endpoints, modelo y comandos del servicio | P1 | Día 1 a 4 | Día 4 |
 | `../inventory-service/README.md` | Responsabilidad, endpoints, modelo y comandos del servicio | P2 | Día 1 a 4 | Día 4 |

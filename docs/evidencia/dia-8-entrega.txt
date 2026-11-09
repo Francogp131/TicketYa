@@ -1,0 +1,75 @@
+# Cierre de entrega — Día 8 (9/11/2026)
+
+Verificación del tag final `entrega-1` y del acceso al repositorio.
+
+- Repositorio: <https://github.com/Francogp131/TicketYa>
+- Rama: `main`
+- Commit de código entregado: `5874fdfb4c25deb99e7c4e7638082db4595b0c3a` (merge del PR #19)
+- Tag: `entrega-1` (anotado)
+- Visibilidad: pública
+- Colaboradores con permiso Write: `CarolinaNavarrete`, `ivanlavayen`, `Francogp131`,
+  `Tiagoarra18` y `Pabloaguirre23`
+
+## 1. Tag local y remoto
+
+```text
+$ git rev-parse HEAD
+5874fdfb4c25deb99e7c4e7638082db4595b0c3a
+
+$ git tag -n
+entrega-1       Entrega 1 - TicketYa
+entrega-1-rc    Release candidate Entrega 1 - TicketYa (Día 7)
+
+$ git ls-remote --tags origin
+ae8041f8ced469744e21daa5c2d4a8a3c28bb39c	refs/tags/entrega-1
+5874fdfb4c25deb99e7c4e7638082db4595b0c3a	refs/tags/entrega-1^{}
+1e90f81927a939ec0a8149aa7043cb80024634f1	refs/tags/entrega-1-rc
+5874fdfb4c25deb99e7c4e7638082db4595b0c3a	refs/tags/entrega-1-rc^{}
+```
+
+El tag `entrega-1` es anotado y su commit pelado (`^{}`) es el merge del PR #19.
+
+## 2. Clone limpio del tag
+
+```text
+$ git clone --depth 1 --branch entrega-1 \
+    git@github.com:Francogp131/TicketYa.git ticketya-final
+$ cd ticketya-final
+$ git rev-parse HEAD
+5874fdfb4c25deb99e7c4e7638082db4595b0c3a
+$ git status --short
+(sin salida)
+$ git describe --tags --exact-match
+entrega-1
+```
+
+El clone del tag queda limpio y en el mismo commit verificado por el RC.
+
+## 3. Acceso y colaboradores
+
+```text
+$ gh repo view Francogp131/TicketYa --json visibility,defaultBranchRef
+{"defaultBranchRef":{"name":"main"},"visibility":"PUBLIC"}
+
+$ gh api repos/Francogp131/TicketYa/collaborators --jq '.[] | .login'
+CarolinaNavarrete
+ivanlavayen
+Francogp131
+Tiagoarra18
+Pabloaguirre23
+```
+
+## 4. Alcance del tag
+
+El tag `entrega-1` apunta al commit de código verificado (`5874fdf`). Los commits posteriores
+al tag solo agregan pruebas o documentación de cierre; no cambian el código de producción,
+el contrato ni las migraciones. Si se mergean commits posteriores y se quiere que el tag
+incluya todo el árbol final, re-crearlo con:
+
+```bash
+git switch main && git pull
+git tag -fa entrega-1 -m "Entrega 1 - TicketYa"
+git push origin entrega-1 --force
+```
+
+La entrega es el enlace público del repositorio: <https://github.com/Francogp131/TicketYa>.

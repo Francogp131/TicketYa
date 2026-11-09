@@ -189,7 +189,9 @@ openspec status --change entrega-1-core
 
 **Día 6 (8/11):** E2E real de los seis flujos críticos por el gateway con Newman: **45/45 requests y 45/45 assertions**, con salida completa en [`docs/evidencia/dia-6-newman.txt`](docs/evidencia/dia-6-newman.txt). Suite de control: **135 tests, 0 fallos, 0 omitidos** ([`docs/evidencia/dia-6-suite.txt`](docs/evidencia/dia-6-suite.txt)). Checklist de la Entrega 1 completo en [`docs/checklist-entrega-1.md`](docs/checklist-entrega-1.md).
 
-**Día 7 (8/11):** release candidate verificado en clone limpio y tag `entrega-1-rc`; evidencia en [`docs/evidencia/dia-7-rc.txt`](docs/evidencia/dia-7-rc.txt). Queda para el Día 8 el tag final `entrega-1` y la entrega del enlace.
+**Día 7 (8/11):** release candidate verificado en clone limpio y tag `entrega-1-rc`; evidencia en [`docs/evidencia/dia-7-rc.txt`](docs/evidencia/dia-7-rc.txt).
+
+**Día 8 (9/11):** tag final `entrega-1` sobre `5874fdf` (merge del PR #19), repositorio público con los cinco colaboradores y clone limpio del tag verificados. Evidencia en [`docs/evidencia/dia-8-entrega.txt`](docs/evidencia/dia-8-entrega.txt). Entrega: <https://github.com/Francogp131/TicketYa>.
 
 El avance verificable está en [`tasks.md`](openspec/changes/entrega-1-core/tasks.md).
 

@@ -4,7 +4,7 @@ Lista verificable de **todo** lo que pide el enunciado para la Entrega 1. Cada f
 
 **Leyenda:** `[ ]` pendiente · `[x]` verificado con evidencia.
 
-## 0. Estado de verificación (Día 6/7 — 8/11/2026)
+## 0. Estado de verificación (Día 8 — 9/11/2026)
 
 | Área | Estado | Evidencia |
 |---|---|---|
@@ -21,7 +21,7 @@ Lista verificable de **todo** lo que pide el enunciado para la Entrega 1. Cada f
 | Postman | 45 requests con assertions; Newman 45/45 (Día 6) | `postman/TicketYa.postman_collection.json` |
 | RC (6.4) | Tag `entrega-1-rc` y clone limpio del candidato | [`evidencia/dia-7-rc.txt`](evidencia/dia-7-rc.txt) |
 | Discrepancia de contrato (no bloqueante) | `DELETE /api/inventory/reservations/{reservaId}` documentado en 4.5 pero no implementado; reportado a P2 | [`pruebas.md` §7.1](pruebas.md#71-discrepancia-de-contrato-detectada-en-el-control-del-día-7) |
-| Pendiente | Tag final `entrega-1`, verificación de accesos y entrega (Día 8) | 6.4 |
+| Cierre (6.4) | Tag final `entrega-1` sobre `5874fdf`, repo público y 5 colaboradores con Write | [`evidencia/dia-8-entrega.txt`](evidencia/dia-8-entrega.txt) |
 
 ## 1. Funcionalidad de la Entrega 1
 
@@ -109,7 +109,7 @@ No se exige en esta entrega; no debe consumir tiempo del cronograma:
 
 ## 6. Puerta de salida (no se entrega si falla)
 
-- [ ] El repositorio es accesible y el tag `entrega-1` apunta al commit entregado. _(RC `entrega-1-rc` creado y verificado en clone limpio; falta el tag final del Día 8)_
+- [x] El repositorio es accesible y el tag `entrega-1` apunta al commit entregado. _(Tag `entrega-1` sobre `5874fdf`; repo público y clone limpio del tag verificados en [`evidencia/dia-8-entrega.txt`](evidencia/dia-8-entrega.txt))_
 - [x] `main` tiene el CI verde y la suite `mvn test` pasa en los cuatro proyectos (135 tests, 0 omitidos). Evidencia: [`evidencia/dia-6-suite.txt`](evidencia/dia-6-suite.txt).
 - [x] Un clone limpio sigue el README y levanta el sistema (3 bases healthy, 4 health 200, gateway 200/401). Evidencia: [`evidencia/dia-5-clone-limpio.txt`](evidencia/dia-5-clone-limpio.txt) y [`evidencia/dia-7-rc.txt`](evidencia/dia-7-rc.txt).
 - [x] La prueba de no doble venta pasa de forma reproducible (`ConcurrenciaPostgresTest`: 100 hilos, 1 ganador).
