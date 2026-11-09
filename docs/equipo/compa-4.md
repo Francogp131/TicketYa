@@ -1,4 +1,4 @@
-# P4 — Gateway + infraestructura (Thiago)
+# P4 — Gateway + infraestructura (Tiago)
 
 **Servicio:** `api-gateway` (puerto **8080**)
 **Rama base:** `main`

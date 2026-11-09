@@ -81,7 +81,7 @@ Tests de tu servicio:
 cd catalog-service && mvn test        # Iván
 cd inventory-service && mvn test      # Pablo
 cd orders-service && mvn test         # Caro
-cd api-gateway && mvn test            # Thiago
+cd api-gateway && mvn test            # Tiago
 ```
 
 Levantar tu servicio:
@@ -128,6 +128,6 @@ Y aclará si estás en Windows, macOS o Linux.
 | Iván | Un test de validación de sector numerado en `catalog-service`. |
 | Pablo | Un test de disponibilidad de zona en `inventory-service`. |
 | Caro | Un test de detalle de orden inexistente en `orders-service`. |
-| Thiago | El esqueleto del diagrama de módulos en `docs/arquitectura.md`. |
+| Tiago | El esqueleto del diagrama de módulos en `docs/arquitectura.md`. |
 
 Después de ese PR, cada uno sigue con las tareas del Día 2 de su brief.
