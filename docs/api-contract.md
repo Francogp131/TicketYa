@@ -189,7 +189,7 @@ Sector no numerado:
 }
 ```
 
-Errores: `400 VALIDATION_ERROR` (capacidad ≤ 0, sector numerado sin filas), `403`, `404 VENUE_NOT_FOUND`.
+Errores: `400 VALIDATION_ERROR` (capacidad ≤ 0, sector numerado sin filas, capacidad > 20000, filas > 100 o asientosPorFila > 200), `403`, `404 VENUE_NOT_FOUND`, `409 SECTOR_ALREADY_EXISTS` (ya existe un sector con ese nombre en el lugar).
 
 ### 3.5 Listar sectores — `GET /api/catalog/venues/{venueId}/sectors` (público)
 

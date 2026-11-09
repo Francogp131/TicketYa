@@ -26,6 +26,10 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class VenueService {
 
+    private static final int CAPACIDAD_MAXIMA = 20000;
+    private static final int FILAS_MAXIMAS = 100;
+    private static final int ASIENTOS_POR_FILA_MAXIMOS = 200;
+
     private final LugarRepository lugarRepository;
     private final SectorRepository sectorRepository;
     private final AsientoRepository asientoRepository;
@@ -66,10 +70,15 @@ public class VenueService {
     @Transactional
     public SectorResponse crearSector(UUID lugarId, CrearSectorRequest request) {
         Lugar lugar = buscarLugar(lugarId);
+        String nombre = request.nombre().trim();
+        if (sectorRepository.existsByLugarIdAndNombre(lugar.getId(), nombre)) {
+            throw ApiException.conflict("SECTOR_ALREADY_EXISTS",
+                    "Ya existe un sector con el nombre '" + nombre + "' en el lugar " + lugarId);
+        }
 
         Sector sector = new Sector();
         sector.setLugarId(lugar.getId());
-        sector.setNombre(request.nombre().trim());
+        sector.setNombre(nombre);
         sector.setTipo(request.tipo());
 
         List<Asiento> asientos = new ArrayList<>();
@@ -77,6 +86,11 @@ public class VenueService {
             if (request.filas() == null || request.filas() < 1
                     || request.asientosPorFila() == null || request.asientosPorFila() < 1) {
                 throw validacion("filas", "un sector numerado requiere filas y asientosPorFila mayores a 0");
+            }
+            if (request.filas() > FILAS_MAXIMAS || request.asientosPorFila() > ASIENTOS_POR_FILA_MAXIMOS
+                    || (long) request.filas() * request.asientosPorFila() > CAPACIDAD_MAXIMA) {
+                throw validacion("filas", "el sector supera el máximo de " + CAPACIDAD_MAXIMA
+                        + " asientos (" + FILAS_MAXIMAS + " filas x " + ASIENTOS_POR_FILA_MAXIMOS + " asientos)");
             }
             int capacidad = request.filas() * request.asientosPorFila();
             sector.setCapacidad(capacidad);
@@ -92,6 +106,9 @@ public class VenueService {
         } else {
             if (request.capacidad() == null || request.capacidad() < 1) {
                 throw validacion("capacidad", "un sector no numerado requiere capacidad mayor a 0");
+            }
+            if (request.capacidad() > CAPACIDAD_MAXIMA) {
+                throw validacion("capacidad", "la capacidad no puede superar " + CAPACIDAD_MAXIMA);
             }
             sector.setCapacidad(request.capacidad());
             sector.setFilas(null);

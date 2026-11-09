@@ -94,6 +94,34 @@ class VenueControllerTest {
     }
 
     @Test
+    void crearSectorConFilasSobreElMaximoDevuelve400() throws Exception {
+        mockMvc.perform(post("/api/catalog/venues/{id}/sectors", UUID.randomUUID())
+                        .header("X-User-Id", ADMIN)
+                        .header("X-User-Role", "ADMIN")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"nombre":"Platea","tipo":"NUMERADO","filas":101,"asientosPorFila":5}
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("VALIDATION_ERROR"))
+                .andExpect(jsonPath("$.errors").isArray());
+    }
+
+    @Test
+    void crearSectorConCapacidadSobreElMaximoDevuelve400() throws Exception {
+        mockMvc.perform(post("/api/catalog/venues/{id}/sectors", UUID.randomUUID())
+                        .header("X-User-Id", ADMIN)
+                        .header("X-User-Role", "ADMIN")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"nombre":"Campo","tipo":"NO_NUMERADO","capacidad":20001}
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("VALIDATION_ERROR"))
+                .andExpect(jsonPath("$.errors").isArray());
+    }
+
+    @Test
     void crearLugarValidoDevuelve201() throws Exception {
         UUID id = UUID.randomUUID();
         when(venueService.crearLugar(any(CrearLugarRequest.class)))

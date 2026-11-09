@@ -11,4 +11,6 @@ public interface SectorRepository extends JpaRepository<Sector, UUID> {
     List<Sector> findByLugarIdOrderByNombreAsc(UUID lugarId);
 
     Optional<Sector> findByIdAndLugarId(UUID id, UUID lugarId);
+
+    boolean existsByLugarIdAndNombre(UUID lugarId, String nombre);
 }
