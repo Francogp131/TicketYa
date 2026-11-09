@@ -300,3 +300,9 @@ curl -s http://localhost:8081/v3/api-docs | jq '.paths | keys'
 Debe listar los nueve endpoints de catálogo, incluidos `GET /api/catalog/events`,
 `POST /api/catalog/events/{eventoId}/cancel` y `PATCH /internal/events/{eventoId}/availability`.
 Swagger UI: <http://localhost:8081/swagger-ui.html>.
+
+## 9. Tests de controllers de orders (Día 9)
+
+Se agregaron tests de la capa HTTP para altas, listado, devoluciones, entradas y cancelación
+interna. Suite de orders: 61 tests, 0 fallos. Evidencia:
+[`evidencia/dia-9-orders.txt`](evidencia/dia-9-orders.txt).
