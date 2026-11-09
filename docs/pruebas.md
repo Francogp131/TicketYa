@@ -62,8 +62,9 @@ Sin Docker, la suite de catalog también queda verde: 54 tests, 0 fallos y solo 
 
 Desglose relevante:
 
-- `EventServiceTest` (22): estados, cancelación con/sin orders, callback de disponibilidad,
-  scheduler de finalización, búsqueda por fecha/precio/relevancia, rango y orden inválidos.
+- `EventServiceTest` (22): estados, cancelación con/sin orders, endpoint de disponibilidad
+  (sin llamada desde inventory; observación 9/11), scheduler de finalización, búsqueda por
+  fecha/precio/relevancia, rango y orden inválidos.
 - `EventoBusquedaIntegrationTest` (3): búsqueda sin filtros, texto con mayúsculas y filtros
   combinados contra PostgreSQL real (regresión del 500 por parámetros nulos).
 - `OrdersRestClientTest` (3): contrato interno de cancelación, propagación de 5xx sin reintentos

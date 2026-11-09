@@ -15,14 +15,14 @@
 | [`equipo/compa-4.md`](equipo/compa-4.md) | Brief de gateway e infraestructura (P4) | P5 | Día 0 | Listo |
 | [`equipo/franco-p5.md`](equipo/franco-p5.md) | Brief de calidad, integración y documentación (P5) | P5 | Día 0 | Listo |
 | [`plan-entrega-1.md`](plan-entrega-1.md) | Cronograma día por día, responsables y riesgos | P4 | Día 0 | Listo |
-| [`checklist-entrega-1.md`](checklist-entrega-1.md) | Verificación de todo lo pedido para la Entrega 1 | P4 | Día 0 a 8 | 100 % verificado y cerrado (6.3, 6.4) |
+| [`checklist-entrega-1.md`](checklist-entrega-1.md) | Verificación de todo lo pedido para la Entrega 1 | P4 | Día 0 a 9 | En revisión (observaciones 9/11) |
 | [`features-y-user-stories.md`](features-y-user-stories.md) | Features y US-01 a US-38 con criterios de aceptación | P1/P2/P3 | Día 0 | Listo |
 | [`api-contract.md`](api-contract.md) | Contrato REST: método, ruta, parámetros, códigos y ejemplos JSON | P1/P2/P3 | Día 0 | Listo (1.3) |
-| [`arquitectura.md`](arquitectura.md) | Diagrama de módulos, secuencia de compra (aprobado/rechazado/vencido), límites de servicio y consistencia | P4/P5 | Día 3 a 5 | Listo (5.3, 5.4, 5.7) |
+| [`arquitectura.md`](arquitectura.md) | Diagrama de módulos, secuencia de compra (aprobado/rechazado/vencido), límites de servicio y consistencia | P4/P5 | Día 3 a 9 | Listo; deuda conocida documentada |
 | [`modelo-datos.md`](modelo-datos.md) | ER por microservicio, claves, relaciones y entidades solapadas | P1/P2/P3/P5 | Día 5 | Listo (5.5) |
-| [`decisiones.md`](decisiones.md) | ADR cortas: decisión, alternativas y consecuencias | P4/P5 | Día 5 | Listo (5.9) |
-| [`pruebas.md`](pruebas.md) | Estrategia, comandos y evidencia de concurrencia, suite y E2E | P5 | Día 5 a 8 | Suite y E2E reales; verificación del tag final |
-| [`evidencia/`](evidencia/) | Salidas de suite, E2E y clone limpio de los Días 4 a 8 | P5 | Día 4 a 8 | Listo, incluido el tag final |
+| [`decisiones.md`](decisiones.md) | ADR cortas: decisión, alternativas y consecuencias | P4/P5 | Día 5 a 9 | Listo (ADR-001 a ADR-013) |
+| [`pruebas.md`](pruebas.md) | Estrategia, comandos y evidencia de concurrencia, suite y E2E | P5 | Día 5 a 9 | En revisión; se actualiza con los fixes |
+| [`evidencia/`](evidencia/) | Salidas de suite, E2E y clone limpio de los Días 4 a 9 | P5 | Día 4 a 9 | Listo hasta el Día 8; se agrega evidencia del Día 9 |
 | `../openspec/changes/entrega-1-core/` | Propuesta, specs, diseño y tareas del cambio | Todos | Día 0 | Listo |
 | `../catalog-service/README.md` | Responsabilidad, endpoints, modelo y comandos del servicio | P1 | Día 1 a 4 | Día 4 |
 | `../inventory-service/README.md` | Responsabilidad, endpoints, modelo y comandos del servicio | P2 | Día 1 a 4 | Día 4 |
@@ -58,4 +58,4 @@
 - [x] Los diagramas Mermaid renderizan en GitHub.
 - [x] El README raíz se probó en un clone limpio (Días 5 y 7).
 - [x] `docs/pruebas.md` tiene comandos que se ejecutan tal cual (suite y Newman corridos el Día 6).
-- [x] `docs/checklist-entrega-1.md` no tiene ítems sin evidencia.
+- [ ] `docs/checklist-entrega-1.md` no tiene ítems sin evidencia. _(2.4 en corrección)_

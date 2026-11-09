@@ -203,4 +203,16 @@ de zonas no numeradas sea idempotente.
 | Cancelación sin orders | `cancelacion_pendiente` + scheduler de reintento |
 | Reserva vencida | Scheduler cada 30 s y validación perezosa al consultar/pagar |
 
-La consistencia entre servicios es **eventual y explícita**: catalog publica un snapshot y solo confirma si inventory lo aceptó; inventory avisa los cambios de disponibilidad con reintento; orders nunca marca `PAGADA` sin la confirmación de inventory. Los snapshots congelan nombre, fecha y precio para que la compra y la devolución no dependan de una llamada en vivo. Cada llamada interna es idempotente para que un reintento no duplique inventario, entradas ni reintegros. Las alternativas y consecuencias de cada mecanismo están en [`decisiones.md`](decisiones.md) (ADR-005 a ADR-010).
+La consistencia entre servicios es **eventual y explícita**: catalog publica un snapshot y solo confirma si inventory lo aceptó; inventory es la fuente de la disponibilidad y el callback de `AGOTADO`/`PUBLICADO` hacia catalog está **pendiente de implementación** (observación del 9/11); orders nunca marca `PAGADA` sin la confirmación de inventory. Los snapshots congelan nombre, fecha y precio para que la compra y la devolución no dependan de una llamada en vivo. Cada llamada interna es idempotente para que un reintento no duplique inventario, entradas ni reintegros. Las alternativas y consecuencias de cada mecanismo están en [`decisiones.md`](decisiones.md) (ADR-005 a ADR-013).
+
+### Deuda conocida (Entrega 1 → Entrega 2)
+
+- **Compra con transacción local y llamadas HTTP:** `OrderService.crear` ejecuta la compra en
+  una transacción local mientras llama a inventory y a la pasarela. La saga/outbox formal y
+  la separación de transacciones quedan para la Entrega 2; mientras tanto, los tests de
+  integración deben cubrir el rollback y la compensación.
+- **Búsqueda en memoria:** `catalog-service` trae los eventos, ordena y pagina en memoria. Con
+  el volumen de la Entrega 1 alcanza; la consulta paginada en base queda para la Entrega 2.
+- **Snapshot con `version = 1L`:** un evento se publica una vez; el `eventoId + version` de
+  ADR-005 queda preparado para futuras republicaciones.
+- **“Suspender”:** en la Entrega 1 se resuelve como cancelación (ADR-012).

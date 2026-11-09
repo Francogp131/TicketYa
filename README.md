@@ -31,10 +31,10 @@ mvn -version           # debe usar Java 21
 docker --version
 ```
 
-Si Maven usa otra versión de Java:
+Si Maven usa otra versión de Java, configurá `JAVA_HOME` apuntando a tu JDK 21. En macOS:
 
 ```bash
-export JAVA_HOME=/Users/Franco/Library/Java/JavaVirtualMachines/temurin-21.0.12.1/Contents/Home
+export JAVA_HOME=$(/usr/libexec/java_home -v 21)
 ```
 
 ## Cómo ejecutar
@@ -179,21 +179,12 @@ openspec status --change entrega-1-core
 
 ## Estado
 
-**Día 1 completado (3/11):** CRUD de catálogo con publicación, inventario base con reserva atómica numerada y de zonas, y creación de orden `PENDIENTE_PAGO` desde una reserva.
+Entrega 1: núcleo implementado (publicación, búsqueda, compra con reserva y QR, no doble
+venta, devoluciones y cancelación). El estado verificable y las observaciones abiertas están
+en [`docs/checklist-entrega-1.md`](docs/checklist-entrega-1.md); la estrategia y la evidencia
+de pruebas, en [`docs/pruebas.md`](docs/pruebas.md).
 
-**Días 2 y 3 completados (4-5/11):** estados, búsqueda con orden/paginación, cancelación y scheduler en catalog; límite por cliente, vencimiento, confirmación, liberación y devoluciones en inventory; pasarela mock, pago aprobado con QR, rechazo, timeout, idempotencia y compensaciones en orders. La colección Postman ya incluye los flujos de compra, reintento, rechazo, pago lento y cancelación.
-
-**Día 4 (6/11):** cerrada la reserva de zonas (3.3) con unitarios y concurrencia; orders 4.3-4.7 extraído a `main`; devoluciones (4.8), cancelación con reintegro (4.9), consultas propias (4.10) y OpenAPI de orders (4.11) implementados; búsqueda de catalog corregida (500 por parámetros nulos) con test de regresión; suite local 51/30/46/5 y E2E 45/45 por gateway. El Día 4 queda completo.
-
-**Día 5 (7/11):** ER de las tres bases validado contra Flyway en [`docs/modelo-datos.md`](docs/modelo-datos.md); decisiones en [`docs/decisiones.md`](docs/decisiones.md) (ADR-001 a ADR-011); [`docs/arquitectura.md`](docs/arquitectura.md) con límites de servicio, consistencia y compensaciones; índice de documentación actualizado. Suite completa **135 tests** (catalog 54, inventory 30, orders 46, gateway 5) **sin fallos ni omitidos** con Java 21 y Docker, y CI verde en `main`. El README se verificó en un clone limpio: las tres bases quedan `healthy`, los cuatro servicios responden `200` y el gateway devuelve `200`/`401` según corresponda.
-
-**Día 6 (8/11):** E2E real de los seis flujos críticos por el gateway con Newman: **45/45 requests y 45/45 assertions**, con salida completa en [`docs/evidencia/dia-6-newman.txt`](docs/evidencia/dia-6-newman.txt). Suite de control: **135 tests, 0 fallos, 0 omitidos** ([`docs/evidencia/dia-6-suite.txt`](docs/evidencia/dia-6-suite.txt)). Checklist de la Entrega 1 completo en [`docs/checklist-entrega-1.md`](docs/checklist-entrega-1.md).
-
-**Día 7 (8/11):** release candidate verificado en clone limpio y tag `entrega-1-rc`; evidencia en [`docs/evidencia/dia-7-rc.txt`](docs/evidencia/dia-7-rc.txt).
-
-**Día 8 (9/11):** tag final `entrega-1` sobre `5874fdf` (merge del PR #19), repositorio público con los cinco colaboradores y clone limpio del tag verificados. Evidencia en [`docs/evidencia/dia-8-entrega.txt`](docs/evidencia/dia-8-entrega.txt). Entrega: <https://github.com/Francogp131/TicketYa>.
-
-El avance verificable está en [`tasks.md`](openspec/changes/entrega-1-core/tasks.md).
+Entrega: <https://github.com/Francogp131/TicketYa>
 
 ## Datos de prueba
 
