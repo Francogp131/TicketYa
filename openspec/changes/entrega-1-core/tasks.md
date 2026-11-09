@@ -63,8 +63,8 @@
 
 - [x] 6.1 Ejecutar la suite completa (`mvn test`) de los cuatro proyectos y el CI sobre `main`; verificar todo verde y sin tests omitidos. _(catalog 54, inventory 30, orders 46, gateway 5: 135 tests, 0 fallos, 0 omitidos con Java 21 y Docker; CI verde en el merge del PR #18 `08ba5c5`; evidencia en `docs/evidencia/dia-6-suite.txt`)_
 - [x] 6.2 Ejecutar el E2E por el gateway de los seis flujos críticos (publicar, buscar, reservar, comprar, devolver y cancelar); verificar con Postman/Newman y dejar la salida como evidencia. _(corrida real del Día 6: 45/45 requests y 45/45 assertions por gateway sobre `08ba5c5`; salida completa en `docs/evidencia/dia-6-newman.txt`)_
-- [x] 6.3 Completar `docs/checklist-entrega-1.md` al 100 %; verificar que no quede ningún ítem sin evidencia. _(todos los ítems verificables con evidencia enlazada; solo queda abierto el tag final `entrega-1` de 6.4)_
-- [ ] 6.4 Probar un clone limpio, crear el tag `entrega-1`, verificar el acceso al repositorio y entregar el enlace; verificar que el tag apunte al commit entregado. _(Día 7: tag `entrega-1-rc` y clone limpio verificados en `docs/evidencia/dia-7-rc.txt`; falta el tag final `entrega-1` y la entrega del Día 8)_
+- [x] 6.3 Completar `docs/checklist-entrega-1.md` al 100 %; verificar que no quede ningún ítem sin evidencia. _(todos los ítems verificables con evidencia enlazada; el tag final `entrega-1` se cerró en 6.4)_
+- [x] 6.4 Probar un clone limpio, crear el tag `entrega-1`, verificar el acceso al repositorio y entregar el enlace; verificar que el tag apunte al commit entregado. _(Día 8: tag `entrega-1` sobre `5874fdf` (merge del PR #19), repo público con 5 colaboradores Write y clone limpio del tag verificado en `docs/evidencia/dia-8-entrega.txt`. Los commits posteriores al tag solo agregan pruebas o documentación de cierre.)_
 
 ## Workflow follow-up
 
