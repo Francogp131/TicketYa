@@ -56,6 +56,14 @@ class EventoBusquedaIntegrationTest {
     }
 
     @Test
+    void unComodinLiteralNoActuaComoComodin() {
+        PageResponse<EventoBusquedaResponse> pagina = eventService.buscar(
+                null, null, "%", "%", null, null, "FECHA_ASC", 0, 20);
+
+        assertThat(pagina.content()).isEmpty();
+    }
+
+    @Test
     void buscarCombinaTipoParticipanteYCiudad() {
         PageResponse<EventoBusquedaResponse> pagina = eventService.buscar(
                 TipoEvento.FESTIVAL, null, "Los Piojos", "Tandil",

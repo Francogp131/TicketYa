@@ -282,7 +282,7 @@ Query params (todos opcionales y combinables):
 | `orden` | `FECHA_ASC`, `FECHA_DESC`, `PRECIO_ASC`, `PRECIO_DESC`, `RELEVANCIA` | Default `FECHA_ASC` |
 | `page`, `size` | entero | Paginación |
 
-Solo devuelve eventos en `PUBLICADO` o `AGOTADO`.
+Solo devuelve eventos en `PUBLICADO` o `AGOTADO`. Los caracteres `%`, `_` y `\` se tratan como literales (no como comodines de `LIKE`).
 
 **200**
 

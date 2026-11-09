@@ -354,13 +354,16 @@ public class EventService {
         String ciudadNormalizada = normalizar(ciudad);
         List<TipoEvento> tipos = tipo == null ? List.of(TipoEvento.values()) : List.of(tipo);
         UUID organizadorFiltro = organizadorId == null ? SIN_ORGANIZADOR : organizadorId;
-        String participanteFiltro = participanteNormalizado == null ? "%" : "%" + participanteNormalizado + "%";
-        String ciudadFiltro = ciudadNormalizada == null ? "%" : ciudadNormalizada;
+        String participanteFiltro = participanteNormalizado == null
+                ? null
+                : "%" + escaparLike(participanteNormalizado) + "%";
+        String ciudadFiltro = ciudadNormalizada == null ? "%" : escaparLike(ciudadNormalizada);
         OffsetDateTime desdeFiltro = fechaDesde == null ? FECHA_MINIMA : fechaDesde;
         OffsetDateTime hastaFiltro = fechaHasta == null ? FECHA_MAXIMA : fechaHasta;
 
         List<Evento> eventos = eventoRepository.buscar(ESTADOS_VISIBLES, tipos, organizadorId != null,
-                organizadorFiltro, participanteFiltro, ciudadFiltro, desdeFiltro, hastaFiltro);
+                organizadorFiltro, participanteNormalizado != null, participanteFiltro, ciudadFiltro,
+                desdeFiltro, hastaFiltro);
         if (eventos.isEmpty()) {
             return new PageResponse<>(List.of(), page, size, 0, 0);
         }
@@ -424,6 +427,12 @@ public class EventService {
             return null;
         }
         return valor.trim().toLowerCase(Locale.ROOT);
+    }
+
+    private String escaparLike(String valor) {
+        return valor.replace("\\", "\\\\")
+                .replace("%", "\\%")
+                .replace("_", "\\_");
     }
 
     private InventorySnapshot armarSnapshot(Evento evento, List<Sector> sectores,
