@@ -34,7 +34,7 @@ public class IdentityHeaderFilter implements org.springframework.cloud.gateway.f
 
     private static final Set<String> ROLES = Set.of("CLIENT", "ORGANIZER", "ADMIN");
     private static final Set<String> ADMIN_ONLY = Set.of("ADMIN");
-    private static final Set<String> ORGANIZER_OR_ADMIN = Set.of("ORGANIZER", "ADMIN");
+    private static final Set<String> ORGANIZER_ONLY = Set.of("ORGANIZER");
     private static final Set<String> AUTHENTICATED = Set.of("CLIENT", "ORGANIZER", "ADMIN");
 
     private static final Set<String> PUBLIC_GET_PATHS = Set.of(
@@ -125,11 +125,11 @@ public class IdentityHeaderFilter implements org.springframework.cloud.gateway.f
             if (HttpMethod.POST.equals(method)
                     && (path.equals("/api/catalog/events")
                     || path.matches("^/api/catalog/events/[0-9a-fA-F-]{36}/publish$"))) {
-                return ORGANIZER_OR_ADMIN;
+                return ORGANIZER_ONLY;
             }
             if (HttpMethod.PUT.equals(method)
                     && path.matches("^/api/catalog/events/[0-9a-fA-F-]{36}/prices/[0-9a-fA-F-]{36}$")) {
-                return ORGANIZER_OR_ADMIN;
+                return ORGANIZER_ONLY;
             }
             return AUTHENTICATED;
         }

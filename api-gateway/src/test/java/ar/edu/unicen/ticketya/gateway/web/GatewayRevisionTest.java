@@ -50,4 +50,17 @@ class GatewayRevisionTest {
                 .exchange()
                 .expectStatus().isUnauthorized();
     }
+
+    @ParameterizedTest
+    @CsvSource({
+            "POST,/api/catalog/events",
+            "PUT,/api/catalog/events/00000000-0000-4000-8000-000000000000/prices/00000000-0000-4000-8000-000000000000",
+            "POST,/api/catalog/events/00000000-0000-4000-8000-000000000000/publish"
+    })
+    void soloUnOrganizadorOperaEventos(String metodo, String ruta) {
+        llamar(metodo, ruta, ADMIN, "ADMIN").expectStatus().isForbidden();
+        llamar(metodo, ruta, CLIENT, "CLIENT").expectStatus().isForbidden();
+        llamar(metodo, ruta, ORGANIZER, "ORGANIZER")
+                .expectStatus().value(s -> assertThat(s).isNotIn(401, 403));
+    }
 }
