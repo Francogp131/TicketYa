@@ -13,7 +13,7 @@
 [INFO] Nothing to compile - all classes are up to date.
 [INFO] 
 [INFO] --- resources:3.3.1:testResources (default-testResources) @ orders-service ---
-[INFO] skip non existing resourceDirectory D:\DATOS\Documents\0.Facultad\2026\Arquitectura Web\TP\TicketYa\orders-service\src\test\resources
+[INFO] skip non existing resourceDirectory <repo>\orders-service\src\test\resources
 [INFO] 
 [INFO] --- compiler:3.14.1:testCompile (default-testCompile) @ orders-service ---
 [INFO] Nothing to compile - all classes are up to date.
@@ -80,7 +80,7 @@ been appended
 
  :: Spring Boot ::               (v3.5.16)
 
-2026-11-09T17:25:33.185-03:00  INFO 19692 --- [orders-service] [           main] .u.t.o.s.OrderIdempotencyIntegrationTest : Starting OrderIdempotencyIntegrationTest using Java 21.0.13 with PID 19692 (started by Usuario in D:\DATOS\Documents\0.Facultad\2026\Arquitectura Web\TP\TicketYa\orders-service)
+2026-11-09T17:25:33.185-03:00  INFO 19692 --- [orders-service] [           main] .u.t.o.s.OrderIdempotencyIntegrationTest : Starting OrderIdempotencyIntegrationTest using Java 21.0.13 with PID 19692 (started by Usuario in <repo>\orders-service)
 2026-11-09T17:25:33.186-03:00  INFO 19692 --- [orders-service] [           main] .u.t.o.s.OrderIdempotencyIntegrationTest : No active profile set, falling back to 1 default profile: "default"
 2026-11-09T17:25:34.013-03:00  INFO 19692 --- [orders-service] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
 2026-11-09T17:25:34.065-03:00  INFO 19692 --- [orders-service] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 44 ms. Found 6 JPA repository interfaces.
@@ -132,7 +132,7 @@ been appended
 
  :: Spring Boot ::               (v3.5.16)
 
-2026-11-09T17:25:42.009-03:00  INFO 19692 --- [orders-service] [           main] a.e.u.t.o.w.InternalOrderControllerTest  : Starting InternalOrderControllerTest using Java 21.0.13 with PID 19692 (started by Usuario in D:\DATOS\Documents\0.Facultad\2026\Arquitectura Web\TP\TicketYa\orders-service)
+2026-11-09T17:25:42.009-03:00  INFO 19692 --- [orders-service] [           main] a.e.u.t.o.w.InternalOrderControllerTest  : Starting InternalOrderControllerTest using Java 21.0.13 with PID 19692 (started by Usuario in <repo>\orders-service)
 2026-11-09T17:25:42.009-03:00  INFO 19692 --- [orders-service] [           main] a.e.u.t.o.w.InternalOrderControllerTest  : No active profile set, falling back to 1 default profile: "default"
 2026-11-09T17:25:42.203-03:00  INFO 19692 --- [orders-service] [           main] o.s.b.t.m.w.SpringBootMockServletContext : Initializing Spring TestDispatcherServlet ''
 2026-11-09T17:25:42.203-03:00  INFO 19692 --- [orders-service] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Initializing Servlet ''
@@ -152,7 +152,7 @@ been appended
 
  :: Spring Boot ::               (v3.5.16)
 
-2026-11-09T17:25:42.336-03:00  INFO 19692 --- [orders-service] [           main] a.e.u.t.orders.web.OpenApiExportTest     : Starting OpenApiExportTest using Java 21.0.13 with PID 19692 (started by Usuario in D:\DATOS\Documents\0.Facultad\2026\Arquitectura Web\TP\TicketYa\orders-service)
+2026-11-09T17:25:42.336-03:00  INFO 19692 --- [orders-service] [           main] a.e.u.t.orders.web.OpenApiExportTest     : Starting OpenApiExportTest using Java 21.0.13 with PID 19692 (started by Usuario in <repo>\orders-service)
 2026-11-09T17:25:42.337-03:00  INFO 19692 --- [orders-service] [           main] a.e.u.t.orders.web.OpenApiExportTest     : No active profile set, falling back to 1 default profile: "default"
 2026-11-09T17:25:42.572-03:00  INFO 19692 --- [orders-service] [           main] o.s.b.t.m.w.SpringBootMockServletContext : Initializing Spring TestDispatcherServlet ''
 2026-11-09T17:25:42.572-03:00  INFO 19692 --- [orders-service] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Initializing Servlet ''
@@ -174,7 +174,7 @@ been appended
 
  :: Spring Boot ::               (v3.5.16)
 
-2026-11-09T17:25:42.911-03:00  INFO 19692 --- [orders-service] [           main] a.e.u.t.orders.web.OrderControllerTest   : Starting OrderControllerTest using Java 21.0.13 with PID 19692 (started by Usuario in D:\DATOS\Documents\0.Facultad\2026\Arquitectura Web\TP\TicketYa\orders-service)
+2026-11-09T17:25:42.911-03:00  INFO 19692 --- [orders-service] [           main] a.e.u.t.orders.web.OrderControllerTest   : Starting OrderControllerTest using Java 21.0.13 with PID 19692 (started by Usuario in <repo>\orders-service)
 2026-11-09T17:25:42.911-03:00  INFO 19692 --- [orders-service] [           main] a.e.u.t.orders.web.OrderControllerTest   : No active profile set, falling back to 1 default profile: "default"
 2026-11-09T17:25:43.025-03:00  INFO 19692 --- [orders-service] [           main] o.s.b.t.m.w.SpringBootMockServletContext : Initializing Spring TestDispatcherServlet ''
 2026-11-09T17:25:43.025-03:00  INFO 19692 --- [orders-service] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Initializing Servlet ''
@@ -194,7 +194,7 @@ been appended
 
  :: Spring Boot ::               (v3.5.16)
 
-2026-11-09T17:25:43.183-03:00  INFO 19692 --- [orders-service] [           main] a.e.u.t.orders.web.ReturnControllerTest  : Starting ReturnControllerTest using Java 21.0.13 with PID 19692 (started by Usuario in D:\DATOS\Documents\0.Facultad\2026\Arquitectura Web\TP\TicketYa\orders-service)
+2026-11-09T17:25:43.183-03:00  INFO 19692 --- [orders-service] [           main] a.e.u.t.orders.web.ReturnControllerTest  : Starting ReturnControllerTest using Java 21.0.13 with PID 19692 (started by Usuario in <repo>\orders-service)
 2026-11-09T17:25:43.183-03:00  INFO 19692 --- [orders-service] [           main] a.e.u.t.orders.web.ReturnControllerTest  : No active profile set, falling back to 1 default profile: "default"
 2026-11-09T17:25:43.309-03:00  INFO 19692 --- [orders-service] [           main] o.s.b.t.m.w.SpringBootMockServletContext : Initializing Spring TestDispatcherServlet ''
 2026-11-09T17:25:43.310-03:00  INFO 19692 --- [orders-service] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Initializing Servlet ''
@@ -214,7 +214,7 @@ been appended
 
  :: Spring Boot ::               (v3.5.16)
 
-2026-11-09T17:25:43.377-03:00  INFO 19692 --- [orders-service] [           main] a.e.u.t.orders.web.TicketControllerTest  : Starting TicketControllerTest using Java 21.0.13 with PID 19692 (started by Usuario in D:\DATOS\Documents\0.Facultad\2026\Arquitectura Web\TP\TicketYa\orders-service)
+2026-11-09T17:25:43.377-03:00  INFO 19692 --- [orders-service] [           main] a.e.u.t.orders.web.TicketControllerTest  : Starting TicketControllerTest using Java 21.0.13 with PID 19692 (started by Usuario in <repo>\orders-service)
 2026-11-09T17:25:43.377-03:00  INFO 19692 --- [orders-service] [           main] a.e.u.t.orders.web.TicketControllerTest  : No active profile set, falling back to 1 default profile: "default"
 2026-11-09T17:25:43.491-03:00  INFO 19692 --- [orders-service] [           main] o.s.b.t.m.w.SpringBootMockServletContext : Initializing Spring TestDispatcherServlet ''
 2026-11-09T17:25:43.491-03:00  INFO 19692 --- [orders-service] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Initializing Servlet ''

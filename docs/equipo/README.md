@@ -42,7 +42,7 @@ mvn -version           # debe usar Java 21
 Si Maven usa otra versión:
 
 ```bash
-export JAVA_HOME=/Users/Franco/Library/Java/JavaVirtualMachines/temurin-21.0.12.1/Contents/Home
+export JAVA_HOME=$JAVA_HOME
 ```
 
 > Cada servicio es un proyecto Maven independiente. No hay `pom.xml` raíz: se ejecuta dentro de la carpeta del servicio.

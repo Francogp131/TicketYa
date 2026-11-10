@@ -4,17 +4,17 @@ Lista verificable de **todo** lo que pide el enunciado para la Entrega 1. Cada f
 
 **Leyenda:** `[ ]` pendiente · `[x]` verificado con evidencia.
 
-**Estado 9/11:** checklist en revisión por observaciones externas. No entregar hasta cerrar
-los P0 de cancelación/ventas, callback de disponibilidad, devolución parcial, sector cruzado,
-cupo de zona y reintegros. El detalle está en `tasks.md` (2.4) y en el seguimiento del equipo.
+**Estado 10/11:** correcciones del 9/11 integradas: cancelación/ventas, callback de
+disponibilidad, devolución parcial, sector cruzado, cupo de zona y reintegros. CI de `main`
+verde en `8f8b50c`: 214 tests, 0 fallos, 0 omitidos.
 
-## 0. Estado de verificación (Día 9 — 9/11/2026, en revisión)
+## 0. Estado de verificación (Día 10 — 10/11/2026, cerrado)
 
 | Área | Estado | Evidencia |
 |---|---|---|
-| CI de `main` | Verde en el merge del PR #18 (`08ba5c5`); el PR de P5 repite la suite | GitHub Actions |
+| CI de `main` | Verde en `8f8b50c` (merge del #30): 214 tests, 0 fallos, 0 omitidos | GitHub Actions, run `42884441398` |
 | RC de catálogo (6.4) | Clone limpio del PR #18: suite catalog 54/0/3 y build de los cuatro servicios | [`evidencia/dia-7-rc-catalog.txt`](evidencia/dia-7-rc-catalog.txt) |
-| Suite completa (6.1) | catalog 54, inventory 30, orders 46, gateway 5; 135 tests, 0 fallos, 0 omitidos con Docker | [`pruebas.md`](pruebas.md), [`evidencia/dia-6-suite.txt`](evidencia/dia-6-suite.txt) |
+| Suite completa (6.1) | catalog 82, inventory 39, orders 74, gateway 19; 214 tests, 0 fallos, 0 omitidos con Docker | [`pruebas.md`](pruebas.md), CI `42884441398` |
 | Suite catalog sin Docker (6.1) | 54 tests, 0 fallos, 3 de integración omitidos | [`evidencia/dia-6-catalog-suite.txt`](evidencia/dia-6-catalog-suite.txt) |
 | E2E por gateway (6.2) | 45/45 requests y 45/45 assertions; corrida real de los seis flujos el Día 6 | [`evidencia/dia-6-newman.txt`](evidencia/dia-6-newman.txt) |
 | ER por servicio (5.5) | catalog, inventory y orders validados contra Flyway | [`modelo-datos.md`](modelo-datos.md) |
@@ -26,7 +26,7 @@ cupo de zona y reintegros. El detalle está en `tasks.md` (2.4) y en el seguimie
 | RC (6.4) | Tag `entrega-1-rc` y clone limpio del candidato | [`evidencia/dia-7-rc.txt`](evidencia/dia-7-rc.txt) |
 | Discrepancia de contrato (no bloqueante) | `DELETE /api/inventory/reservations/{reservaId}` documentado en 4.5 pero no implementado; reportado a P2 | [`pruebas.md` §7.1](pruebas.md#71-discrepancia-de-contrato-detectada-en-el-control-del-día-7) |
 | Cierre (6.4) | Tag final `entrega-1` sobre `5874fdf`, repo público y 5 colaboradores con Write | [`evidencia/dia-8-entrega.txt`](evidencia/dia-8-entrega.txt) |
-| Revisión externa (9/11) | En corrección: cancelación/ventas, callback de disponibilidad, devolución parcial, sector cruzado, cupo de zona y reintegros | [`tasks.md`](../openspec/changes/entrega-1-core/tasks.md) |
+| Correcciones del 9/11 (10/11) | Integradas y mergeadas: cancelación/ventas, callback de disponibilidad, devolución parcial, sector cruzado, cupo de zona y reintegros | PRs [#27](https://github.com/Francogp131/TicketYa/pull/27), [#29](https://github.com/Francogp131/TicketYa/pull/29), [#30](https://github.com/Francogp131/TicketYa/pull/30), [#31](https://github.com/Francogp131/TicketYa/pull/31) y [`tasks.md`](../openspec/changes/entrega-1-core/tasks.md) |
 
 ## 1. Funcionalidad de la Entrega 1
 
@@ -121,4 +121,4 @@ No se exige en esta entrega; no debe consumir tiempo del cronograma:
 - [x] Los seis flujos E2E de Postman pasan por el gateway: corrida real 45/45 requests y 45/45 assertions del Día 6 en [`evidencia/dia-6-newman.txt`](evidencia/dia-6-newman.txt).
 - [x] `docs/README.md` no tiene enlaces rotos y los endpoints de los flujos de la Entrega 1 están en el contrato y en el OpenAPI (26 paths / 30 operaciones, incluidos los internos). Queda una discrepancia no bloqueante: `DELETE /api/inventory/reservations/{reservaId}` figura en el contrato 4.5 pero no está implementado ni en el OpenAPI; ver [`pruebas.md` §7.1](pruebas.md#71-discrepancia-de-contrato-detectada-en-el-control-del-día-7).
 - [x] Cada ítem verificado de este checklist tiene evidencia enlazada en el PR o en `docs/`.
-- [ ] No quedan tareas P0 abiertas en `openspec/changes/entrega-1-core/tasks.md`. _(2.4 y las observaciones del 9/11 están en corrección)_
+- [x] No quedan tareas P0 abiertas en `openspec/changes/entrega-1-core/tasks.md`. _(2.4 y las observaciones del 9/11 quedaron integradas en los PRs #27, #29, #30 y #31)_

@@ -15,7 +15,9 @@ Los comandos se ejecutan desde `ticketya/` salvo que se indique otro directorio.
 Requisitos: Java 21, Maven 3.9+, Docker Desktop encendido. Si Maven usa otra JDK:
 
 ```bash
-export JAVA_HOME=/Users/Franco/Library/Java/JavaVirtualMachines/temurin-21.0.12.1/Contents/Home
+# macOS
+export JAVA_HOME=$(/usr/libexec/java_home -v 21)
+# Linux: export JAVA_HOME=/ruta/a/jdk-21
 ```
 
 ## 2. Comandos por servicio
@@ -51,6 +53,18 @@ Suite completa del Día 5 (7/11/2026, `mvn clean test` con Java 21 y Docker ence
 | **Total** | **135** | **0 fallos, 0 errores, 0 omitidos** |
 
 Evidencia: [`docs/evidencia/dia-5-suite.txt`](evidencia/dia-5-suite.txt). Incluye los tests de Testcontainers de catalog (búsqueda), inventory (concurrencia, vencimiento, límite y confirmación) y orders (idempotencia), por lo que ningún test quedó omitido.
+
+Suite final del Día 10 (10/11/2026, CI de `main` en `8f8b50c`, con Docker):
+
+| Proyecto | Tests | Resultado |
+|---|---|---|
+| catalog-service | 82 | 0 fallos, 0 errores, 0 omitidos |
+| inventory-service | 39 | 0 fallos, 0 errores, 0 omitidos |
+| orders-service | 74 | 0 fallos, 0 errores, 0 omitidos |
+| api-gateway | 19 | 0 fallos, 0 errores, 0 omitidos |
+| **Total** | **214** | **0 fallos, 0 errores, 0 omitidos** |
+
+Evidencia: GitHub Actions run `42884441398` y [`evidencia/dia-9-orders-fixes.txt`](evidencia/dia-9-orders-fixes.txt).
 
 Suite de control del Día 6/7 (8/11/2026, `mvn clean test` sobre `08ba5c5`, Java 21 y Docker):
 **135 tests, 0 fallos, 0 errores, 0 omitidos**. Evidencia:
