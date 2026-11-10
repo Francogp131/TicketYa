@@ -34,7 +34,7 @@ public class IdentityHeaderFilter implements org.springframework.cloud.gateway.f
 
     private static final Set<String> ROLES = Set.of("CLIENT", "ORGANIZER", "ADMIN");
     private static final Set<String> ADMIN_ONLY = Set.of("ADMIN");
-    private static final Set<String> ORGANIZER_OR_ADMIN = Set.of("ORGANIZER", "ADMIN");
+    private static final Set<String> ORGANIZER_ONLY = Set.of("ORGANIZER");
     private static final Set<String> AUTHENTICATED = Set.of("CLIENT", "ORGANIZER", "ADMIN");
 
     private static final Set<String> PUBLIC_GET_PATHS = Set.of(
@@ -43,8 +43,37 @@ public class IdentityHeaderFilter implements org.springframework.cloud.gateway.f
 
     private static final Pattern PUBLIC_GET_PATTERN = Pattern.compile(
             "^/api/catalog/(events|venues)/[0-9a-fA-F-]{36}$"
+                    + "|^/api/catalog/venues/[0-9a-fA-F-]{36}/sectors$"
                     + "|^/api/inventory/events/[0-9a-fA-F-]{36}/availability$"
                     + "|^/api/inventory/events/[0-9a-fA-F-]{36}/seats$");
+
+    private static final String ID = "[0-9a-fA-F-]{36}";
+
+    private record Rule(HttpMethod method, Pattern path, Set<String> roles) {}
+
+    private static Rule rule(HttpMethod method, String regex, Set<String> roles) {
+        return new Rule(method, Pattern.compile("^" + regex + "$"), roles);
+    }
+
+    /** Lista cerrada de rutas protegidas del contrato. Lo que no está acá se deniega. */
+    private static final List<Rule> RULES = List.of(
+            rule(HttpMethod.POST, "/api/catalog/venues", ADMIN_ONLY),
+            rule(HttpMethod.POST, "/api/catalog/venues/" + ID + "/sectors", ADMIN_ONLY),
+            rule(HttpMethod.POST, "/api/catalog/events", ORGANIZER_ONLY),
+            rule(HttpMethod.PUT, "/api/catalog/events/" + ID + "/prices/" + ID, ORGANIZER_ONLY),
+            rule(HttpMethod.POST, "/api/catalog/events/" + ID + "/publish", ORGANIZER_ONLY),
+            rule(HttpMethod.POST, "/api/catalog/events/" + ID + "/cancel", ADMIN_ONLY),
+            rule(HttpMethod.POST, "/api/inventory/reservations", AUTHENTICATED),
+            rule(HttpMethod.GET, "/api/inventory/reservations/" + ID, AUTHENTICATED),
+            rule(HttpMethod.DELETE, "/api/inventory/reservations/" + ID, AUTHENTICATED),
+            rule(HttpMethod.POST, "/api/orders", AUTHENTICATED),
+            rule(HttpMethod.GET, "/api/orders", AUTHENTICATED),
+            rule(HttpMethod.GET, "/api/orders/" + ID, AUTHENTICATED),
+            rule(HttpMethod.GET, "/api/orders/tickets", AUTHENTICATED),
+            rule(HttpMethod.GET, "/api/orders/tickets/" + ID, AUTHENTICATED),
+            rule(HttpMethod.POST, "/api/orders/tickets/" + ID + "/returns", AUTHENTICATED),
+            rule(HttpMethod.POST, "/api/orders/returns/" + ID + "/approve", ADMIN_ONLY),
+            rule(HttpMethod.POST, "/api/orders/returns/" + ID + "/reject", ADMIN_ONLY));
 
     private final ObjectMapper objectMapper;
 
@@ -61,10 +90,8 @@ public class IdentityHeaderFilter implements org.springframework.cloud.gateway.f
         boolean publicRead = HttpMethod.GET.equals(method)
                 && (PUBLIC_GET_PATHS.contains(path) || PUBLIC_GET_PATTERN.matcher(path).matches());
 
-        String incomingCorrelationId = request.getHeaders().getFirst(CORRELATION_HEADER);
-        final String correlationId = (incomingCorrelationId == null || incomingCorrelationId.isBlank())
-                ? UUID.randomUUID().toString()
-                : incomingCorrelationId;
+        final String correlationId = resolveCorrelationId(request.getHeaders().getFirst(CORRELATION_HEADER));
+        exchange.getResponse().getHeaders().set(CORRELATION_HEADER, correlationId);
 
         ServerHttpRequest.Builder requestBuilder = request.mutate()
                 .headers(headers -> headers.set(CORRELATION_HEADER, correlationId));
@@ -114,28 +141,23 @@ public class IdentityHeaderFilter implements org.springframework.cloud.gateway.f
     }
 
     private Set<String> requiredRoles(String path, HttpMethod method) {
-        if (path.startsWith("/api/catalog/venues")) {
-            return ADMIN_ONLY;
-        }
-        if (path.startsWith("/api/catalog/events")) {
-            if (HttpMethod.POST.equals(method) && path.matches("^/api/catalog/events/[0-9a-fA-F-]{36}/cancel$")) {
-                return ADMIN_ONLY;
+        for (Rule rule : RULES) {
+            if (rule.method().equals(method) && rule.path().matcher(path).matches()) {
+                return rule.roles();
             }
-            if (HttpMethod.POST.equals(method)
-                    && (path.equals("/api/catalog/events")
-                    || path.matches("^/api/catalog/events/[0-9a-fA-F-]{36}/publish$"))) {
-                return ORGANIZER_OR_ADMIN;
-            }
-            if (HttpMethod.PUT.equals(method)
-                    && path.matches("^/api/catalog/events/[0-9a-fA-F-]{36}/prices/[0-9a-fA-F-]{36}$")) {
-                return ORGANIZER_OR_ADMIN;
-            }
-            return AUTHENTICATED;
         }
-        if (path.matches("^/api/orders/returns/[0-9a-fA-F-]{36}/(approve|reject)$")) {
-            return ADMIN_ONLY;
+        return Set.of(); // default-deny
+    }
+
+    private static String resolveCorrelationId(String incoming) {
+        if (incoming != null && !incoming.isBlank()) {
+            try {
+                return UUID.fromString(incoming.trim()).toString();
+            } catch (IllegalArgumentException ignored) {
+                // no es un UUID: se genera uno nuevo
+            }
         }
-        return AUTHENTICATED;
+        return UUID.randomUUID().toString();
     }
 
     private Mono<Void> reject(ServerWebExchange exchange, HttpStatus status, String code, String detail) {
