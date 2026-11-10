@@ -85,7 +85,15 @@ public class OrderService {
         try {
             idempotencyService.registrar(idempotencyKey, hash, OffsetDateTime.now(clock));
         } catch (DataIntegrityViolationException ex) {
-            return idempotencyService.resolverExistente(idempotencyKey, hash);
+            try {
+                return idempotencyService.resolverExistente(idempotencyKey, hash);
+            } catch (ApiException apiEx) {
+                if ("IDEMPOTENCY_KEY_EXPIRED".equals(apiEx.getCode())) {
+                    idempotencyService.registrar(idempotencyKey, hash, OffsetDateTime.now(clock));
+                } else {
+                    throw apiEx;
+                }
+            }
         }
 
         try {
