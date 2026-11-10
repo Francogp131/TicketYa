@@ -49,6 +49,7 @@ class OpenApiDocumentoTest {
                 .contains("/api/inventory/events/{eventoId}/seats")
                 .contains("/api/inventory/reservations")
                 .contains("/internal/events/{eventoId}/inventory")
+                .contains("/internal/events/{eventoId}/state")
                 .contains("/internal/reservations/{reservaId}/confirm")
                 .contains("/internal/reservations/{reservaId}/release")
                 .contains("/internal/returns")

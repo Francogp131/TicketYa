@@ -1,8 +1,10 @@
 package ar.edu.unicen.ticketya.inventory.web;
 
 import ar.edu.unicen.ticketya.inventory.servicio.ConfirmacionService;
+import ar.edu.unicen.ticketya.inventory.servicio.EstadoEventoService;
 import ar.edu.unicen.ticketya.inventory.servicio.InventarioService;
 import ar.edu.unicen.ticketya.inventory.servicio.ReservaService;
+import ar.edu.unicen.ticketya.inventory.web.dto.EstadoEventoRequest;
 import ar.edu.unicen.ticketya.inventory.web.dto.InventoryUpsertRequest;
 import ar.edu.unicen.ticketya.inventory.web.dto.InventoryUpsertResponse;
 import ar.edu.unicen.ticketya.inventory.web.dto.ReleaseRequest;
@@ -21,6 +23,7 @@ import jakarta.validation.Valid;
 import java.util.UUID;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -36,13 +39,42 @@ public class InternalInventoryController {
     private final InventarioService inventarioService;
     private final ReservaService reservaService;
     private final ConfirmacionService confirmacionService;
+    private final EstadoEventoService estadoEventoService;
 
     public InternalInventoryController(InventarioService inventarioService,
                                        ReservaService reservaService,
-                                       ConfirmacionService confirmacionService) {
+                                       ConfirmacionService confirmacionService,
+                                       EstadoEventoService estadoEventoService) {
         this.inventarioService = inventarioService;
         this.reservaService = reservaService;
         this.confirmacionService = confirmacionService;
+        this.estadoEventoService = estadoEventoService;
+    }
+
+    @PatchMapping("/events/{eventoId}/state")
+    @Operation(summary = "Marcar el evento como cancelado o finalizado",
+            description = """
+                    Lo llama catalog. Acepta CANCELADO o FINALIZADO. Si el evento ya está en ese estado, \
+                    responde 204 sin escribir. No se puede salir de un estado terminal.
+                    """)
+    @ApiResponses({
+            @ApiResponse(responseCode = "204", description = "Estado aplicado, o ya estaba en ese estado"),
+            @ApiResponse(responseCode = "400", description = "Estado inválido",
+                    content = @Content(mediaType = "application/problem+json",
+                            schema = @Schema(implementation = Problema.class),
+                            examples = @ExampleObject(name = "VALIDATION_ERROR", value = Ejemplos.VALIDACION))),
+            @ApiResponse(responseCode = "404", description = "No existe el evento",
+                    content = @Content(mediaType = "application/problem+json",
+                            schema = @Schema(implementation = Problema.class),
+                            examples = @ExampleObject(name = "EVENT_NOT_FOUND", value = Ejemplos.EVENTO_NO_ENCONTRADO))),
+            @ApiResponse(responseCode = "409", description = "El evento ya está en un estado terminal distinto",
+                    content = @Content(mediaType = "application/problem+json",
+                            schema = @Schema(implementation = Problema.class)))
+    })
+    public ResponseEntity<Void> actualizarEstado(@PathVariable UUID eventoId,
+                                                 @Valid @RequestBody EstadoEventoRequest request) {
+        estadoEventoService.actualizar(eventoId, request.estado());
+        return ResponseEntity.noContent().build();
     }
 
     @PostMapping("/events/{eventoId}/inventory")

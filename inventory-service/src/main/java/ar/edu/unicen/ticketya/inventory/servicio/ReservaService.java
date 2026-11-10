@@ -46,6 +46,7 @@ public class ReservaService {
     private final JdbcTemplate jdbcTemplate;
     private final LimitePorCliente limitePorCliente;
     private final VencimientoService vencimientoService;
+    private final DisponibilidadSincronizador disponibilidadSincronizador;
     private final Clock clock;
 
     public ReservaService(EventoInventarioRepository eventoRepository,
@@ -56,6 +57,7 @@ public class ReservaService {
                           JdbcTemplate jdbcTemplate,
                           LimitePorCliente limitePorCliente,
                           VencimientoService vencimientoService,
+                          DisponibilidadSincronizador disponibilidadSincronizador,
                           Clock clock) {
         this.eventoRepository = eventoRepository;
         this.sectorRepository = sectorRepository;
@@ -65,6 +67,7 @@ public class ReservaService {
         this.jdbcTemplate = jdbcTemplate;
         this.limitePorCliente = limitePorCliente;
         this.vencimientoService = vencimientoService;
+        this.disponibilidadSincronizador = disponibilidadSincronizador;
         this.clock = clock;
     }
 
@@ -77,11 +80,15 @@ public class ReservaService {
                 && evento.getEstado() != EstadoEventoInventario.AGOTADO) {
             throw ApiException.conflict("EVENT_NOT_ON_SALE", "El evento no está en venta");
         }
+        if (evento.getFecha() != null && evento.getFecha().isBefore(OffsetDateTime.now(clock))) {
+            throw ApiException.conflict("EVENT_FINISHED", "El evento ya finalizó");
+        }
 
         Map<UUID, SectorInventario> sectores = new LinkedHashMap<>();
         List<ReservaRequest.Item> itemsNumerados = new ArrayList<>();
         List<ReservaRequest.Item> itemsZona = new ArrayList<>();
         Set<UUID> asientosPedidos = new HashSet<>();
+        Map<UUID, UUID> sectorDeclarado = new LinkedHashMap<>();
 
         for (ReservaRequest.Item item : request.items()) {
             SectorInventario sector = sectorRepository
@@ -98,6 +105,7 @@ public class ReservaService {
                     if (!asientosPedidos.add(asientoId)) {
                         throw validacion("items", "hay asientos repetidos en la solicitud");
                     }
+                    sectorDeclarado.put(asientoId, item.sectorId());
                 }
                 itemsNumerados.add(item);
             } else {
@@ -134,6 +142,10 @@ public class ReservaService {
                     throw ApiException.conflict("SEAT_NOT_AVAILABLE",
                             "El asiento " + asiento.getAsientoId() + " ya no está disponible");
                 }
+                if (!asiento.getSectorId().equals(sectorDeclarado.get(asiento.getAsientoId()))) {
+                    throw ApiException.badRequest("SECTOR_MISMATCH",
+                            "El asiento " + asiento.getAsientoId() + " no pertenece al sector indicado");
+                }
                 asiento.setEstado(EstadoAsiento.RESERVADO);
                 asiento.setReservaId(reserva.getId());
                 asiento.setExpiresAt(expiresAt);
@@ -164,6 +176,7 @@ public class ReservaService {
             }
         }
         reservaItemRepository.saveAll(reservaItems);
+        disponibilidadSincronizador.sincronizar(evento.getEventoId());
 
         return toResponse(reserva, evento, sectores, reservaItems);
     }

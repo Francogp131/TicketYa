@@ -49,10 +49,14 @@ public class VencimientoService {
             """;
 
     private final JdbcTemplate jdbcTemplate;
+    private final DisponibilidadSincronizador disponibilidadSincronizador;
     private final Clock clock;
 
-    public VencimientoService(JdbcTemplate jdbcTemplate, Clock clock) {
+    public VencimientoService(JdbcTemplate jdbcTemplate,
+                              DisponibilidadSincronizador disponibilidadSincronizador,
+                              Clock clock) {
         this.jdbcTemplate = jdbcTemplate;
+        this.disponibilidadSincronizador = disponibilidadSincronizador;
         this.clock = clock;
     }
 
@@ -83,5 +87,6 @@ public class VencimientoService {
                 "SELECT evento_id FROM reserva WHERE id = ?", UUID.class, reservaId);
         jdbcTemplate.update(LIBERAR_ASIENTOS, reservaId);
         jdbcTemplate.update(REPONER_ZONA, reservaId, eventoId);
+        disponibilidadSincronizador.sincronizar(eventoId);
     }
 }

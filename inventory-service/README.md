@@ -12,6 +12,7 @@ Servicio de disponibilidad, reservas temporales y no doble venta de TicketYa.
 | Método | Ruta | Rol | Descripción |
 |---|---|---|---|
 | POST | `/internal/events/{eventoId}/inventory` | interno | Alta/actualización idempotente del snapshot de catalog |
+| PATCH | `/internal/events/{eventoId}/state` | interno | Catalog avisa `CANCELADO` o `FINALIZADO`. Idempotente, 204 |
 | GET | `/api/inventory/events/{eventoId}/availability` | público | Disponibilidad por sector |
 | GET | `/api/inventory/events/{eventoId}/seats?sectorId=` | público | Mapa de asientos |
 | POST | `/api/inventory/reservations` | autenticado | Reserva atómica de asientos numerados y zonas |
@@ -26,14 +27,16 @@ Límite por cliente, vencimiento, confirmación/liberación y devolución corres
 ## Reserva y no doble venta
 
 - La reserva se ejecuta en una transacción.
-- Asientos numerados: se bloquean con `SELECT ... FOR UPDATE` ordenados por `asientoId`; si alguno no está `LIBRE`, se aborta toda la reserva con `409 SEAT_NOT_AVAILABLE`.
+- Asientos numerados: se bloquean con `SELECT ... FOR UPDATE` ordenados por `asientoId`; si alguno no está `LIBRE`, se aborta toda la reserva con `409 SEAT_NOT_AVAILABLE`. Si el asiento no pertenece al `sectorId` del ítem, `400 SECTOR_MISMATCH` y no se reserva nada.
+- Si `fecha` del evento ya pasó, `409 EVENT_FINISHED` y no se reserva nada.
 - Zonas no numeradas: `UPDATE ... SET disponibles = disponibles - N WHERE disponibles >= N RETURNING disponibles`; si no hay filas, `409 INSUFFICIENT_AVAILABILITY`.
 - Límite por cliente: `pg_advisory_xact_lock(hashtext(evento_id || cliente_id))` y después se suman `cliente_evento.entradas_vendidas` más las cantidades de reservas `VIGENTE`. Si eso más lo pedido supera `limite_por_cliente`, se responde `422 CLIENT_LIMIT_EXCEEDED` y no se escribe la reserva. Al confirmar una venta (tarea 3.6) hay que incrementar `entradas_vendidas`, porque la reserva pasa a `CONFIRMADA` y deja de entrar en el conteo de vigentes.
 - La reserva vence a los 10 minutos (`expires_at`). Un scheduler cada 30 segundos pasa a `VENCIDA` las reservas `VIGENTE` con `expires_at` cumplido y libera sus lugares. Los asientos se sueltan con `UPDATE ... WHERE estado = 'RESERVADO' AND reserva_id = ?`, así dos instancias no liberan dos veces. Consultar una reserva vencida también la libera y responde `estado: VENCIDA`. Pagar una vencida responde `410 RESERVATION_EXPIRED` (lo valida la confirmación de la tarea 3.6).
 - Confirmar: `UPDATE reserva SET estado = 'CONFIRMADA' WHERE id = ? AND estado = 'VIGENTE' AND expires_at > now()`. Los asientos pasan de `RESERVADO` a `VENDIDO` y se suma `cliente_evento.entradas_vendidas`. Si ya estaba `CONFIRMADA`, se devuelve la misma reserva. Si venció, se liberan los lugares y se responde `410 RESERVATION_EXPIRED`.
 - Liberar: la reserva `VIGENTE` pasa a `LIBERADA` y se reponen asientos y zona. Repetir la llamada responde 204 sin tocar la disponibilidad otra vez.
-- Devolver: un asiento `VENDIDO` vuelve a `LIBRE`; una zona suma la cantidad a `disponibles`. Con el header `Idempotency-Key`, repetir el mismo cuerpo no repone dos veces.
+- Devolver: un asiento `VENDIDO` vuelve a `LIBRE` y resta 1 en `cliente_evento`. Una zona suma la cantidad a `disponibles` y, si el body trae `clienteId`, resta esa cantidad del cupo. Sin `clienteId` la zona se repone pero el límite no se libera. Con el header `Idempotency-Key`, repetir el mismo cuerpo no repone dos veces.
 - Concurrencia: `ConcurrenciaPostgresTest` verifica que un asiento y el último lugar de una zona se reservan una sola vez.
+- Si después de reservar, confirmar, liberar, vencer o devolver no queda ningún lugar libre, el evento pasa a `AGOTADO` y se avisa a catalog con `PATCH /internal/events/{id}/availability` y `{"agotado":true}`. Al volver a haber lugar, pasa a `PUBLICADO` y avisa con `false`. El aviso sale después del commit, con un reintento. Si catalog no responde, la operación local queda hecha.
 - El alta de inventario es idempotente por `eventoId + version` y usa `ON CONFLICT DO NOTHING` para los asientos.
 
 ## Modelo
@@ -47,6 +50,9 @@ Límite por cliente, vencimiento, confirmación/liberación y devolución corres
 | `SERVER_PORT` | `8082` | Puerto HTTP |
 | `DB_URL` | `jdbc:postgresql://localhost:5434/inventory_db` | Conexión JDBC |
 | `DB_USER` / `DB_PASSWORD` | `ticketya` | Credenciales |
+| `CATALOG_URL` | `http://localhost:8081` | Catalog para avisar `AGOTADO` / `PUBLICADO` |
+
+El pool de desarrollo tiene 20 conexiones, `connection-timeout` de 3 s y `lock_timeout` de 3 s en PostgreSQL. Si una reserva no consigue el lock, falla rápido en vez de quedar colgada. El detector de conexiones perdidas avisa a los 10 s.
 
 ## Ejecutar y probar
 
