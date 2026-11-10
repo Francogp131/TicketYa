@@ -25,7 +25,7 @@ public class MockPaymentGateway implements PaymentGateway {
     }
 
     @Override
-    public void reintegrar(UUID pagoId) {
-        // El mock no mueve dinero: el estado REINTEGRADO del pago es la evidencia.
+    public void reintegrar(UUID pagoId, BigDecimal monto) {
+        // El mock no mueve dinero: el estado del reintegro/pago es la evidencia.
     }
 }
