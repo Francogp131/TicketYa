@@ -115,6 +115,11 @@ public class DevolucionService {
         devolucion.setEstado(EstadoDevolucion.PROCESANDO);
         devolucionRepository.save(devolucion);
 
+        // La entrada deja de ser válida mientras dura la devolución. Si el reintegro
+        // o inventory fallan, queda EN_DEVOLUCION y el retry service la termina.
+        entrada.setEstado(EstadoEntrada.EN_DEVOLUCION);
+        entradaRepository.save(entrada);
+
         // Procesar reintegro antes de liberar el asiento para evitar inconsistencia
         reintegrarEntrada(entrada);
 
@@ -143,6 +148,10 @@ public class DevolucionService {
         if (devolucion.getEstado() == EstadoDevolucion.APROBADA
                 || devolucion.getEstado() == EstadoDevolucion.RECHAZADA) {
             throw ApiException.conflict("RETURN_ALREADY_RESOLVED", "La devolución ya fue resuelta");
+        }
+        if (devolucion.getEstado() == EstadoDevolucion.PROCESANDO) {
+            throw ApiException.conflict("RETURN_IN_PROGRESS",
+                    "La devolución está procesando el reintegro y no se puede rechazar");
         }
         devolucion.setEstado(EstadoDevolucion.RECHAZADA);
         devolucion.setResolvedAt(OffsetDateTime.now(clock));

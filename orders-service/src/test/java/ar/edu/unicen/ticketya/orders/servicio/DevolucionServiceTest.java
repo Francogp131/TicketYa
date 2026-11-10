@@ -191,8 +191,23 @@ class DevolucionServiceTest {
         verify(devolucionRepository, org.mockito.Mockito.atLeastOnce()).save(captor.capture());
         assertThat(captor.getAllValues().get(captor.getAllValues().size() - 1).getEstado())
                 .isEqualTo(EstadoDevolucion.PROCESANDO);
-        assertThat(entrada.getEstado()).isEqualTo(EstadoEntrada.VALIDA);
+        assertThat(entrada.getEstado()).isEqualTo(EstadoEntrada.EN_DEVOLUCION);
         verify(paymentGateway).reintegrar(pago.getId(), new BigDecimal("15000.00"));
+    }
+
+    @Test
+    void noSePuedeRechazarUnaDevolucionEnProceso() {
+        Entrada entrada = entrada(OffsetDateTime.parse("2026-11-10T21:00:00-03:00"));
+        Devolucion devolucion = devolucion(entrada.getId(), EstadoDevolucion.PROCESANDO);
+        when(devolucionRepository.findById(devolucion.getId())).thenReturn(Optional.of(devolucion));
+
+        assertThatThrownBy(() -> service.rechazar(devolucion.getId()))
+                .isInstanceOfSatisfying(ApiException.class, ex -> {
+                    assertThat(ex.getStatus().value()).isEqualTo(409);
+                    assertThat(ex.getCode()).isEqualTo("RETURN_IN_PROGRESS");
+                });
+        assertThat(devolucion.getEstado()).isEqualTo(EstadoDevolucion.PROCESANDO);
+        verify(devolucionRepository, never()).save(any());
     }
 
     @Test
@@ -327,6 +342,7 @@ class DevolucionServiceTest {
         ReturnResponse response = service.aprobar(devolucion.getId());
 
         assertThat(response.estado()).isEqualTo(EstadoDevolucion.APROBADA);
+        assertThat(entrada.getEstado()).isEqualTo(EstadoEntrada.DEVUELTA);
         assertThat(reintegros.get(0).getEstado()).isEqualTo(EstadoReintegro.APROBADO);
         assertThat(pago.getEstado()).isEqualTo(EstadoPago.REINTEGRADO);
     }
