@@ -185,6 +185,51 @@ class ReservaServiceTest {
     }
 
     @Test
+    void unEventoConFechaPasadaNoSeReserva() {
+        EventoInventario evento = evento();
+        evento.setFecha(OffsetDateTime.parse("2026-11-01T21:00:00-03:00"));
+        when(eventoRepository.findById(evento.getEventoId())).thenReturn(Optional.of(evento));
+
+        assertThatThrownBy(() -> reservaService.reservar(
+                new ReservaRequest(evento.getEventoId(), List.of(
+                        new ReservaRequest.Item(UUID.randomUUID(), List.of(UUID.randomUUID()), null))),
+                UUID.randomUUID()))
+                .isInstanceOfSatisfying(ApiException.class, ex -> {
+                    assertThat(ex.getStatus().value()).isEqualTo(409);
+                    assertThat(ex.getCode()).isEqualTo("EVENT_FINISHED");
+                });
+        verify(reservaRepository, never()).save(any());
+    }
+
+    @Test
+    void unAsientoDeOtroSectorNoSeReserva() {
+        EventoInventario evento = evento();
+        SectorInventario sector = sector(evento.getEventoId(), TipoSectorInventario.NUMERADO);
+        AsientoInventario asiento = asiento(evento.getEventoId(), UUID.randomUUID(), EstadoAsiento.LIBRE);
+        when(eventoRepository.findById(evento.getEventoId())).thenReturn(Optional.of(evento));
+        when(sectorRepository.findByEventoIdAndSectorId(evento.getEventoId(), sector.getSectorId()))
+                .thenReturn(Optional.of(sector));
+        when(reservaRepository.save(any(Reserva.class))).thenAnswer(inv -> {
+            Reserva reserva = inv.getArgument(0);
+            reserva.setId(UUID.randomUUID());
+            return reserva;
+        });
+        when(asientoRepository.bloquearAsientos(eq(evento.getEventoId()), anyCollection()))
+                .thenReturn(List.of(asiento));
+
+        assertThatThrownBy(() -> reservaService.reservar(
+                new ReservaRequest(evento.getEventoId(), List.of(
+                        new ReservaRequest.Item(sector.getSectorId(), List.of(asiento.getAsientoId()), null))),
+                UUID.randomUUID()))
+                .isInstanceOfSatisfying(ApiException.class, ex -> {
+                    assertThat(ex.getStatus().value()).isEqualTo(400);
+                    assertThat(ex.getCode()).isEqualTo("SECTOR_MISMATCH");
+                });
+        assertThat(asiento.getEstado()).isEqualTo(EstadoAsiento.LIBRE);
+        verify(asientoRepository, never()).saveAll(any());
+    }
+
+    @Test
     void unaZonaSinDisponibilidadDevuelveConflict() {
         EventoInventario evento = evento();
         SectorInventario sector = sector(evento.getEventoId(), TipoSectorInventario.NO_NUMERADO);
