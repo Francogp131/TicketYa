@@ -266,7 +266,8 @@ public class OrderService {
         for (Entrada entrada : enReintegro) {
             Pago pago = pagoRepository.findByOrdenId(entrada.getOrdenId()).stream()
                     .filter(p -> p.getEstado() == EstadoPago.APROBADO
-                            || p.getEstado() == EstadoPago.REINTEGRO_PENDIENTE)
+                            || p.getEstado() == EstadoPago.REINTEGRO_PENDIENTE
+                            || p.getEstado() == EstadoPago.REINTEGRADO)
                     .findFirst()
                     .orElse(null);
             if (pago == null) {

@@ -207,6 +207,115 @@ class DevolucionServiceTest {
                 });
     }
 
+    @Test
+    void devolverUnaDeCuatroReintegraSoloSuPrecio() {
+        Entrada entrada = entrada(OffsetDateTime.parse("2026-11-10T21:00:00-03:00"));
+        Devolucion devolucion = devolucion(entrada.getId(), EstadoDevolucion.PENDIENTE);
+        Pago pago = pago(entrada.getOrdenId(), EstadoPago.APROBADO, new BigDecimal("60000.00"));
+        OrdenItem item = ordenItem(entrada.getOrdenItemId(), entrada.getOrdenId(), new BigDecimal("15000.00"));
+        when(devolucionRepository.findById(devolucion.getId())).thenReturn(Optional.of(devolucion));
+        when(entradaRepository.findById(entrada.getId())).thenReturn(Optional.of(entrada));
+        when(pagoRepository.findByOrdenId(entrada.getOrdenId())).thenReturn(List.of(pago));
+        when(ordenItemRepository.findById(entrada.getOrdenItemId())).thenReturn(Optional.of(item));
+        when(entradaRepository.save(any(Entrada.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(devolucionRepository.save(any(Devolucion.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(pagoRepository.save(any(Pago.class))).thenAnswer(inv -> inv.getArgument(0));
+        List<Reintegro> reintegros = new ArrayList<>();
+        when(reintegroRepository.findByPagoId(pago.getId())).thenAnswer(inv -> new ArrayList<>(reintegros));
+        when(reintegroRepository.save(any(Reintegro.class))).thenAnswer(inv -> {
+            Reintegro r = inv.getArgument(0);
+            if (r.getId() == null) r.setId(UUID.randomUUID());
+            reintegros.removeIf(x -> x.getId() != null && x.getId().equals(r.getId()));
+            reintegros.add(r);
+            return r;
+        });
+
+        service.aprobar(devolucion.getId());
+
+        verify(paymentGateway).reintegrar(pago.getId(), new BigDecimal("15000.00"));
+        assertThat(pago.getEstado()).isEqualTo(EstadoPago.REINTEGRO_PENDIENTE);
+    }
+
+    @Test
+    void devolverLasCuatroReintegraElTotalYDejaPagoReintegrado() {
+        Entrada entrada = entrada(OffsetDateTime.parse("2026-11-10T21:00:00-03:00"));
+        Devolucion devolucion = devolucion(entrada.getId(), EstadoDevolucion.PENDIENTE);
+        Pago pago = pago(entrada.getOrdenId(), EstadoPago.REINTEGRO_PENDIENTE, new BigDecimal("60000.00"));
+        OrdenItem item = ordenItem(entrada.getOrdenItemId(), entrada.getOrdenId(), new BigDecimal("15000.00"));
+        // 3 reintegros previos ya aprobados por 15000 c/u
+        List<Reintegro> reintegros = new ArrayList<>();
+        for (int i = 0; i < 3; i++) {
+            Reintegro prev = new Reintegro(pago.getId(), UUID.randomUUID(), new BigDecimal("15000.00"), EstadoReintegro.APROBADO);
+            prev.setId(UUID.randomUUID());
+            reintegros.add(prev);
+        }
+        when(devolucionRepository.findById(devolucion.getId())).thenReturn(Optional.of(devolucion));
+        when(entradaRepository.findById(entrada.getId())).thenReturn(Optional.of(entrada));
+        when(pagoRepository.findByOrdenId(entrada.getOrdenId())).thenReturn(List.of(pago));
+        when(ordenItemRepository.findById(entrada.getOrdenItemId())).thenReturn(Optional.of(item));
+        when(entradaRepository.save(any(Entrada.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(devolucionRepository.save(any(Devolucion.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(pagoRepository.save(any(Pago.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(reintegroRepository.findByPagoId(pago.getId())).thenAnswer(inv -> new ArrayList<>(reintegros));
+        when(reintegroRepository.save(any(Reintegro.class))).thenAnswer(inv -> {
+            Reintegro r = inv.getArgument(0);
+            if (r.getId() == null) r.setId(UUID.randomUUID());
+            reintegros.removeIf(x -> x.getId() != null && x.getId().equals(r.getId()));
+            reintegros.add(r);
+            return r;
+        });
+
+        service.aprobar(devolucion.getId());
+
+        verify(paymentGateway).reintegrar(pago.getId(), new BigDecimal("15000.00"));
+        assertThat(pago.getEstado()).isEqualTo(EstadoPago.REINTEGRADO);
+    }
+
+    @Test
+    void siLaPasarelaFallaElReintegroQuedaPendienteYElReintentoLoAprueba() {
+        Entrada entrada = entrada(OffsetDateTime.parse("2026-11-10T21:00:00-03:00"));
+        Devolucion devolucion = devolucion(entrada.getId(), EstadoDevolucion.PENDIENTE);
+        Pago pago = pago(entrada.getOrdenId(), EstadoPago.APROBADO, new BigDecimal("15000.00"));
+        OrdenItem item = ordenItem(entrada.getOrdenItemId(), entrada.getOrdenId(), new BigDecimal("15000.00"));
+        when(devolucionRepository.findById(devolucion.getId())).thenReturn(Optional.of(devolucion));
+        when(entradaRepository.findById(entrada.getId())).thenReturn(Optional.of(entrada));
+        when(pagoRepository.findByOrdenId(entrada.getOrdenId())).thenReturn(List.of(pago));
+        when(ordenItemRepository.findById(entrada.getOrdenItemId())).thenReturn(Optional.of(item));
+        when(entradaRepository.save(any(Entrada.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(devolucionRepository.save(any(Devolucion.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(pagoRepository.save(any(Pago.class))).thenAnswer(inv -> inv.getArgument(0));
+        List<Reintegro> reintegros = new ArrayList<>();
+        when(reintegroRepository.findByPagoId(pago.getId())).thenAnswer(inv -> new ArrayList<>(reintegros));
+        when(reintegroRepository.save(any(Reintegro.class))).thenAnswer(inv -> {
+            Reintegro r = inv.getArgument(0);
+            if (r.getId() == null) r.setId(UUID.randomUUID());
+            reintegros.removeIf(x -> x.getId() != null && x.getId().equals(r.getId()));
+            reintegros.add(r);
+            return r;
+        });
+
+        org.mockito.Mockito.doThrow(new RuntimeException("pasarela caída"))
+                .when(paymentGateway).reintegrar(any(), any());
+
+        assertThatThrownBy(() -> service.aprobar(devolucion.getId()))
+                .isInstanceOfSatisfying(ApiException.class, ex -> {
+                    assertThat(ex.getStatus().value()).isEqualTo(502);
+                    assertThat(ex.getCode()).isEqualTo("PAYMENT_GATEWAY_ERROR");
+                });
+        assertThat(devolucion.getEstado()).isEqualTo(EstadoDevolucion.PROCESANDO);
+        assertThat(reintegros).hasSize(1);
+        assertThat(reintegros.get(0).getEstado()).isEqualTo(EstadoReintegro.PENDIENTE);
+
+        // reintento: la pasarela responde OK
+        org.mockito.Mockito.doNothing().when(paymentGateway).reintegrar(any(), any());
+
+        ReturnResponse response = service.aprobar(devolucion.getId());
+
+        assertThat(response.estado()).isEqualTo(EstadoDevolucion.APROBADA);
+        assertThat(reintegros.get(0).getEstado()).isEqualTo(EstadoReintegro.APROBADO);
+        assertThat(pago.getEstado()).isEqualTo(EstadoPago.REINTEGRADO);
+    }
+
     private Entrada entrada(OffsetDateTime eventoFecha) {
         Entrada entrada = new Entrada();
         entrada.setId(UUID.randomUUID());

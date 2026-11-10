@@ -394,6 +394,56 @@ class OrderServiceTest {
         verify(paymentGateway, never()).reintegrar(any(UUID.class), any(BigDecimal.class));
     }
 
+    @Test
+    void cancelarEventoConTresEntradasCreaTresReintegrosSinDuplicar() {
+        UUID eventoId = UUID.randomUUID();
+        UUID ordenId = UUID.randomUUID();
+        Entrada e1 = entradaCancelacion(eventoId, ordenId);
+        Entrada e2 = entradaCancelacion(eventoId, ordenId);
+        Entrada e3 = entradaCancelacion(eventoId, ordenId);
+        OrdenItem i1 = new OrdenItem(ordenId, e1.getSectorId(), e1.getAsientoId(), 1, new BigDecimal("10000.00"), new BigDecimal("10000.00"));
+        i1.setId(e1.getOrdenItemId());
+        OrdenItem i2 = new OrdenItem(ordenId, e2.getSectorId(), e2.getAsientoId(), 1, new BigDecimal("10000.00"), new BigDecimal("10000.00"));
+        i2.setId(e2.getOrdenItemId());
+        OrdenItem i3 = new OrdenItem(ordenId, e3.getSectorId(), e3.getAsientoId(), 1, new BigDecimal("10000.00"), new BigDecimal("10000.00"));
+        i3.setId(e3.getOrdenItemId());
+        Pago pago = new Pago();
+        pago.setId(UUID.randomUUID());
+        pago.setOrdenId(ordenId);
+        pago.setEstado(EstadoPago.APROBADO);
+        pago.setMonto(new BigDecimal("30000.00"));
+        when(entradaRepository.findByEventoIdAndEstado(eventoId, EstadoEntrada.VALIDA)).thenReturn(List.of(e1, e2, e3));
+        when(entradaRepository.findByEventoIdAndEstado(eventoId, EstadoEntrada.EN_REINTEGRO)).thenReturn(List.of(e1, e2, e3));
+        when(pagoRepository.findByOrdenId(ordenId)).thenReturn(List.of(pago));
+        when(pagoRepository.save(any(Pago.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(ordenItemRepository.findById(e1.getOrdenItemId())).thenReturn(Optional.of(i1));
+        when(ordenItemRepository.findById(e2.getOrdenItemId())).thenReturn(Optional.of(i2));
+        when(ordenItemRepository.findById(e3.getOrdenItemId())).thenReturn(Optional.of(i3));
+        java.util.List<Reintegro> reintegros = new java.util.ArrayList<>();
+        when(reintegroRepository.findByPagoId(pago.getId())).thenAnswer(inv -> new java.util.ArrayList<>(reintegros));
+        when(reintegroRepository.save(any(Reintegro.class))).thenAnswer(inv -> {
+            Reintegro r = inv.getArgument(0);
+            if (r.getId() == null) r.setId(UUID.randomUUID());
+            reintegros.removeIf(x -> x.getId() != null && x.getId().equals(r.getId()));
+            reintegros.add(r);
+            return r;
+        });
+
+        var response = orderService.cancelarEvento(eventoId);
+
+        assertThat(response.entradasAfectadas()).isEqualTo(3);
+        assertThat(response.reintegrosSolicitados()).isEqualTo(3);
+        assertThat(reintegros).hasSize(3);
+        verify(paymentGateway, org.mockito.Mockito.times(3)).reintegrar(eq(pago.getId()), eq(new BigDecimal("10000.00")));
+
+        // reintento: no duplica reintegros ni llamadas para los ya aprobados
+        when(entradaRepository.findByEventoIdAndEstado(eventoId, EstadoEntrada.VALIDA)).thenReturn(List.of());
+        var retry = orderService.cancelarEvento(eventoId);
+        assertThat(retry.reintegrosSolicitados()).isEqualTo(3);
+        assertThat(reintegros).hasSize(3);
+        verify(paymentGateway, org.mockito.Mockito.times(3)).reintegrar(eq(pago.getId()), eq(new BigDecimal("10000.00")));
+    }
+
     private Entrada entrada(ReservationDto reserva, UUID qr) {
         Entrada entrada = new Entrada();
         entrada.setId(UUID.randomUUID());
