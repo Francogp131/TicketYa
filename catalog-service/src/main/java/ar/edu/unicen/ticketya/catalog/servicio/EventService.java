@@ -44,6 +44,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.HttpClientErrorException;
 
 @Service
 public class EventService {
@@ -247,6 +248,12 @@ public class EventService {
             pendiente = true;
             log.warn("No se pudo avisar la cancelación del evento {} a orders; queda pendiente", eventoId, ex);
         }
+        try {
+            inventoryClient.actualizarEstado(eventoId, "CANCELADO");
+        } catch (RuntimeException ex) {
+            pendiente = true;
+            log.warn("No se pudo avisar la cancelación del evento {} a inventory; queda pendiente", eventoId, ex);
+        }
         evento.setCancelacionPendiente(pendiente);
         evento = eventoRepository.save(evento);
         return new CancelacionResponse(evento.getId(), evento.getEstado(), evento.isCancelacionPendiente());
@@ -281,9 +288,31 @@ public class EventService {
     public int finalizarEventosVencidos() {
         List<Evento> vencidos = eventoRepository.findByEstadoInAndFechaBefore(
                 List.of(EstadoEvento.PUBLICADO, EstadoEvento.AGOTADO), OffsetDateTime.now(clock));
-        vencidos.forEach(evento -> evento.setEstado(EstadoEvento.FINALIZADO));
-        eventoRepository.saveAll(vencidos);
-        return vencidos.size();
+        List<Evento> cerrados = new ArrayList<>();
+        for (Evento evento : vencidos) {
+            try {
+                inventoryClient.actualizarEstado(evento.getId(), "FINALIZADO");
+                evento.setEstado(EstadoEvento.FINALIZADO);
+                cerrados.add(evento);
+            } catch (HttpClientErrorException ex) {
+                if (ex.getStatusCode().value() == HttpStatus.CONFLICT.value()) {
+                    log.warn("Inventory ya tenía el evento {} en estado terminal; se finaliza en catálogo igual",
+                            evento.getId(), ex);
+                    evento.setEstado(EstadoEvento.FINALIZADO);
+                    cerrados.add(evento);
+                } else {
+                    log.warn("Inventory rechazó la finalización del evento {}; queda {} para reintentar",
+                            evento.getId(), evento.getEstado(), ex);
+                }
+            } catch (RuntimeException ex) {
+                log.warn("No se pudo avisar la finalización del evento {} a inventory; queda {} para reintentar",
+                        evento.getId(), evento.getEstado(), ex);
+            }
+        }
+        if (!cerrados.isEmpty()) {
+            eventoRepository.saveAll(cerrados);
+        }
+        return cerrados.size();
     }
 
     @Transactional
@@ -291,13 +320,23 @@ public class EventService {
         List<Evento> pendientes = eventoRepository.findByCancelacionPendienteTrue();
         int reintentadas = 0;
         for (Evento evento : pendientes) {
+            boolean ok = true;
             try {
                 ordersClient.cancelarEvento(evento.getId());
+            } catch (RuntimeException ex) {
+                ok = false;
+                log.warn("Sigue pendiente el aviso de cancelación del evento {} a orders", evento.getId(), ex);
+            }
+            try {
+                inventoryClient.actualizarEstado(evento.getId(), "CANCELADO");
+            } catch (RuntimeException ex) {
+                ok = false;
+                log.warn("Sigue pendiente el aviso de cancelación del evento {} a inventory", evento.getId(), ex);
+            }
+            if (ok) {
                 evento.setCancelacionPendiente(false);
                 eventoRepository.save(evento);
                 reintentadas++;
-            } catch (RuntimeException ex) {
-                log.warn("Sigue pendiente el aviso de cancelación del evento {}", evento.getId(), ex);
             }
         }
         return reintentadas;

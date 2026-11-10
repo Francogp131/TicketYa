@@ -19,18 +19,20 @@ Servicio de catálogo de TicketYa: lugares, sectores, asientos, eventos, precios
 | POST | `/api/catalog/events` | ORGANIZER | Crea un evento en `BORRADOR` |
 | PUT | `/api/catalog/events/{eventoId}/prices/{sectorId}` | ORGANIZER | Asigna el precio de un sector |
 | POST | `/api/catalog/events/{eventoId}/publish` | ORGANIZER | Publica y envía el snapshot a inventory |
-| POST | `/api/catalog/events/{eventoId}/cancel` | ADMIN | Cancela el evento y avisa a orders |
+| POST | `/api/catalog/events/{eventoId}/cancel` | ADMIN | Cancela el evento y avisa a orders e inventory (`PATCH /internal/events/{eventoId}/state`) |
 | GET | `/api/catalog/events` | público | Busca eventos publicados o agotados con filtros, orden y paginación |
 | GET | `/api/catalog/events/{eventoId}` | público | Detalle con disponibilidad consultada a inventory |
 | PATCH | `/internal/events/{eventoId}/availability` | interno | Callback de inventory: `AGOTADO` ↔ `PUBLICADO` |
 
+Al cancelar y al finalizar, catalog avisa a inventory con `PATCH /internal/events/{eventoId}/state` (`{"estado":"CANCELADO"}` o `{"estado":"FINALIZADO"}`); ese endpoint lo expone inventory y es idempotente.
+
 La búsqueda acepta `tipo`, `organizadorId`, `participante`, `ciudad`, `fechaDesde`, `fechaHasta`, `orden`, `page` y `size`. Los órdenes válidos son `FECHA_ASC` (default), `FECHA_DESC`, `PRECIO_ASC`, `PRECIO_DESC` y `RELEVANCIA`; esta última prioriza eventos `PUBLICADO` y luego la fecha más próxima. Un rango inválido responde `400 INVALID_DATE_RANGE` y un orden desconocido `400 INVALID_SORT`.
 
-Las transiciones de estado permitidas son `BORRADOR → PUBLICADO`, `PUBLICADO ↔ AGOTADO`, `PUBLICADO/AGOTADO → CANCELADO` y `PUBLICADO/AGOTADO → FINALIZADO`. Si orders no responde al cancelar, el evento queda `CANCELADO` con `cancelacionPendiente: true` y el scheduler reintenta el aviso cada minuto. El mismo scheduler pasa a `FINALIZADO` los eventos cuya fecha ya pasó.
+Las transiciones de estado permitidas son `BORRADOR → PUBLICADO`, `PUBLICADO ↔ AGOTADO`, `PUBLICADO/AGOTADO → CANCELADO` y `PUBLICADO/AGOTADO → FINALIZADO`. Si orders o inventory no responden al cancelar, el evento queda `CANCELADO` con `cancelacionPendiente: true` y el scheduler reintenta ambos avisos cada minuto. El mismo scheduler avisa `FINALIZADO` a inventory antes de pasar el evento a `FINALIZADO`: si inventory falla, el evento queda en su estado actual para el próximo tick; si inventory responde `409` porque ya está en el otro estado terminal, se finaliza igual en catalog.
 
 La integración con inventory usa timeout corto (`INVENTORY_CONNECT_TIMEOUT_MS`/`INVENTORY_READ_TIMEOUT_MS`) y hasta 3 intentos con backoff ante timeouts o 5xx; los 4xx no se reintentan. La publicación envía un snapshot idempotente por `eventoId + version`, por lo que un reintento o una republicación no duplica inventario. Inventory notifica los cambios de disponibilidad con `PATCH /internal/events/{eventoId}/availability`.
 
-La cancelación avisa a orders con timeout corto (`ORDERS_CONNECT_TIMEOUT_MS`/`ORDERS_READ_TIMEOUT_MS`). Como ese aviso es idempotente, si orders falla o demora el evento queda `CANCELADO` con `cancelacionPendiente: true` y el scheduler reintenta; esto es la base de la que dependen las devoluciones y la cancelación masiva de entradas.
+La cancelación avisa a orders con timeout corto (`ORDERS_CONNECT_TIMEOUT_MS`/`ORDERS_READ_TIMEOUT_MS`) y a inventory con `PATCH /internal/events/{eventoId}/state`. Como ambos avisos son idempotentes, si alguno falla o demora el evento queda `CANCELADO` con `cancelacionPendiente: true` y el scheduler reintenta los dos; esto es la base de la que dependen las devoluciones y la cancelación masiva de entradas.
 
 El OpenAPI documenta la identidad (`X-User-Id`, `X-User-Role`), los ejemplos de request y un esquema común `ProblemDetail` para todos los errores 4xx/5xx, con ejemplos de `VALIDATION_ERROR`, `EVENT_NOT_FOUND`, `EVENT_NOT_EDITABLE`, `INVENTORY_UNAVAILABLE` y `ORDERS_UNAVAILABLE` según el caso.
 
