@@ -44,6 +44,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.HttpClientErrorException;
 
 @Service
 public class EventService {
@@ -242,16 +243,7 @@ public class EventService {
                     "No se puede cancelar un evento " + evento.getEstado().name().toLowerCase());
         }
 
-        if (evento.getEstado() == EstadoEvento.PUBLICADO || evento.getEstado() == EstadoEvento.AGOTADO) {
-            try {
-                inventoryClient.cambiarEstado(eventoId, EstadoEvento.CANCELADO.name());
-            } catch (RuntimeException ex) {
-                log.warn("No se pudo frenar la venta del evento {} en inventory; no se cancela", eventoId, ex);
-                throw new ApiException(HttpStatus.BAD_GATEWAY, "INVENTORY_UNAVAILABLE",
-                        "No se pudo frenar la venta en inventory; el evento no se canceló", List.of());
-            }
-        }
-
+        EstadoEvento estadoAnterior = evento.getEstado();
         evento.setEstado(EstadoEvento.CANCELADO);
         boolean pendiente = false;
         try {
@@ -259,6 +251,22 @@ public class EventService {
         } catch (RuntimeException ex) {
             pendiente = true;
             log.warn("No se pudo avisar la cancelación del evento {} a orders; queda pendiente", eventoId, ex);
+        }
+        if (estadoAnterior == EstadoEvento.PUBLICADO || estadoAnterior == EstadoEvento.AGOTADO) {
+            try {
+                inventoryClient.actualizarEstado(eventoId, "CANCELADO");
+            } catch (HttpClientErrorException ex) {
+                int status = ex.getStatusCode().value();
+                if (status == HttpStatus.NOT_FOUND.value() || status == HttpStatus.CONFLICT.value()) {
+                    log.info("Inventory no tenía el evento {} o ya estaba terminal; no hay venta que frenar", eventoId);
+                } else {
+                    pendiente = true;
+                    log.warn("No se pudo avisar la cancelación del evento {} a inventory; queda pendiente", eventoId, ex);
+                }
+            } catch (RuntimeException ex) {
+                pendiente = true;
+                log.warn("No se pudo avisar la cancelación del evento {} a inventory; queda pendiente", eventoId, ex);
+            }
         }
         evento.setCancelacionPendiente(pendiente);
         evento = eventoRepository.save(evento);
@@ -294,22 +302,32 @@ public class EventService {
     public int finalizarEventosVencidos() {
         List<Evento> vencidos = eventoRepository.findByEstadoInAndFechaBefore(
                 List.of(EstadoEvento.PUBLICADO, EstadoEvento.AGOTADO), OffsetDateTime.now(clock));
-        List<Evento> finalizados = new ArrayList<>();
+        List<Evento> cerrados = new ArrayList<>();
         for (Evento evento : vencidos) {
             try {
-                inventoryClient.cambiarEstado(evento.getId(), EstadoEvento.FINALIZADO.name());
+                inventoryClient.actualizarEstado(evento.getId(), "FINALIZADO");
+                evento.setEstado(EstadoEvento.FINALIZADO);
+                cerrados.add(evento);
+            } catch (HttpClientErrorException ex) {
+                int status = ex.getStatusCode().value();
+                if (status == HttpStatus.CONFLICT.value() || status == HttpStatus.NOT_FOUND.value()) {
+                    log.warn("Inventory ya estaba terminal o no tenía el evento {}; se finaliza en catálogo igual",
+                            evento.getId(), ex);
+                    evento.setEstado(EstadoEvento.FINALIZADO);
+                    cerrados.add(evento);
+                } else {
+                    log.warn("Inventory rechazó la finalización del evento {}; queda {} para reintentar",
+                            evento.getId(), evento.getEstado(), ex);
+                }
             } catch (RuntimeException ex) {
-                log.warn("No se pudo finalizar el evento {} en inventory; se reintenta en la próxima corrida",
-                        evento.getId(), ex);
-                continue;
+                log.warn("No se pudo avisar la finalización del evento {} a inventory; queda {} para reintentar",
+                        evento.getId(), evento.getEstado(), ex);
             }
-            evento.setEstado(EstadoEvento.FINALIZADO);
-            finalizados.add(evento);
         }
-        if (!finalizados.isEmpty()) {
-            eventoRepository.saveAll(finalizados);
+        if (!cerrados.isEmpty()) {
+            eventoRepository.saveAll(cerrados);
         }
-        return finalizados.size();
+        return cerrados.size();
     }
 
     @Transactional
@@ -317,13 +335,31 @@ public class EventService {
         List<Evento> pendientes = eventoRepository.findByCancelacionPendienteTrue();
         int reintentadas = 0;
         for (Evento evento : pendientes) {
+            boolean ok = true;
             try {
                 ordersClient.cancelarEvento(evento.getId());
+            } catch (RuntimeException ex) {
+                ok = false;
+                log.warn("Sigue pendiente el aviso de cancelación del evento {} a orders", evento.getId(), ex);
+            }
+            try {
+                inventoryClient.actualizarEstado(evento.getId(), "CANCELADO");
+            } catch (HttpClientErrorException ex) {
+                int status = ex.getStatusCode().value();
+                if (status == HttpStatus.NOT_FOUND.value() || status == HttpStatus.CONFLICT.value()) {
+                    log.info("Inventory no tenía el evento {} o ya estaba terminal; se cierra el aviso", evento.getId());
+                } else {
+                    ok = false;
+                    log.warn("Sigue pendiente el aviso de cancelación del evento {} a inventory", evento.getId(), ex);
+                }
+            } catch (RuntimeException ex) {
+                ok = false;
+                log.warn("Sigue pendiente el aviso de cancelación del evento {} a inventory", evento.getId(), ex);
+            }
+            if (ok) {
                 evento.setCancelacionPendiente(false);
                 eventoRepository.save(evento);
                 reintentadas++;
-            } catch (RuntimeException ex) {
-                log.warn("Sigue pendiente el aviso de cancelación del evento {}", evento.getId(), ex);
             }
         }
         return reintentadas;
