@@ -75,7 +75,7 @@ public class IdempotencyService {
      * clave se reutilizó con otro cuerpo y 409 mientras la compra original corre.
      * Si la clave está vencida, se trata como inexistente.
      */
-    @Transactional
+    @Transactional(noRollbackFor = ApiException.class)
     public OrderResponse resolverExistente(String key, String requestHash) {
         IdempotencyKey existente = repository.findById(key)
                 .orElseThrow(() -> new ApiException(HttpStatus.CONFLICT, "IDEMPOTENCY_IN_PROGRESS",
