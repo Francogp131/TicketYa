@@ -148,6 +148,11 @@ public class ConfirmacionService {
     }
 
     private void aplicarDevolucion(String clave, ReturnRequest request) {
+        boolean hayZona = request.items().stream().anyMatch(item -> item.asientoId() == null);
+        if (hayZona && request.clienteId() == null) {
+            throw ApiException.badRequest("CLIENT_ID_REQUIRED",
+                    "Las devoluciones de zona requieren clienteId para liberar el cupo");
+        }
         if (clave != null && !clave.isBlank()) {
             int insertadas = jdbcTemplate.update("""
                     INSERT INTO devolucion_aplicada (clave, evento_id)

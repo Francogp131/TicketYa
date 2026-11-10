@@ -108,11 +108,28 @@ class ConfirmacionPostgresTest {
         confirmacionService.confirmar(reservaId);
         assertThat(disponibles()).isEqualTo(antes - 2);
 
-        ReturnRequest devolucion = new ReturnRequest(EVENTO, List.of(new ReturnRequest.Item(CAMPO, null, 2)), null);
+        ReturnRequest devolucion = new ReturnRequest(EVENTO, List.of(new ReturnRequest.Item(CAMPO, null, 2)),
+                UUID.randomUUID());
         confirmacionService.devolver("zona-" + antes, devolucion);
         confirmacionService.devolver("zona-" + antes, devolucion);
 
         assertThat(disponibles()).isEqualTo(antes);
+    }
+
+    @Test
+    void devolverUnaZonaSinClienteIdDevuelve400() {
+        int antes = disponibles();
+        UUID reservaId = reservarZona(2, false);
+        confirmacionService.confirmar(reservaId);
+
+        ApiException error = catchThrowableOfType(
+                () -> confirmacionService.devolver("zona-sin-cliente",
+                        new ReturnRequest(EVENTO, List.of(new ReturnRequest.Item(CAMPO, null, 1)), null)),
+                ApiException.class);
+
+        assertThat(error.getStatus().value()).isEqualTo(400);
+        assertThat(error.getCode()).isEqualTo("CLIENT_ID_REQUIRED");
+        assertThat(disponibles()).isEqualTo(antes - 2);
     }
 
     @Test
