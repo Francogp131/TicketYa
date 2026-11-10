@@ -1,0 +1,33 @@
+# Evidencia final de la revisión — 10/11/2026
+
+Commit del código: `d1daff7` (head del PR #34).
+CI del commit: <https://github.com/Francogp131/TicketYa/actions/runs/42921385492>
+
+## Suite completa con Docker
+
+El runner de GitHub Actions tiene Docker, por lo que se ejecutaron también los tests de
+Testcontainers (concurrencia, idempotencia, reservas contra PostgreSQL, emisión real).
+
+| Proyecto | Tests | Resultado |
+|---|---|---|
+| catalog-service | 82 | 0 fallos, 0 errores, 0 omitidos |
+| inventory-service | 44 | 0 fallos, 0 errores, 0 omitidos |
+| orders-service | 75 | 0 fallos, 0 errores, 0 omitidos |
+| api-gateway | 19 | 0 fallos, 0 errores, 0 omitidos |
+| **Total** | **220** | **0 fallos, 0 errores, 0 omitidos** |
+
+## Qué cubre esta corrida
+
+- No doble venta y concurrencia de inventory (`ConcurrenciaPostgresTest`).
+- Idempotencia concurrente de orders (`OrderIdempotencyIntegrationTest`).
+- Pasarela caída y fallo real de emisión con compensación persistida
+  (`OrderTransactionIntegrationTest`, `OrderTransactionEmissionIntegrationTest`).
+- `SECTOR_MISMATCH` y `EVENT_FINISHED` contra PostgreSQL real
+  (`ReservaReglasPostgresTest`).
+- Reintegros parciales, devoluciones en proceso y schedulers de reintento.
+- Gateway: ruteo, roles, sectores públicos, default-deny y correlation id.
+
+## Nota
+
+La evidencia local sin Docker omitía los tests de Testcontainers. Esta corrida de CI los
+incluye y es la que corresponde a la entrega.

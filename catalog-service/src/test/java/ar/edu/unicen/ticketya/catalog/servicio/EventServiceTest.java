@@ -235,8 +235,9 @@ class EventServiceTest {
 
         assertThat(response.estado()).isEqualTo(EstadoEvento.CANCELADO);
         assertThat(response.cancelacionPendiente()).isFalse();
-        verify(ordersClient).cancelarEvento(evento.getId());
-        verify(inventoryClient).actualizarEstado(evento.getId(), "CANCELADO");
+        var orden = org.mockito.Mockito.inOrder(inventoryClient, ordersClient);
+        orden.verify(inventoryClient).actualizarEstado(evento.getId(), "CANCELADO");
+        orden.verify(ordersClient).cancelarEvento(evento.getId());
     }
 
     @Test
@@ -253,7 +254,7 @@ class EventServiceTest {
         assertThat(response.estado()).isEqualTo(EstadoEvento.CANCELADO);
         assertThat(response.cancelacionPendiente()).isTrue();
         assertThat(evento.isCancelacionPendiente()).isTrue();
-        verify(ordersClient).cancelarEvento(evento.getId());
+        verify(ordersClient, never()).cancelarEvento(any());
     }
 
     @Test
@@ -423,7 +424,7 @@ class EventServiceTest {
 
         assertThat(reintentadas).isZero();
         assertThat(evento.isCancelacionPendiente()).isTrue();
-        verify(ordersClient).cancelarEvento(evento.getId());
+        verify(ordersClient, never()).cancelarEvento(any());
         verify(eventoRepository, never()).save(any());
     }
 

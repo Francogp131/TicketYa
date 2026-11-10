@@ -263,7 +263,7 @@ class DevolucionServiceTest {
         service.aprobar(devolucion.getId());
 
         verify(paymentGateway).reintegrar(pago.getId(), new BigDecimal("15000.00"));
-        assertThat(pago.getEstado()).isEqualTo(EstadoPago.REINTEGRO_PENDIENTE);
+        assertThat(pago.getEstado()).isEqualTo(EstadoPago.PARCIALMENTE_REINTEGRADO);
     }
 
     @Test

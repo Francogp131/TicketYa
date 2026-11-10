@@ -70,14 +70,19 @@ class OrderServiceTest {
     private IdempotencyService idempotencyService;
 
     private OrderService orderService;
+    private OrderPersistenceService orderPersistenceService;
+    private OrderEmissionService orderEmissionService;
     private final Clock clock = Clock.fixed(Instant.parse("2026-11-03T15:00:00Z"), ZONA);
     private final UUID clienteId = UUID.randomUUID();
 
     @BeforeEach
     void setUp() {
+        orderPersistenceService = new OrderPersistenceService(
+                ordenRepository, ordenItemRepository, pagoRepository);
+        orderEmissionService = new OrderEmissionService(ordenRepository, ticketService);
         orderService = new OrderService(ordenRepository, ordenItemRepository, entradaRepository,
-                pagoRepository, reintegroRepository, inventoryClient, paymentGateway, ticketService,
-                idempotencyService, clock);
+                pagoRepository, reintegroRepository, inventoryClient, paymentGateway,
+                orderPersistenceService, orderEmissionService, idempotencyService, clock);
     }
 
     @Test

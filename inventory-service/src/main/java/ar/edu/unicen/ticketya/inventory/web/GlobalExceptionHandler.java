@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.dao.PessimisticLockingFailureException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
@@ -67,6 +68,17 @@ public class GlobalExceptionHandler {
                 "El método HTTP no está permitido para este recurso", List.of(), request);
     }
 
+    @ExceptionHandler(PessimisticLockingFailureException.class)
+    public ResponseEntity<ProblemDetail> handleLockTimeout(PessimisticLockingFailureException ex,
+                                                           HttpServletRequest request) {
+        log.warn("No se pudo adquirir el lock en {} {}", request.getMethod(), request.getRequestURI(), ex);
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+                .header("Retry-After", "1")
+                .contentType(org.springframework.http.MediaType.APPLICATION_PROBLEM_JSON)
+                .body(problem(HttpStatus.SERVICE_UNAVAILABLE, "LOCK_TIMEOUT",
+                        "La operación se está procesando; reintentá en unos segundos", List.of(), request));
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ProblemDetail> handleUnexpected(Exception ex, HttpServletRequest request) {
         log.error("Error no controlado en {} {}", request.getMethod(), request.getRequestURI(), ex);
@@ -82,14 +94,19 @@ public class GlobalExceptionHandler {
 
     private ResponseEntity<ProblemDetail> build(HttpStatus status, String code, String detail,
                                                  List<Map<String, Object>> errors, HttpServletRequest request) {
+        return ResponseEntity.status(status)
+                .contentType(org.springframework.http.MediaType.APPLICATION_PROBLEM_JSON)
+                .body(problem(status, code, detail, errors, request));
+    }
+
+    private ProblemDetail problem(HttpStatus status, String code, String detail,
+                                  List<Map<String, Object>> errors, HttpServletRequest request) {
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(status, detail);
         problem.setTitle(status.getReasonPhrase());
         problem.setType(URI.create("https://ticketya.local/errors/" + code.toLowerCase().replace('_', '-')));
         problem.setInstance(URI.create(request.getRequestURI()));
         problem.setProperty("code", code);
         problem.setProperty("errors", errors == null ? List.of() : errors);
-        return ResponseEntity.status(status)
-                .contentType(org.springframework.http.MediaType.APPLICATION_PROBLEM_JSON)
-                .body(problem);
+        return problem;
     }
 }

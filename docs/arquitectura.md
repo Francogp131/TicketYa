@@ -207,18 +207,22 @@ La consistencia entre servicios es **eventual y explícita**: catalog publica un
 
 ### Deuda conocida (Entrega 1 → Entrega 2)
 
-- **Compra con transacción local y llamadas HTTP:** `OrderService.crear` ejecuta la compra en
-  una transacción local mientras llama a inventory y a la pasarela. La saga/outbox formal y
-  la separación de transacciones quedan para la Entrega 2. `noRollbackFor = ApiException`
-  persiste el camino de pasarela caída; un fallo de base dentro de `TicketService.emitir`
-  todavía puede marcar la transacción rollback-only y la compensación no persistirse.
-  `OrderTransactionIntegrationTest` cubre el camino de pasarela; el caso de emisión con base
-  real queda como limitación documentada.
+- **Compra con llamadas HTTP y transacciones cortas:** la orden, los ítems y el pago se
+  confirman en una transacción propia antes de la pasarela; la emisión corre en otra
+  transacción (`OrderEmissionService`) y, si falla, la compensación se persiste. La saga/outbox
+  formal y sacar todas las llamadas HTTP de la transacción quedan para la Entrega 2.
 - **Búsqueda en memoria:** `catalog-service` trae los eventos, ordena y pagina en memoria. Con
   el volumen de la Entrega 1 alcanza; la consulta paginada en base queda para la Entrega 2.
 - **N+1 en listado de órdenes:** `OrderQueryService.ordenes` realiza consultas por orden para
   traer ítems y entradas. Con el volumen de la Entrega 1 es aceptable; se puede optimizar con
   batch queries o fetch joins en la Entrega 2.
+- **Reservas vencidas:** el `VencimientoScheduler` libera cada 30 s; hasta ese tick un asiento
+  vencido puede seguir bloqueado. Es aceptable para la Entrega 1.
+- **Idempotencia huérfana:** una compra que queda `EN_PROCESO` no se limpia hasta que vence
+  (24 h); el reintento responde `409` hasta entonces. Se limpia al registrar una clave nueva.
+- **Disponibilidad:** el aviso normal a catalog es fire-and-forget; el
+  `DisponibilidadReconciliador` reenvía el estado local cada 5 minutos para corregir drift u
+  orden invertido de avisos.
 - **Snapshot con `version = 1L`:** un evento se publica una vez; el `eventoId + version` de
   ADR-005 queda preparado para futuras republicaciones.
 - **“Suspender”:** en la Entrega 1 se resuelve como cancelación (ADR-012).

@@ -6,15 +6,15 @@ Lista verificable de **todo** lo que pide el enunciado para la Entrega 1. Cada f
 
 **Estado 10/11:** correcciones del 9/11 integradas: cancelación/ventas, callback de
 disponibilidad, devolución parcial, sector cruzado, cupo de zona y reintegros. CI de `main`
-verde en `8f8b50c`: 214 tests, 0 fallos, 0 omitidos.
+verde en `d1daff7` (head del PR #34): 220 tests, 0 fallos, 0 omitidos.
 
 ## 0. Estado de verificación (Día 10 — 10/11/2026, cerrado)
 
 | Área | Estado | Evidencia |
 |---|---|---|
-| CI de `main` | Verde en `8f8b50c` (merge del #30): 214 tests, 0 fallos, 0 omitidos | GitHub Actions, run `42884441398` |
+| CI de `main` | Verde en `d1daff7` (head del PR #34): 220 tests, 0 fallos, 0 omitidos | GitHub Actions, run `42921385492` |
 | RC de catálogo (6.4) | Clone limpio del PR #18: suite catalog 54/0/3 y build de los cuatro servicios | [`evidencia/dia-7-rc-catalog.txt`](evidencia/dia-7-rc-catalog.txt) |
-| Suite completa (6.1) | catalog 82, inventory 39, orders 74, gateway 19; 214 tests, 0 fallos, 0 omitidos con Docker | [`pruebas.md`](pruebas.md), CI `42884441398` |
+| Suite completa (6.1) | catalog 82, inventory 44, orders 75, gateway 19; 220 tests, 0 fallos, 0 omitidos con Docker | [`pruebas.md`](pruebas.md), [`evidencia/dia-10-cierre.txt`](evidencia/dia-10-cierre.txt) |
 | Suite catalog sin Docker (6.1) | 54 tests, 0 fallos, 3 de integración omitidos | [`evidencia/dia-6-catalog-suite.txt`](evidencia/dia-6-catalog-suite.txt) |
 | E2E por gateway (6.2) | 45/45 requests y 45/45 assertions; corrida real de los seis flujos el Día 6 | [`evidencia/dia-6-newman.txt`](evidencia/dia-6-newman.txt) |
 | ER por servicio (5.5) | catalog, inventory y orders validados contra Flyway | [`modelo-datos.md`](modelo-datos.md) |

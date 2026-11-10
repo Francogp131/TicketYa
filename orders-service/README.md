@@ -28,10 +28,11 @@ Servicio de órdenes, pagos, entradas/QR y compensaciones de TicketYa.
    Si ya existe: misma respuesta (misma clave y cuerpo), `422 IDEMPOTENCY_KEY_REUSED`
    (cuerpo distinto) o `409 IDEMPOTENCY_IN_PROGRESS` con `Retry-After`.
 3. Consulta la reserva a inventory (`GET /internal/reservations/{id}`), valida dueño y vigencia.
-4. Guarda el snapshot del evento, los ítems y el pago `PENDIENTE`; el total se calcula en el servidor.
+4. Guarda el snapshot del evento, los ítems y el pago `PENDIENTE` en una transacción corta
+   (`OrderPersistenceService`); el total se calcula en el servidor.
 5. Llama a la pasarela mock (`PaymentGateway`): `APROBADO`, `RECHAZADO` o `LENTO` (timeout).
-   - `APROBADO`: confirma la reserva en inventory, pasa la orden a `PAGADA` y emite una
-     entrada con QR único por asiento y por unidad de zona.
+   - `APROBADO`: confirma la reserva en inventory y emite las entradas en una transacción
+     propia (`OrderEmissionService`); la orden pasa a `PAGADA` en esa misma transacción.
    - `RECHAZADO`: orden `RECHAZADA`, sin entradas, y libera la reserva.
    - `LENTO`: `502 PAYMENT_GATEWAY_ERROR`, libera la reserva y no deja orden pagada.
 6. Si falla la confirmación de inventory o la emisión de entradas después del pago, la orden
@@ -74,9 +75,9 @@ mvn spring-boot:run
 curl http://localhost:8083/actuator/health
 ```
 
-`mvn test` incluye `OrderIdempotencyIntegrationTest` y `OrderTransactionIntegrationTest`,
-que usan PostgreSQL 16 con Testcontainers. El primero verifica que dos reintentos
-concurrentes con la misma clave crean una sola orden; el segundo, que un fallo de pasarela
-persiste `ERROR_PAGO`/`RECHAZADO` sin perder la orden. Si Docker no está disponible, se omiten.
+`mvn test` incluye `OrderIdempotencyIntegrationTest`, `OrderTransactionIntegrationTest` y
+`OrderTransactionEmissionIntegrationTest`, que usan PostgreSQL 16 con Testcontainers. Cubren
+reintentos concurrentes, pasarela caída y un fallo real del repositorio dentro de la emisión
+(la compensación queda persistida). Si Docker no está disponible, se omiten.
 
 Swagger UI: <http://localhost:8083/swagger-ui.html> · OpenAPI: <http://localhost:8083/v3/api-docs>

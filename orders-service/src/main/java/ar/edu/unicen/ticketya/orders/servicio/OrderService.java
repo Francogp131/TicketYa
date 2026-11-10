@@ -21,7 +21,6 @@ import ar.edu.unicen.ticketya.orders.web.dto.OrderResponse;
 import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.OffsetDateTime;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -43,7 +42,8 @@ public class OrderService {
     private final ReintegroRepository reintegroRepository;
     private final InventoryClient inventoryClient;
     private final PaymentGateway paymentGateway;
-    private final TicketService ticketService;
+    private final OrderPersistenceService orderPersistenceService;
+    private final OrderEmissionService orderEmissionService;
     private final IdempotencyService idempotencyService;
     private final Clock clock;
 
@@ -54,7 +54,8 @@ public class OrderService {
                         ReintegroRepository reintegroRepository,
                         InventoryClient inventoryClient,
                         PaymentGateway paymentGateway,
-                        TicketService ticketService,
+                        OrderPersistenceService orderPersistenceService,
+                        OrderEmissionService orderEmissionService,
                         IdempotencyService idempotencyService,
                         Clock clock) {
         this.ordenRepository = ordenRepository;
@@ -64,7 +65,8 @@ public class OrderService {
         this.reintegroRepository = reintegroRepository;
         this.inventoryClient = inventoryClient;
         this.paymentGateway = paymentGateway;
-        this.ticketService = ticketService;
+        this.orderPersistenceService = orderPersistenceService;
+        this.orderEmissionService = orderEmissionService;
         this.idempotencyService = idempotencyService;
         this.clock = clock;
     }
@@ -114,35 +116,12 @@ public class OrderService {
         ReservationDto reserva = consultarReserva(request.reservaId());
         validarReserva(reserva, clienteId);
 
-        BigDecimal total = reserva.items().stream()
-                .map(ReservationDto.Item::subtotal)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-        Orden orden = new Orden();
-        orden.setClienteId(clienteId);
-        orden.setReservaId(reserva.id());
-        orden.setEventoId(reserva.eventoId());
-        orden.setEventoNombre(reserva.eventoNombre());
-        orden.setEventoFecha(reserva.eventoFecha());
-        orden.setEstado(EstadoOrden.PENDIENTE_PAGO);
-        orden.setMedioPago(request.medioPago());
-        orden.setTotal(total);
-        orden = ordenRepository.save(orden);
-
-        List<OrdenItem> items = new ArrayList<>();
-        for (ReservationDto.Item item : reserva.items()) {
-            items.add(new OrdenItem(orden.getId(), item.sectorId(), item.asientoId(),
-                    item.cantidad(), item.precioUnitario(), item.subtotal()));
-        }
-        items = ordenItemRepository.saveAll(items);
-
-        Pago pago = new Pago();
-        pago.setOrdenId(orden.getId());
-        pago.setEstado(EstadoPago.PENDIENTE);
-        pago.setMonto(total);
-        pago.setMedioPago(request.medioPago());
-        pago.setToken(request.token());
-        pago = pagoRepository.save(pago);
+        OrderPersistenceService.OrdenCreada creada =
+                orderPersistenceService.crearPendiente(reserva, clienteId, request);
+        Orden orden = creada.orden();
+        List<OrdenItem> items = creada.items();
+        Pago pago = creada.pago();
+        BigDecimal total = pago.getMonto();
 
         PaymentGateway.PaymentResult resultado;
         try {
@@ -176,10 +155,8 @@ public class OrderService {
             return compensar(orden, pago, items, reserva, false);
         }
 
-        orden.setEstado(EstadoOrden.PAGADA);
-        ordenRepository.save(orden);
         try {
-            List<Entrada> entradas = ticketService.emitir(orden, items);
+            List<Entrada> entradas = orderEmissionService.marcarPagadaYEmitir(orden, items);
             return toResponse(orden, items, entradas);
         } catch (RuntimeException ex) {
             return compensar(orden, pago, items, reserva, true);
@@ -279,6 +256,7 @@ public class OrderService {
             Pago pago = pagoRepository.findByOrdenId(entrada.getOrdenId()).stream()
                     .filter(p -> p.getEstado() == EstadoPago.APROBADO
                             || p.getEstado() == EstadoPago.REINTEGRO_PENDIENTE
+                            || p.getEstado() == EstadoPago.PARCIALMENTE_REINTEGRADO
                             || p.getEstado() == EstadoPago.REINTEGRADO)
                     .findFirst()
                     .orElse(null);
@@ -321,8 +299,10 @@ public class OrderService {
         boolean hayPendientes = reintegros.stream().anyMatch(r -> r.getEstado() == EstadoReintegro.PENDIENTE);
         if (totalAprobado.compareTo(pago.getMonto()) >= 0) {
             pago.setEstado(EstadoPago.REINTEGRADO);
-        } else if (totalAprobado.compareTo(BigDecimal.ZERO) > 0 || hayPendientes) {
+        } else if (hayPendientes) {
             pago.setEstado(EstadoPago.REINTEGRO_PENDIENTE);
+        } else if (totalAprobado.compareTo(BigDecimal.ZERO) > 0) {
+            pago.setEstado(EstadoPago.PARCIALMENTE_REINTEGRADO);
         }
         pagoRepository.save(pago);
     }

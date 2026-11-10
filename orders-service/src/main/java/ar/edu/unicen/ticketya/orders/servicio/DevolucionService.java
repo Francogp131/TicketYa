@@ -168,7 +168,8 @@ public class DevolucionService {
     private void reintegrarEntrada(Entrada entrada) {
         Pago pago = pagoRepository.findByOrdenId(entrada.getOrdenId()).stream()
                 .filter(p -> p.getEstado() == EstadoPago.APROBADO
-                        || p.getEstado() == EstadoPago.REINTEGRO_PENDIENTE)
+                        || p.getEstado() == EstadoPago.REINTEGRO_PENDIENTE
+                        || p.getEstado() == EstadoPago.PARCIALMENTE_REINTEGRADO)
                 .findFirst()
                 .orElseThrow(() -> ApiException.conflict("PAYMENT_NOT_REFUNDABLE",
                         "No hay un pago aprobado para reintegrar"));
@@ -207,8 +208,10 @@ public class DevolucionService {
         boolean hayPendientes = reintegros.stream().anyMatch(r -> r.getEstado() == EstadoReintegro.PENDIENTE);
         if (totalAprobado.compareTo(pago.getMonto()) >= 0) {
             pago.setEstado(EstadoPago.REINTEGRADO);
-        } else if (totalAprobado.compareTo(BigDecimal.ZERO) > 0 || hayPendientes) {
+        } else if (hayPendientes) {
             pago.setEstado(EstadoPago.REINTEGRO_PENDIENTE);
+        } else if (totalAprobado.compareTo(BigDecimal.ZERO) > 0) {
+            pago.setEstado(EstadoPago.PARCIALMENTE_REINTEGRADO);
         }
         pagoRepository.save(pago);
     }
