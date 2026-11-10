@@ -46,6 +46,7 @@ public class ReservaService {
     private final JdbcTemplate jdbcTemplate;
     private final LimitePorCliente limitePorCliente;
     private final VencimientoService vencimientoService;
+    private final DisponibilidadSincronizador disponibilidadSincronizador;
     private final Clock clock;
 
     public ReservaService(EventoInventarioRepository eventoRepository,
@@ -56,6 +57,7 @@ public class ReservaService {
                           JdbcTemplate jdbcTemplate,
                           LimitePorCliente limitePorCliente,
                           VencimientoService vencimientoService,
+                          DisponibilidadSincronizador disponibilidadSincronizador,
                           Clock clock) {
         this.eventoRepository = eventoRepository;
         this.sectorRepository = sectorRepository;
@@ -65,6 +67,7 @@ public class ReservaService {
         this.jdbcTemplate = jdbcTemplate;
         this.limitePorCliente = limitePorCliente;
         this.vencimientoService = vencimientoService;
+        this.disponibilidadSincronizador = disponibilidadSincronizador;
         this.clock = clock;
     }
 
@@ -173,6 +176,7 @@ public class ReservaService {
             }
         }
         reservaItemRepository.saveAll(reservaItems);
+        disponibilidadSincronizador.sincronizar(evento.getEventoId());
 
         return toResponse(reserva, evento, sectores, reservaItems);
     }

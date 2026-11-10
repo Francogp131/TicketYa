@@ -63,6 +63,8 @@ class ReservaServiceTest {
     private JdbcTemplate jdbcTemplate;
     @Mock
     private LimitePorCliente limitePorCliente;
+    @Mock
+    private DisponibilidadSincronizador disponibilidadSincronizador;
     private VencimientoService vencimientoService;
 
     private ReservaService reservaService;
@@ -72,7 +74,7 @@ class ReservaServiceTest {
     void setUp() {
         reservaService = new ReservaService(eventoRepository, sectorRepository, asientoRepository,
                 reservaRepository, reservaItemRepository, jdbcTemplate, limitePorCliente,
-                vencimientoService, clock);
+                vencimientoService, disponibilidadSincronizador, clock);
     }
 
     @Test

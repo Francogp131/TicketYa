@@ -75,17 +75,20 @@ public class ConfirmacionService {
     private final ReservaRepository reservaRepository;
     private final ReservaService reservaService;
     private final TransactionTemplate transactionTemplate;
+    private final DisponibilidadSincronizador disponibilidadSincronizador;
     private final Clock clock;
 
     public ConfirmacionService(JdbcTemplate jdbcTemplate,
                                ReservaRepository reservaRepository,
                                ReservaService reservaService,
                                TransactionTemplate transactionTemplate,
+                               DisponibilidadSincronizador disponibilidadSincronizador,
                                Clock clock) {
         this.jdbcTemplate = jdbcTemplate;
         this.reservaRepository = reservaRepository;
         this.reservaService = reservaService;
         this.transactionTemplate = transactionTemplate;
+        this.disponibilidadSincronizador = disponibilidadSincronizador;
         this.clock = clock;
     }
 
@@ -114,6 +117,7 @@ public class ConfirmacionService {
         if (confirmadas == 1) {
             jdbcTemplate.update(VENDER_ASIENTOS, reservaId);
             sumarVendidas(reservaId);
+            sincronizar(reservaId);
             return Paso.CONFIRMADA;
         }
         Reserva reserva = buscar(reservaId);
@@ -123,6 +127,7 @@ public class ConfirmacionService {
         if (reserva.getEstado() == EstadoReserva.VIGENTE && !reserva.getExpiresAt().isAfter(ahora)) {
             jdbcTemplate.update(VENCER_RESERVA, reservaId, ahora);
             liberarLugares(reservaId, reserva.getEventoId());
+            disponibilidadSincronizador.sincronizar(reserva.getEventoId());
             return Paso.VENCIDA;
         }
         return Paso.NO_CONFIRMABLE;
@@ -133,6 +138,7 @@ public class ConfirmacionService {
         int liberadas = jdbcTemplate.update(LIBERAR_RESERVA, reservaId);
         if (liberadas == 1) {
             liberarLugares(reservaId, reserva.getEventoId());
+            disponibilidadSincronizador.sincronizar(reserva.getEventoId());
             return;
         }
         if (reserva.getEstado() == EstadoReserva.LIBERADA || reserva.getEstado() == EstadoReserva.VENCIDA) {
@@ -159,6 +165,7 @@ public class ConfirmacionService {
                 devolverAsiento(request.eventoId(), item.asientoId());
             }
         }
+        disponibilidadSincronizador.sincronizar(request.eventoId());
     }
 
     private void devolverAsiento(UUID eventoId, UUID asientoId) {
@@ -204,6 +211,12 @@ public class ConfirmacionService {
                    SET entradas_vendidas = GREATEST(0, entradas_vendidas - ?), updated_at = now()
                  WHERE evento_id = ? AND cliente_id = ?
                 """, item.cantidad(), eventoId, clienteId);
+    }
+
+    private void sincronizar(UUID reservaId) {
+        UUID eventoId = jdbcTemplate.queryForObject(
+                "SELECT evento_id FROM reserva WHERE id = ?", UUID.class, reservaId);
+        disponibilidadSincronizador.sincronizar(eventoId);
     }
 
     private void sumarVendidas(UUID reservaId) {
