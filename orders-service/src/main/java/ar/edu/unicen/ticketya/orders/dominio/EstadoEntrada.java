@@ -4,5 +4,6 @@ public enum EstadoEntrada {
     VALIDA,
     UTILIZADA,
     DEVUELTA,
-    EN_REINTEGRO
+    EN_REINTEGRO,
+    EN_DEVOLUCION
 }

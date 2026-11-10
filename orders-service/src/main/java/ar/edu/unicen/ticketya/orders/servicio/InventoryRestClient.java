@@ -1,8 +1,10 @@
 package ar.edu.unicen.ticketya.orders.servicio;
 
+import java.time.Duration;
 import java.util.UUID;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 
@@ -13,7 +15,13 @@ public class InventoryRestClient implements InventoryClient {
 
     public InventoryRestClient(RestClient.Builder builder,
                                @Value("${inventory.url:http://localhost:8082}") String baseUrl) {
-        this.restClient = builder.baseUrl(baseUrl).build();
+        SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
+        requestFactory.setConnectTimeout(Duration.ofSeconds(2));
+        requestFactory.setReadTimeout(Duration.ofSeconds(5));
+        this.restClient = builder
+                .baseUrl(baseUrl)
+                .requestFactory(requestFactory)
+                .build();
     }
 
     @Override

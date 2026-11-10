@@ -85,6 +85,7 @@ class IdempotencyServiceTest {
         fila.setKey("compra-0001");
         fila.setRequestHash("hash");
         fila.setEstado("EN_PROCESO");
+        fila.setExpiresAt(OffsetDateTime.now().plusHours(1));
         when(repository.findById("compra-0001")).thenReturn(Optional.of(fila));
 
         assertThatThrownBy(() -> idempotencyService.resolverExistente("compra-0001", "hash"))
@@ -93,6 +94,23 @@ class IdempotencyServiceTest {
                     assertThat(ex.getCode()).isEqualTo("IDEMPOTENCY_IN_PROGRESS");
                     assertThat(ex.getHeaders()).containsEntry("Retry-After", "1");
                 });
+    }
+
+    @Test
+    void unaClaveVencidaSeTrataComoInexistente() {
+        IdempotencyKey fila = new IdempotencyKey();
+        fila.setKey("compra-0001");
+        fila.setRequestHash("hash");
+        fila.setEstado("COMPLETADA");
+        fila.setExpiresAt(OffsetDateTime.now().minusHours(1));
+        when(repository.findById("compra-0001")).thenReturn(Optional.of(fila));
+
+        assertThatThrownBy(() -> idempotencyService.resolverExistente("compra-0001", "hash"))
+                .isInstanceOfSatisfying(ApiException.class, ex -> {
+                    assertThat(ex.getStatus().value()).isEqualTo(409);
+                    assertThat(ex.getCode()).isEqualTo("IDEMPOTENCY_KEY_EXPIRED");
+                });
+        verify(repository).delete(fila);
     }
 
     @Test

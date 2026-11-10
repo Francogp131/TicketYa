@@ -4,6 +4,9 @@ import ar.edu.unicen.ticketya.orders.servicio.DevolucionService;
 import ar.edu.unicen.ticketya.orders.web.dto.ReturnRequest;
 import ar.edu.unicen.ticketya.orders.web.dto.ReturnResponse;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -32,11 +35,25 @@ public class ReturnController {
     @ResponseStatus(HttpStatus.CREATED)
     @Operation(summary = "Solicitar la devolución de una entrada",
             description = "Solo el dueño, entrada VALIDA y más de 72 horas antes del evento.")
-    @ApiResponse(responseCode = "201", description = "Solicitud creada en PENDIENTE")
+    @ApiResponse(responseCode = "201", description = "Solicitud creada en PENDIENTE",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = ReturnResponse.class),
+                    examples = @ExampleObject(name = "Devolución pendiente", value = """
+                            {
+                              "id": "88888888-8888-4888-8888-888888888888",
+                              "entradaId": "66666666-6666-4666-8666-666666666666",
+                              "estado": "PENDIENTE",
+                              "motivo": "No puedo asistir al evento",
+                              "createdAt": "2026-11-10T12:00:00-03:00",
+                              "resolvedAt": null
+                            }
+                            """)))
     @ApiResponse(responseCode = "403", description = "La entrada es de otro cliente (NOT_TICKET_OWNER)")
     @ApiResponse(responseCode = "404", description = "La entrada no existe (TICKET_NOT_FOUND)")
     @ApiResponse(responseCode = "409", description = "Entrada no válida (TICKET_NOT_VALID) o devolución abierta (RETURN_ALREADY_EXISTS)")
-    @ApiResponse(responseCode = "422", description = "Fuera del plazo de 72 horas (RETURN_WINDOW_CLOSED)")
+    @ApiResponse(responseCode = "422", description = "Fuera del plazo de 72 horas (RETURN_WINDOW_CLOSED)",
+            content = @Content(mediaType = "application/problem+json", examples = @ExampleObject(value = """
+                    {"type":"https://ticketya.local/errors/return-window-closed","title":"Unprocessable Entity","status":422,"detail":"Solo se puede devolver hasta 72 horas antes del evento","instance":"/api/orders/tickets/66666666-6666-4666-8666-666666666666/returns","code":"RETURN_WINDOW_CLOSED","errors":[]}
+                    """)))
     public ReturnResponse solicitar(
             @PathVariable UUID entradaId,
             @Valid @RequestBody ReturnRequest request,

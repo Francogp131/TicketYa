@@ -14,10 +14,10 @@ public interface PaymentGateway {
     PaymentResult cobrar(UUID ordenId, BigDecimal monto, MedioPago medioPago, String token);
 
     /**
-     * Solicita el reintegro de un pago. Es idempotente por pagoId: repetir la
-     * llamada no duplica el reintegro en la pasarela.
+     * Solicita el reintegro de un pago por un monto específico. Es idempotente
+     * por (pagoId, monto/entrada) según lo maneje el llamador.
      */
-    void reintegrar(UUID pagoId);
+    void reintegrar(UUID pagoId, java.math.BigDecimal monto);
 
     record PaymentResult(EstadoPago estado, String externalId) {
     }

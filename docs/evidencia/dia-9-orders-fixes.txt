@@ -1,0 +1,37 @@
+# Evidencia de la revisión de orders — 10/11/2026
+
+Rama: `fix/orders-revision`
+Alcance: `orders-service` (+ `docs/`, `openapi/` asociados).
+
+## Cambios de la última revisión
+
+- Reintegros parciales por entrada con tabla `reintegro` y estado `REINTEGRO_PENDIENTE`
+  en `pago` (`V2__reintegros.sql`).
+- `PaymentGateway.reintegrar(pagoId, monto)`; no se marca nada como aprobado antes de la
+  pasarela.
+- Compensación de compra: crea el reintegro pendiente y llama a la pasarela.
+- Cancelación de evento: reintegros por entrada, idempotentes.
+- `ReintegroRetryService`: reintenta reintegros pendientes cada minuto.
+- Devoluciones: la entrada pasa a `EN_DEVOLUCION` (`V3__entrada_en_devolucion.sql`) y no se
+  libera inventory hasta que el reintegro respondió.
+- `DevolucionRetryService`: reintenta devoluciones `PROCESANDO` cada minuto.
+- Una devolución `PROCESANDO` no se puede rechazar (`409 RETURN_IN_PROGRESS`).
+- Timeouts del cliente de inventory, idempotencia vencida y ejemplos de OpenAPI.
+- Limitación documentada: la compra sigue usando una transacción local alrededor de las
+  llamadas HTTP; la saga/outbox formal queda para la Entrega 2.
+
+## Suite local
+
+```text
+[INFO] Tests run: 74, Failures: 0, Errors: 0, Skipped: 4
+[INFO] BUILD SUCCESS
+```
+
+Los 4 omitidos son los tests de Testcontainers (`OrderIdempotencyIntegrationTest` y
+`OrderTransactionIntegrationTest`) porque la máquina local no tiene Docker. El CI los
+ejecuta con PostgreSQL 16.
+
+## CI
+
+Ver el run del PR #30 en GitHub Actions. El job `build (orders-service)` corre
+`mvn -B -ntp verify` e incluye los tests de Testcontainers.

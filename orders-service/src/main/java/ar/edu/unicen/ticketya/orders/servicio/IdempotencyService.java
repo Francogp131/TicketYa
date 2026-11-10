@@ -55,6 +55,7 @@ public class IdempotencyService {
      */
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void registrar(String key, String requestHash, OffsetDateTime momento) {
+        limpiarVencidas(momento);
         // INSERT directo: con @Id asignado, repository.save() haría merge y
         // pisaría la fila existente en lugar de detectar la clave duplicada.
         jdbcTemplate.update("""
@@ -63,16 +64,29 @@ public class IdempotencyService {
                 """, key, requestHash, Timestamp.from(momento.plusHours(HORAS_VIGENCIA).toInstant()));
     }
 
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void limpiarVencidas(OffsetDateTime momento) {
+        jdbcTemplate.update("DELETE FROM idempotency_key WHERE expires_at < ?",
+                Timestamp.from(momento.toInstant()));
+    }
+
     /**
      * Resuelve un reintento: misma respuesta si el cuerpo es igual, 422 si la
      * clave se reutilizó con otro cuerpo y 409 mientras la compra original corre.
+     * Si la clave está vencida, se trata como inexistente.
      */
-    @Transactional(readOnly = true)
+    @Transactional(noRollbackFor = ApiException.class)
     public OrderResponse resolverExistente(String key, String requestHash) {
         IdempotencyKey existente = repository.findById(key)
                 .orElseThrow(() -> new ApiException(HttpStatus.CONFLICT, "IDEMPOTENCY_IN_PROGRESS",
                         "La compra con esta Idempotency-Key todavía está en proceso",
                         java.util.List.of(), Map.of("Retry-After", "1")));
+        if (existente.getExpiresAt() != null && !existente.getExpiresAt().isAfter(OffsetDateTime.now())) {
+            repository.delete(existente);
+            throw new ApiException(HttpStatus.CONFLICT, "IDEMPOTENCY_KEY_EXPIRED",
+                    "La Idempotency-Key venció, reintente la operación",
+                    java.util.List.of(), Map.of("Retry-After", "0"));
+        }
         if (!existente.getRequestHash().equals(requestHash)) {
             throw ApiException.unprocessable("IDEMPOTENCY_KEY_REUSED",
                     "La Idempotency-Key ya se usó con un cuerpo distinto");

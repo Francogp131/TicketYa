@@ -209,10 +209,16 @@ La consistencia entre servicios es **eventual y explícita**: catalog publica un
 
 - **Compra con transacción local y llamadas HTTP:** `OrderService.crear` ejecuta la compra en
   una transacción local mientras llama a inventory y a la pasarela. La saga/outbox formal y
-  la separación de transacciones quedan para la Entrega 2; mientras tanto, los tests de
-  integración deben cubrir el rollback y la compensación.
+  la separación de transacciones quedan para la Entrega 2. `noRollbackFor = ApiException`
+  persiste el camino de pasarela caída; un fallo de base dentro de `TicketService.emitir`
+  todavía puede marcar la transacción rollback-only y la compensación no persistirse.
+  `OrderTransactionIntegrationTest` cubre el camino de pasarela; el caso de emisión con base
+  real queda como limitación documentada.
 - **Búsqueda en memoria:** `catalog-service` trae los eventos, ordena y pagina en memoria. Con
   el volumen de la Entrega 1 alcanza; la consulta paginada en base queda para la Entrega 2.
+- **N+1 en listado de órdenes:** `OrderQueryService.ordenes` realiza consultas por orden para
+  traer ítems y entradas. Con el volumen de la Entrega 1 es aceptable; se puede optimizar con
+  batch queries o fetch joins en la Entrega 2.
 - **Snapshot con `version = 1L`:** un evento se publica una vez; el `eventoId + version` de
   ADR-005 queda preparado para futuras republicaciones.
 - **“Suspender”:** en la Entrega 1 se resuelve como cancelación (ADR-012).

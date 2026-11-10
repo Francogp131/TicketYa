@@ -4,5 +4,6 @@ public enum EstadoPago {
     PENDIENTE,
     APROBADO,
     RECHAZADO,
-    REINTEGRADO
+    REINTEGRADO,
+    REINTEGRO_PENDIENTE
 }

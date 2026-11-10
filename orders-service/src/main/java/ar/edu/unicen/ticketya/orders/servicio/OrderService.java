@@ -4,13 +4,16 @@ import ar.edu.unicen.ticketya.orders.dominio.Entrada;
 import ar.edu.unicen.ticketya.orders.dominio.EstadoEntrada;
 import ar.edu.unicen.ticketya.orders.dominio.EstadoOrden;
 import ar.edu.unicen.ticketya.orders.dominio.EstadoPago;
+import ar.edu.unicen.ticketya.orders.dominio.EstadoReintegro;
 import ar.edu.unicen.ticketya.orders.dominio.Orden;
 import ar.edu.unicen.ticketya.orders.dominio.OrdenItem;
 import ar.edu.unicen.ticketya.orders.dominio.Pago;
+import ar.edu.unicen.ticketya.orders.dominio.Reintegro;
 import ar.edu.unicen.ticketya.orders.repositorio.EntradaRepository;
 import ar.edu.unicen.ticketya.orders.repositorio.OrdenItemRepository;
 import ar.edu.unicen.ticketya.orders.repositorio.OrdenRepository;
 import ar.edu.unicen.ticketya.orders.repositorio.PagoRepository;
+import ar.edu.unicen.ticketya.orders.repositorio.ReintegroRepository;
 import ar.edu.unicen.ticketya.orders.web.ApiException;
 import ar.edu.unicen.ticketya.orders.web.dto.CancelacionEventoResponse;
 import ar.edu.unicen.ticketya.orders.web.dto.CrearOrdenRequest;
@@ -37,6 +40,7 @@ public class OrderService {
     private final OrdenItemRepository ordenItemRepository;
     private final EntradaRepository entradaRepository;
     private final PagoRepository pagoRepository;
+    private final ReintegroRepository reintegroRepository;
     private final InventoryClient inventoryClient;
     private final PaymentGateway paymentGateway;
     private final TicketService ticketService;
@@ -47,6 +51,7 @@ public class OrderService {
                         OrdenItemRepository ordenItemRepository,
                         EntradaRepository entradaRepository,
                         PagoRepository pagoRepository,
+                        ReintegroRepository reintegroRepository,
                         InventoryClient inventoryClient,
                         PaymentGateway paymentGateway,
                         TicketService ticketService,
@@ -56,6 +61,7 @@ public class OrderService {
         this.ordenItemRepository = ordenItemRepository;
         this.entradaRepository = entradaRepository;
         this.pagoRepository = pagoRepository;
+        this.reintegroRepository = reintegroRepository;
         this.inventoryClient = inventoryClient;
         this.paymentGateway = paymentGateway;
         this.ticketService = ticketService;
@@ -69,7 +75,7 @@ public class OrderService {
      * <p>La Idempotency-Key se reclama antes de tocar inventory. Si la compra
      * falla, el reclamo se libera para permitir un reintento limpio.</p>
      */
-    @Transactional
+    @Transactional(noRollbackFor = ApiException.class)
     public OrderResponse crear(CrearOrdenRequest request, UUID clienteId, String idempotencyKey) {
         validarIdempotencyKey(idempotencyKey);
         validarToken(request.token());
@@ -79,7 +85,15 @@ public class OrderService {
         try {
             idempotencyService.registrar(idempotencyKey, hash, OffsetDateTime.now(clock));
         } catch (DataIntegrityViolationException ex) {
-            return idempotencyService.resolverExistente(idempotencyKey, hash);
+            try {
+                return idempotencyService.resolverExistente(idempotencyKey, hash);
+            } catch (ApiException apiEx) {
+                if ("IDEMPOTENCY_KEY_EXPIRED".equals(apiEx.getCode())) {
+                    idempotencyService.registrar(idempotencyKey, hash, OffsetDateTime.now(clock));
+                } else {
+                    throw apiEx;
+                }
+            }
         }
 
         try {
@@ -87,7 +101,11 @@ public class OrderService {
             idempotencyService.completar(idempotencyKey, response);
             return response;
         } catch (RuntimeException ex) {
-            idempotencyService.liberar(idempotencyKey);
+            try {
+                idempotencyService.liberar(idempotencyKey);
+            } catch (RuntimeException ignored) {
+                // best-effort: no ocultar la excepción original
+            }
             throw ex;
         }
     }
@@ -169,21 +187,38 @@ public class OrderService {
     }
 
     /**
-     * Compensación (tarea 4.7): la orden nunca queda PAGADA y el pago pasa a
-     * REINTEGRADO. Si la venta se había confirmado, se devuelven los lugares.
+     * Compensación (tarea 4.7): la orden nunca queda PAGADA. Se crea el reintegro
+     * pendiente y se intenta solicitarlo a la pasarela; si falla, queda REINTEGRO_PENDIENTE.
      */
     private OrderResponse compensar(Orden orden, Pago pago, List<OrdenItem> items,
                                     ReservationDto reserva, boolean ventaConfirmada) {
         orden.setEstado(EstadoOrden.REINTEGRO_PENDIENTE);
-        pago.setEstado(EstadoPago.REINTEGRADO);
         ordenRepository.save(orden);
-        pagoRepository.save(pago);
         if (ventaConfirmada) {
             devolverSinFallo(reserva, items, pago.getId());
         } else {
             liberarSinFallo(reserva.id(), "ERROR_CONFIRMACION");
         }
+        solicitarReintegroCompensacion(pago);
         return toResponse(orden, items, List.of());
+    }
+
+    private void solicitarReintegroCompensacion(Pago pago) {
+        Reintegro reintegro = reintegroRepository.findByPagoId(pago.getId()).stream()
+                .filter(r -> r.getEntradaId() == null)
+                .findFirst()
+                .orElseGet(() -> reintegroRepository.save(
+                        new Reintegro(pago.getId(), null, pago.getMonto(), EstadoReintegro.PENDIENTE)));
+        if (reintegro.getEstado() != EstadoReintegro.APROBADO) {
+            try {
+                paymentGateway.reintegrar(pago.getId(), reintegro.getMonto());
+                reintegro.setEstado(EstadoReintegro.APROBADO);
+                reintegroRepository.save(reintegro);
+            } catch (RuntimeException ex) {
+                // Queda pendiente para reintento.
+            }
+        }
+        actualizarEstadoPago(pago);
     }
 
     private ReservationDto consultarReserva(UUID reservaId) {
@@ -230,7 +265,7 @@ public class OrderService {
     /**
      * Cancelación de evento pedida por catalog (tarea 4.9, necesaria para 2.3).
      * Idempotente: repetir devuelve la misma cantidad de entradas en reintegro
-     * y no vuelve a pedir reintegros ya solicitados.
+     * y no vuelve a pedir reintegros ya aprobados.
      */
     @Transactional
     public CancelacionEventoResponse cancelarEvento(UUID eventoId) {
@@ -239,23 +274,57 @@ public class OrderService {
         entradaRepository.saveAll(validas);
 
         List<Entrada> enReintegro = entradaRepository.findByEventoIdAndEstado(eventoId, EstadoEntrada.EN_REINTEGRO);
-        int reintegros = 0;
-        List<UUID> ordenes = enReintegro.stream().map(Entrada::getOrdenId).distinct().toList();
-        for (UUID ordenId : ordenes) {
-            for (Pago pago : pagoRepository.findByOrdenId(ordenId)) {
-                if (pago.getEstado() == EstadoPago.APROBADO) {
-                    pago.setEstado(EstadoPago.REINTEGRADO);
-                    pagoRepository.save(pago);
-                    try {
-                        paymentGateway.reintegrar(pago.getId());
-                    } catch (RuntimeException ex) {
-                        // El pago queda REINTEGRADO; la pasarela mock es idempotente.
-                    }
-                    reintegros++;
+        int reintegrosAprobados = 0;
+        for (Entrada entrada : enReintegro) {
+            Pago pago = pagoRepository.findByOrdenId(entrada.getOrdenId()).stream()
+                    .filter(p -> p.getEstado() == EstadoPago.APROBADO
+                            || p.getEstado() == EstadoPago.REINTEGRO_PENDIENTE
+                            || p.getEstado() == EstadoPago.REINTEGRADO)
+                    .findFirst()
+                    .orElse(null);
+            if (pago == null) {
+                continue;
+            }
+            OrdenItem item = ordenItemRepository.findById(entrada.getOrdenItemId()).orElse(null);
+            if (item == null) {
+                continue;
+            }
+            BigDecimal monto = item.getPrecioUnitario();
+            Reintegro reintegro = reintegroRepository.findByPagoId(pago.getId()).stream()
+                    .filter(r -> entrada.getId().equals(r.getEntradaId()))
+                    .findFirst()
+                    .orElseGet(() -> reintegroRepository.save(
+                            new Reintegro(pago.getId(), entrada.getId(), monto, EstadoReintegro.PENDIENTE)));
+            if (reintegro.getEstado() != EstadoReintegro.APROBADO) {
+                try {
+                    paymentGateway.reintegrar(pago.getId(), monto);
+                    reintegro.setEstado(EstadoReintegro.APROBADO);
+                    reintegroRepository.save(reintegro);
+                } catch (RuntimeException ex) {
+                    // Queda PENDIENTE para reintento.
                 }
             }
+            if (reintegro.getEstado() == EstadoReintegro.APROBADO) {
+                reintegrosAprobados++;
+            }
+            actualizarEstadoPago(pago);
         }
-        return new CancelacionEventoResponse(eventoId, enReintegro.size(), reintegros);
+        return new CancelacionEventoResponse(eventoId, enReintegro.size(), reintegrosAprobados);
+    }
+
+    private void actualizarEstadoPago(Pago pago) {
+        List<Reintegro> reintegros = reintegroRepository.findByPagoId(pago.getId());
+        BigDecimal totalAprobado = reintegros.stream()
+                .filter(r -> r.getEstado() == EstadoReintegro.APROBADO)
+                .map(Reintegro::getMonto)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        boolean hayPendientes = reintegros.stream().anyMatch(r -> r.getEstado() == EstadoReintegro.PENDIENTE);
+        if (totalAprobado.compareTo(pago.getMonto()) >= 0) {
+            pago.setEstado(EstadoPago.REINTEGRADO);
+        } else if (totalAprobado.compareTo(BigDecimal.ZERO) > 0 || hayPendientes) {
+            pago.setEstado(EstadoPago.REINTEGRO_PENDIENTE);
+        }
+        pagoRepository.save(pago);
     }
 
     private void liberarSinFallo(UUID reservaId, String motivo) {
@@ -272,7 +341,8 @@ public class OrderService {
                         item.getAsientoId() == null ? item.getCantidad() : 1))
                 .toList();
         try {
-            inventoryClient.devolverItems(new ReturnDto(reserva.eventoId(), referencia, devoluciones));
+            inventoryClient.devolverItems(new ReturnDto(reserva.eventoId(), referencia, devoluciones,
+                    reserva.clienteId()));
         } catch (RuntimeException ex) {
             // La orden ya quedó en REINTEGRO_PENDIENTE; se puede reintentar.
         }
