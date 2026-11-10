@@ -101,7 +101,11 @@ public class OrderService {
             idempotencyService.completar(idempotencyKey, response);
             return response;
         } catch (RuntimeException ex) {
-            idempotencyService.liberar(idempotencyKey);
+            try {
+                idempotencyService.liberar(idempotencyKey);
+            } catch (RuntimeException ignored) {
+                // best-effort: no ocultar la excepción original
+            }
             throw ex;
         }
     }

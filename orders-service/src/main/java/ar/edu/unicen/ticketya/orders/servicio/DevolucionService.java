@@ -115,6 +115,9 @@ public class DevolucionService {
         devolucion.setEstado(EstadoDevolucion.PROCESANDO);
         devolucionRepository.save(devolucion);
 
+        // Procesar reintegro antes de liberar el asiento para evitar inconsistencia
+        reintegrarEntrada(entrada);
+
         try {
             inventoryClient.devolverItems(new ReturnDto(
                     entrada.getEventoId(),
@@ -126,7 +129,6 @@ public class DevolucionService {
                     "No se pudo liberar el lugar en inventory; la devolución queda PROCESANDO");
         }
 
-        reintegrarEntrada(entrada);
         entrada.setEstado(EstadoEntrada.DEVUELTA);
         entradaRepository.save(entrada);
         devolucion.setEstado(EstadoDevolucion.APROBADA);

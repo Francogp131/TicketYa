@@ -161,9 +161,23 @@ class DevolucionServiceTest {
     void siInventoryFallaLaDevolucionQuedaProcesando() {
         Entrada entrada = entrada(OffsetDateTime.parse("2026-11-10T21:00:00-03:00"));
         Devolucion devolucion = devolucion(entrada.getId(), EstadoDevolucion.PENDIENTE);
+        Pago pago = pago(entrada.getOrdenId(), EstadoPago.APROBADO, new BigDecimal("15000.00"));
+        OrdenItem item = ordenItem(entrada.getOrdenItemId(), entrada.getOrdenId(), new BigDecimal("15000.00"));
         when(devolucionRepository.findById(devolucion.getId())).thenReturn(Optional.of(devolucion));
         when(entradaRepository.findById(entrada.getId())).thenReturn(Optional.of(entrada));
         when(devolucionRepository.save(any(Devolucion.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(pagoRepository.findByOrdenId(entrada.getOrdenId())).thenReturn(List.of(pago));
+        when(ordenItemRepository.findById(entrada.getOrdenItemId())).thenReturn(Optional.of(item));
+        when(pagoRepository.save(any(Pago.class))).thenAnswer(inv -> inv.getArgument(0));
+        List<Reintegro> reintegros = new ArrayList<>();
+        when(reintegroRepository.findByPagoId(pago.getId())).thenAnswer(inv -> new ArrayList<>(reintegros));
+        when(reintegroRepository.save(any(Reintegro.class))).thenAnswer(inv -> {
+            Reintegro r = inv.getArgument(0);
+            if (r.getId() == null) r.setId(UUID.randomUUID());
+            reintegros.removeIf(x -> x.getId() != null && x.getId().equals(r.getId()));
+            reintegros.add(r);
+            return r;
+        });
         org.mockito.Mockito.doThrow(new RuntimeException("inventory caído"))
                 .when(inventoryClient).devolverItems(any());
 
@@ -178,6 +192,7 @@ class DevolucionServiceTest {
         assertThat(captor.getAllValues().get(captor.getAllValues().size() - 1).getEstado())
                 .isEqualTo(EstadoDevolucion.PROCESANDO);
         assertThat(entrada.getEstado()).isEqualTo(EstadoEntrada.VALIDA);
+        verify(paymentGateway).reintegrar(pago.getId(), new BigDecimal("15000.00"));
     }
 
     @Test
