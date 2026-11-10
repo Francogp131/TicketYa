@@ -75,7 +75,7 @@ public class OrderService {
      * <p>La Idempotency-Key se reclama antes de tocar inventory. Si la compra
      * falla, el reclamo se libera para permitir un reintento limpio.</p>
      */
-    @Transactional
+    @Transactional(noRollbackFor = ApiException.class)
     public OrderResponse crear(CrearOrdenRequest request, UUID clienteId, String idempotencyKey) {
         validarIdempotencyKey(idempotencyKey);
         validarToken(request.token());
