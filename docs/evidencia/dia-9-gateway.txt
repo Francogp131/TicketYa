@@ -1,0 +1,16 @@
+# Evidencia gateway - revision (9/11/2026)
+
+## mvn test
+
+## Sectores publico, sin identidad (no debe ser 401/403)
+500
+## Crear sector sin identidad (401)
+401
+## ADMIN publica evento (403)
+403
+## Ruta inventada con CLIENT (403)
+403
+
+## mvn test (api-gateway, corrida en IntelliJ)
+Tests run: 19, Failures: 0, Errors: 0, Skipped: 0
+BUILD SUCCESS
