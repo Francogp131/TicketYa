@@ -10,12 +10,16 @@ import java.time.Clock;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionTemplate;
 
 @Service
 public class ConfirmacionService {
+
+    private static final Logger log = LoggerFactory.getLogger(ConfirmacionService.class);
 
     private static final String CONFIRMAR = """
             UPDATE reserva
@@ -150,7 +154,7 @@ public class ConfirmacionService {
         }
         for (ReturnRequest.Item item : request.items()) {
             if (item.asientoId() == null) {
-                reponerZona(request.eventoId(), item);
+                reponerZona(request.eventoId(), request.clienteId(), item);
             } else {
                 devolverAsiento(request.eventoId(), item.asientoId());
             }
@@ -181,7 +185,7 @@ public class ConfirmacionService {
         }
     }
 
-    private void reponerZona(UUID eventoId, ReturnRequest.Item item) {
+    private void reponerZona(UUID eventoId, UUID clienteId, ReturnRequest.Item item) {
         int actualizadas = jdbcTemplate.update("""
                 UPDATE sector_inventario
                    SET disponibles = LEAST(capacidad, disponibles + ?)
@@ -190,6 +194,16 @@ public class ConfirmacionService {
         if (actualizadas == 0) {
             throw ApiException.notFound("SECTOR_NOT_FOUND", "No existe la zona " + item.sectorId());
         }
+        if (clienteId == null) {
+            log.warn("Devolución de zona sin clienteId: no se libera el cupo. evento={} sector={} cantidad={}",
+                    eventoId, item.sectorId(), item.cantidad());
+            return;
+        }
+        jdbcTemplate.update("""
+                UPDATE cliente_evento
+                   SET entradas_vendidas = GREATEST(0, entradas_vendidas - ?), updated_at = now()
+                 WHERE evento_id = ? AND cliente_id = ?
+                """, item.cantidad(), eventoId, clienteId);
     }
 
     private void sumarVendidas(UUID reservaId) {

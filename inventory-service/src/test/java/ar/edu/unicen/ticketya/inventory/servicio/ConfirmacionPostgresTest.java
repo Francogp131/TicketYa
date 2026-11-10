@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowableOfType;
 
 import ar.edu.unicen.ticketya.inventory.web.ApiException;
+import ar.edu.unicen.ticketya.inventory.web.dto.ReservaRequest;
 import ar.edu.unicen.ticketya.inventory.web.dto.ReturnRequest;
 import java.util.List;
 import java.util.UUID;
@@ -37,6 +38,8 @@ class ConfirmacionPostgresTest {
 
     @Autowired
     private ConfirmacionService confirmacionService;
+    @Autowired
+    private ReservaService reservaService;
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
@@ -90,7 +93,7 @@ class ConfirmacionPostgresTest {
         UUID reservaId = reservarAsiento(clienteId, asientoId, false);
         confirmacionService.confirmar(reservaId);
 
-        ReturnRequest devolucion = new ReturnRequest(EVENTO, List.of(new ReturnRequest.Item(PLATEA, asientoId, 1)));
+        ReturnRequest devolucion = new ReturnRequest(EVENTO, List.of(new ReturnRequest.Item(PLATEA, asientoId, 1)), null);
         confirmacionService.devolver("asiento-" + asientoId, devolucion);
         confirmacionService.devolver("asiento-" + asientoId, devolucion);
 
@@ -105,11 +108,28 @@ class ConfirmacionPostgresTest {
         confirmacionService.confirmar(reservaId);
         assertThat(disponibles()).isEqualTo(antes - 2);
 
-        ReturnRequest devolucion = new ReturnRequest(EVENTO, List.of(new ReturnRequest.Item(CAMPO, null, 2)));
+        ReturnRequest devolucion = new ReturnRequest(EVENTO, List.of(new ReturnRequest.Item(CAMPO, null, 2)), null);
         confirmacionService.devolver("zona-" + antes, devolucion);
         confirmacionService.devolver("zona-" + antes, devolucion);
 
         assertThat(disponibles()).isEqualTo(antes);
+    }
+
+    @Test
+    void devolverUnaZonaLiberaElCupoYPermiteReservarDeNuevo() {
+        UUID clienteId = UUID.randomUUID();
+        var compra = reservaService.reservar(
+                new ReservaRequest(EVENTO, List.of(new ReservaRequest.Item(CAMPO, null, 4))), clienteId);
+        confirmacionService.confirmar(compra.id());
+        assertThat(vendidas(clienteId)).isEqualTo(4);
+
+        confirmacionService.devolver("cupo-" + clienteId,
+                new ReturnRequest(EVENTO, List.of(new ReturnRequest.Item(CAMPO, null, 1)), clienteId));
+
+        assertThat(vendidas(clienteId)).isEqualTo(3);
+        var otra = reservaService.reservar(
+                new ReservaRequest(EVENTO, List.of(new ReservaRequest.Item(CAMPO, null, 1))), clienteId);
+        assertThat(otra.estado().name()).isEqualTo("VIGENTE");
     }
 
     private UUID reservarAsiento(UUID clienteId, UUID asientoId, boolean vencida) {
