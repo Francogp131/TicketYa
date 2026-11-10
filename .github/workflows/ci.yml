@@ -46,3 +46,17 @@ jobs:
 
       - name: Validar configuración
         run: docker compose -f docker-compose.dev.yml config
+
+  openapi:
+    name: validar OpenAPI
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validar archivos OpenAPI
+        run: |
+          for f in openapi/*.json; do
+            echo "Validando $f"
+            jq -e 'has("openapi") and has("paths")' "$f" > /dev/null
+          done
