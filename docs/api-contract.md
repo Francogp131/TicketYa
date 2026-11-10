@@ -87,8 +87,9 @@ Parámetros: `page` (desde 0, default 0), `size` (default 20, máximo 100). Un `
 | `TipoSector` | `NUMERADO`, `NO_NUMERADO` |
 | `EstadoReserva` | `VIGENTE`, `CONFIRMADA`, `LIBERADA`, `VENCIDA` |
 | `EstadoOrden` | `PENDIENTE_PAGO`, `PAGADA`, `RECHAZADA`, `ERROR_PAGO`, `REINTEGRO_PENDIENTE` |
-| `EstadoEntrada` | `VALIDA`, `UTILIZADA`, `DEVUELTA`, `EN_REINTEGRO` |
+| `EstadoEntrada` | `VALIDA`, `UTILIZADA`, `DEVUELTA`, `EN_REINTEGRO`, `EN_DEVOLUCION` |
 | `EstadoDevolucion` | `PENDIENTE`, `PROCESANDO`, `APROBADA`, `RECHAZADA` |
+| `EstadoPago` | `PENDIENTE`, `APROBADO`, `RECHAZADO`, `REINTEGRADO`, `REINTEGRO_PENDIENTE` |
 | `MedioPago` | `TARJETA`, `EFECTIVO`, `TRANSFERENCIA` |
 | Token de la pasarela mock | `APROBADO`, `RECHAZADO`, `LENTO` |
 
@@ -651,19 +652,21 @@ Errores: `400 VALIDATION_ERROR`, `403 NOT_RESERVATION_OWNER`, `404 RESERVATION_N
 }
 ```
 
-Errores: `403 NOT_TICKET_OWNER`, `404 TICKET_NOT_FOUND`, `409 TICKET_NOT_VALID` (utilizada/devuelta/en reintegro), `409 RETURN_ALREADY_EXISTS`, `422 RETURN_WINDOW_CLOSED` (faltan 72 h o menos).
+Errores: `403 NOT_TICKET_OWNER`, `404 TICKET_NOT_FOUND`, `409 TICKET_NOT_VALID` (utilizada/devuelta/en reintegro/en devolución), `409 RETURN_ALREADY_EXISTS`, `422 RETURN_WINDOW_CLOSED` (faltan 72 h o menos).
 
 ### 5.7 Aprobar devolución — `POST /api/orders/returns/{devolucionId}/approve` (ADMIN)
 
-Sin cuerpo. **200** `ReturnResponse` con `estado: "APROBADA"`. Libera el lugar en inventory, invalida la entrada y solicita el reintegro.
+Sin cuerpo. **200** `ReturnResponse` con `estado: "APROBADA"`. Marca la entrada `EN_DEVOLUCION`, solicita el reintegro y libera el lugar en inventory.
 
-Errores: `404 RETURN_NOT_FOUND`, `409 RETURN_ALREADY_RESOLVED`, `502 INVENTORY_UNAVAILABLE` (queda `PROCESANDO` y se reintenta).
+Si falla la pasarela o inventory, responde `502` (`PAYMENT_GATEWAY_ERROR` o `INVENTORY_UNAVAILABLE`), la devolución queda `PROCESANDO` y la entrada `EN_DEVOLUCION`; los schedulers de reintento la terminan.
+
+Errores: `404 RETURN_NOT_FOUND`, `409 RETURN_ALREADY_RESOLVED`, `502 PAYMENT_GATEWAY_ERROR`/`INVENTORY_UNAVAILABLE` (queda `PROCESANDO` y se reintenta).
 
 ### 5.8 Rechazar devolución — `POST /api/orders/returns/{devolucionId}/reject` (ADMIN)
 
 Sin cuerpo. **200** `ReturnResponse` con `estado: "RECHAZADA"`; la entrada sigue `VALIDA`.
 
-Errores: `404 RETURN_NOT_FOUND`, `409 RETURN_ALREADY_RESOLVED`.
+Errores: `404 RETURN_NOT_FOUND`, `409 RETURN_ALREADY_RESOLVED`, `409 RETURN_IN_PROGRESS` (la devolución está `PROCESANDO` y no se puede rechazar).
 
 ### 5.9 Interno — cancelar evento
 

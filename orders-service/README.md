@@ -35,9 +35,20 @@ Servicio de órdenes, pagos, entradas/QR y compensaciones de TicketYa.
    - `RECHAZADO`: orden `RECHAZADA`, sin entradas, y libera la reserva.
    - `LENTO`: `502 PAYMENT_GATEWAY_ERROR`, libera la reserva y no deja orden pagada.
 6. Si falla la confirmación de inventory o la emisión de entradas después del pago, la orden
-   queda `REINTEGRO_PENDIENTE`, el pago `REINTEGRADO` y se liberan o devuelven los lugares.
+   queda `REINTEGRO_PENDIENTE`; el pago pasa a `REINTEGRO_PENDIENTE` o `REINTEGRADO` según el
+   resultado de la pasarela y se liberan o devuelven los lugares.
 7. Al completar, guarda la respuesta en `idempotency_key` para que los reintentos devuelvan
    exactamente la misma orden y las mismas entradas.
+
+## Devoluciones y reintentos
+
+- Al aprobar una devolución, la entrada pasa a `EN_DEVOLUCION` (deja de ser válida) y recién
+  al liberar inventory queda `DEVUELTA`. Si la pasarela o inventory fallan, la devolución
+  queda `PROCESANDO` y la entrada `EN_DEVOLUCION`.
+- `DevolucionRetryService` reintenta las devoluciones `PROCESANDO` cada minuto.
+- `ReintegroRetryService` reintenta los `reintegro` pendientes (devoluciones, cancelación de
+  evento y compensaciones) cada minuto, sin marcar nada como aprobado antes de la pasarela.
+- Una devolución `PROCESANDO` no se puede rechazar: responde `409 RETURN_IN_PROGRESS`.
 
 ## Modelo
 
@@ -63,8 +74,9 @@ mvn spring-boot:run
 curl http://localhost:8083/actuator/health
 ```
 
-`mvn test` incluye `OrderIdempotencyIntegrationTest`, que usa PostgreSQL 16 con
-Testcontainers para verificar que dos reintentos concurrentes con la misma clave crean
-una sola orden. Si Docker no está disponible, el test se omite.
+`mvn test` incluye `OrderIdempotencyIntegrationTest` y `OrderTransactionIntegrationTest`,
+que usan PostgreSQL 16 con Testcontainers. El primero verifica que dos reintentos
+concurrentes con la misma clave crean una sola orden; el segundo, que un fallo de pasarela
+persiste `ERROR_PAGO`/`RECHAZADO` sin perder la orden. Si Docker no está disponible, se omiten.
 
 Swagger UI: <http://localhost:8083/swagger-ui.html> · OpenAPI: <http://localhost:8083/v3/api-docs>
