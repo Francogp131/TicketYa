@@ -46,6 +46,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.client.HttpClientErrorException;
 
 @ExtendWith(MockitoExtension.class)
 class EventServiceTest {
@@ -223,7 +225,7 @@ class EventServiceTest {
     }
 
     @Test
-    void cancelarEventoPublicadoAvisaAOrdersYQuedaCancelado() {
+    void cancelarEventoPublicadoAvisaAOrdersEInventoryYQuedaCancelado() {
         Evento evento = evento(UUID.randomUUID(), UUID.randomUUID());
         evento.setEstado(EstadoEvento.PUBLICADO);
         when(eventoRepository.findById(evento.getId())).thenReturn(Optional.of(evento));
@@ -233,26 +235,25 @@ class EventServiceTest {
 
         assertThat(response.estado()).isEqualTo(EstadoEvento.CANCELADO);
         assertThat(response.cancelacionPendiente()).isFalse();
-        verify(inventoryClient).cambiarEstado(evento.getId(), "CANCELADO");
         verify(ordersClient).cancelarEvento(evento.getId());
+        verify(inventoryClient).actualizarEstado(evento.getId(), "CANCELADO");
     }
 
     @Test
-    void siInventoryFallaAlCancelarElEventoNoQuedaCancelado() {
+    void siInventoryFallaLaCancelacionQuedaPendiente() {
         Evento evento = evento(UUID.randomUUID(), UUID.randomUUID());
         evento.setEstado(EstadoEvento.PUBLICADO);
         when(eventoRepository.findById(evento.getId())).thenReturn(Optional.of(evento));
+        when(eventoRepository.save(any(Evento.class))).thenAnswer(inv -> inv.getArgument(0));
         doThrow(new RuntimeException("inventory caído"))
-                .when(inventoryClient).cambiarEstado(evento.getId(), "CANCELADO");
+                .when(inventoryClient).actualizarEstado(evento.getId(), "CANCELADO");
 
-        assertThatThrownBy(() -> eventService.cancelar(evento.getId()))
-                .isInstanceOfSatisfying(ApiException.class, ex -> {
-                    assertThat(ex.getStatus().value()).isEqualTo(502);
-                    assertThat(ex.getCode()).isEqualTo("INVENTORY_UNAVAILABLE");
-                });
-        assertThat(evento.getEstado()).isEqualTo(EstadoEvento.PUBLICADO);
-        verify(ordersClient, never()).cancelarEvento(any());
-        verify(eventoRepository, never()).save(any());
+        CancelacionResponse response = eventService.cancelar(evento.getId());
+
+        assertThat(response.estado()).isEqualTo(EstadoEvento.CANCELADO);
+        assertThat(response.cancelacionPendiente()).isTrue();
+        assertThat(evento.isCancelacionPendiente()).isTrue();
+        verify(ordersClient).cancelarEvento(evento.getId());
     }
 
     @Test
@@ -271,6 +272,20 @@ class EventServiceTest {
     }
 
     @Test
+    void cancelarUnEventoEnBorradorNoAvisaAInventory() {
+        Evento evento = evento(UUID.randomUUID(), UUID.randomUUID());
+        when(eventoRepository.findById(evento.getId())).thenReturn(Optional.of(evento));
+        when(eventoRepository.save(any(Evento.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        CancelacionResponse response = eventService.cancelar(evento.getId());
+
+        assertThat(response.estado()).isEqualTo(EstadoEvento.CANCELADO);
+        assertThat(response.cancelacionPendiente()).isFalse();
+        verify(ordersClient).cancelarEvento(evento.getId());
+        verify(inventoryClient, never()).actualizarEstado(any(), any());
+    }
+
+    @Test
     void noSePuedeCancelarUnEventoFinalizado() {
         Evento evento = evento(UUID.randomUUID(), UUID.randomUUID());
         evento.setEstado(EstadoEvento.FINALIZADO);
@@ -282,6 +297,7 @@ class EventServiceTest {
                     assertThat(ex.getCode()).isEqualTo("EVENT_NOT_CANCELLABLE");
                 });
         verify(ordersClient, never()).cancelarEvento(any());
+        verify(inventoryClient, never()).actualizarEstado(any(), any());
     }
 
     @Test
@@ -324,28 +340,41 @@ class EventServiceTest {
         assertThat(finalizados).isEqualTo(2);
         assertThat(publicado.getEstado()).isEqualTo(EstadoEvento.FINALIZADO);
         assertThat(agotado.getEstado()).isEqualTo(EstadoEvento.FINALIZADO);
-        verify(inventoryClient).cambiarEstado(publicado.getId(), "FINALIZADO");
-        verify(inventoryClient).cambiarEstado(agotado.getId(), "FINALIZADO");
+        verify(inventoryClient).actualizarEstado(publicado.getId(), "FINALIZADO");
+        verify(inventoryClient).actualizarEstado(agotado.getId(), "FINALIZADO");
         verify(eventoRepository).saveAll(List.of(publicado, agotado));
     }
 
     @Test
-    void elSchedulerNoFinalizaElEventoSiInventoryFalla() {
-        Evento aceptado = evento(UUID.randomUUID(), UUID.randomUUID(), "Aceptado",
+    void siInventoryFallaElEventoNoSeFinalizaYSeReintenta() {
+        Evento publicado = evento(UUID.randomUUID(), UUID.randomUUID(), "Publicado",
                 OffsetDateTime.parse("2026-11-01T21:00:00-03:00"), EstadoEvento.PUBLICADO);
-        Evento rechazado = evento(UUID.randomUUID(), UUID.randomUUID(), "Rechazado",
-                OffsetDateTime.parse("2026-11-02T21:00:00-03:00"), EstadoEvento.PUBLICADO);
         when(eventoRepository.findByEstadoInAndFechaBefore(any(), any(OffsetDateTime.class)))
-                .thenReturn(List.of(aceptado, rechazado));
-        lenient().doThrow(new RuntimeException("inventory caído"))
-                .when(inventoryClient).cambiarEstado(rechazado.getId(), "FINALIZADO");
+                .thenReturn(List.of(publicado));
+        doThrow(new RuntimeException("inventory caído"))
+                .when(inventoryClient).actualizarEstado(publicado.getId(), "FINALIZADO");
+
+        int finalizados = eventService.finalizarEventosVencidos();
+
+        assertThat(finalizados).isZero();
+        assertThat(publicado.getEstado()).isEqualTo(EstadoEvento.PUBLICADO);
+        verify(eventoRepository, never()).saveAll(any());
+    }
+
+    @Test
+    void siInventoryResponde409ElEventoSeFinalizaIgual() {
+        Evento publicado = evento(UUID.randomUUID(), UUID.randomUUID(), "Publicado",
+                OffsetDateTime.parse("2026-11-01T21:00:00-03:00"), EstadoEvento.PUBLICADO);
+        when(eventoRepository.findByEstadoInAndFechaBefore(any(), any(OffsetDateTime.class)))
+                .thenReturn(List.of(publicado));
+        doThrow(new HttpClientErrorException(HttpStatus.CONFLICT))
+                .when(inventoryClient).actualizarEstado(publicado.getId(), "FINALIZADO");
 
         int finalizados = eventService.finalizarEventosVencidos();
 
         assertThat(finalizados).isEqualTo(1);
-        assertThat(aceptado.getEstado()).isEqualTo(EstadoEvento.FINALIZADO);
-        assertThat(rechazado.getEstado()).isEqualTo(EstadoEvento.PUBLICADO);
-        verify(eventoRepository).saveAll(List.of(aceptado));
+        assertThat(publicado.getEstado()).isEqualTo(EstadoEvento.FINALIZADO);
+        verify(eventoRepository).saveAll(List.of(publicado));
     }
 
     @Test
@@ -361,6 +390,41 @@ class EventServiceTest {
         assertThat(reintentadas).isEqualTo(1);
         assertThat(evento.isCancelacionPendiente()).isFalse();
         verify(ordersClient).cancelarEvento(evento.getId());
+        verify(inventoryClient).actualizarEstado(evento.getId(), "CANCELADO");
+    }
+
+    @Test
+    void elReintentoConInventory404CierraElAviso() {
+        Evento evento = evento(UUID.randomUUID(), UUID.randomUUID());
+        evento.setEstado(EstadoEvento.CANCELADO);
+        evento.setCancelacionPendiente(true);
+        when(eventoRepository.findByCancelacionPendienteTrue()).thenReturn(List.of(evento));
+        when(eventoRepository.save(any(Evento.class))).thenAnswer(inv -> inv.getArgument(0));
+        doThrow(new HttpClientErrorException(HttpStatus.NOT_FOUND))
+                .when(inventoryClient).actualizarEstado(evento.getId(), "CANCELADO");
+
+        int reintentadas = eventService.reintentarCancelacionesPendientes();
+
+        assertThat(reintentadas).isEqualTo(1);
+        assertThat(evento.isCancelacionPendiente()).isFalse();
+        verify(ordersClient).cancelarEvento(evento.getId());
+    }
+
+    @Test
+    void siInventorySigueFallandoElReintentoMantieneElFlag() {
+        Evento evento = evento(UUID.randomUUID(), UUID.randomUUID());
+        evento.setEstado(EstadoEvento.CANCELADO);
+        evento.setCancelacionPendiente(true);
+        when(eventoRepository.findByCancelacionPendienteTrue()).thenReturn(List.of(evento));
+        doThrow(new RuntimeException("inventory caído"))
+                .when(inventoryClient).actualizarEstado(evento.getId(), "CANCELADO");
+
+        int reintentadas = eventService.reintentarCancelacionesPendientes();
+
+        assertThat(reintentadas).isZero();
+        assertThat(evento.isCancelacionPendiente()).isTrue();
+        verify(ordersClient).cancelarEvento(evento.getId());
+        verify(eventoRepository, never()).save(any());
     }
 
     @Test

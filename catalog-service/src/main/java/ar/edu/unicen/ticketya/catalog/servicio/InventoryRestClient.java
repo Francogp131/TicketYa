@@ -47,7 +47,7 @@ public class InventoryRestClient implements InventoryClient {
     }
 
     @Override
-    public void cambiarEstado(UUID eventoId, String estado) {
+    public void actualizarEstado(UUID eventoId, String estado) {
         conReintentos(() -> {
             restClient.patch()
                     .uri("/internal/events/{eventoId}/state", eventoId)

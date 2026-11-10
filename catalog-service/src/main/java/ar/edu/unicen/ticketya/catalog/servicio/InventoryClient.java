@@ -8,9 +8,10 @@ public interface InventoryClient {
     void publicarInventario(InventorySnapshot snapshot);
 
     /**
-     * Frena la venta en inventory cuando el evento se cancela o finaliza.
+     * Avisa a inventory que el evento llegó a un estado terminal (CANCELADO o FINALIZADO).
+     * Es idempotente: repetir el mismo estado responde 204 sin escribir.
      */
-    void cambiarEstado(UUID eventoId, String estado);
+    void actualizarEstado(UUID eventoId, String estado);
 
     /**
      * Devuelve, por sectorId, la cantidad de lugares disponibles.
