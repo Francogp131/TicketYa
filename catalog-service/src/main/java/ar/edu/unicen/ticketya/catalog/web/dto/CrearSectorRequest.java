@@ -2,6 +2,7 @@ package ar.edu.unicen.ticketya.catalog.web.dto;
 
 import ar.edu.unicen.ticketya.catalog.dominio.TipoSector;
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -15,9 +16,9 @@ public record CrearSectorRequest(
         @NotNull TipoSector tipo,
         @Schema(description = "Capacidad para sectores no numerados; en numerados se calcula filas * asientosPorFila",
                 example = "200")
-        @Min(1) Integer capacidad,
+        @Min(1) @Max(20000) Integer capacidad,
         @Schema(description = "Filas (solo NUMERADO)", example = "10")
-        @Min(1) Integer filas,
+        @Min(1) @Max(100) Integer filas,
         @Schema(description = "Asientos por fila (solo NUMERADO)", example = "20")
-        @Min(1) Integer asientosPorFila) {
+        @Min(1) @Max(200) Integer asientosPorFila) {
 }

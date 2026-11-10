@@ -84,6 +84,24 @@ class InventoryRestClientTest {
     }
 
     @Test
+    void propagaElCambioDeEstadoAInventory() {
+        UUID eventoId = UUID.randomUUID();
+        List<String> metodos = new CopyOnWriteArrayList<>();
+        List<String> cuerpos = new CopyOnWriteArrayList<>();
+        server.createContext("/internal/events/" + eventoId + "/state", exchange -> {
+            metodos.add(exchange.getRequestMethod());
+            cuerpos.add(new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8));
+            exchange.sendResponseHeaders(204, -1);
+            exchange.close();
+        });
+
+        cliente().cambiarEstado(eventoId, "CANCELADO");
+
+        assertThat(metodos).containsExactly("PATCH");
+        assertThat(cuerpos).singleElement().asString().contains("\"estado\":\"CANCELADO\"");
+    }
+
+    @Test
     void consultaLaDisponibilidadPorSector() {
         UUID sectorId = UUID.randomUUID();
         server.createContext("/api/inventory/events/" + SNAPSHOT.eventoId() + "/availability", exchange ->

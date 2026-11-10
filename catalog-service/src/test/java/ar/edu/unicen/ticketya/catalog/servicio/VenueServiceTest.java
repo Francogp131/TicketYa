@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -80,6 +81,58 @@ class VenueServiceTest {
                     assertThat(ex.getStatus().value()).isEqualTo(400);
                     assertThat(ex.getCode()).isEqualTo("VALIDATION_ERROR");
                 });
+    }
+
+    @Test
+    void unSectorDuplicadoDevuelve409YNoSeGuarda() {
+        UUID lugarId = UUID.randomUUID();
+        Lugar lugar = new Lugar();
+        lugar.setId(lugarId);
+        when(lugarRepository.findById(lugarId)).thenReturn(Optional.of(lugar));
+        when(sectorRepository.existsByLugarIdAndNombre(lugarId, "Platea")).thenReturn(true);
+
+        assertThatThrownBy(() -> venueService.crearSector(lugarId,
+                new CrearSectorRequest(" Platea ", TipoSector.NO_NUMERADO, 100, null, null)))
+                .isInstanceOfSatisfying(ApiException.class, ex -> {
+                    assertThat(ex.getStatus().value()).isEqualTo(409);
+                    assertThat(ex.getCode()).isEqualTo("SECTOR_ALREADY_EXISTS");
+                });
+
+        verify(sectorRepository, never()).save(any());
+    }
+
+    @Test
+    void unSectorNumeradoQueSuperaLaCapacidadMaximaEsInvalido() {
+        UUID lugarId = UUID.randomUUID();
+        Lugar lugar = new Lugar();
+        lugar.setId(lugarId);
+        when(lugarRepository.findById(lugarId)).thenReturn(Optional.of(lugar));
+
+        assertThatThrownBy(() -> venueService.crearSector(lugarId,
+                new CrearSectorRequest("Platea", TipoSector.NUMERADO, null, 100, 201)))
+                .isInstanceOfSatisfying(ApiException.class, ex -> {
+                    assertThat(ex.getStatus().value()).isEqualTo(400);
+                    assertThat(ex.getCode()).isEqualTo("VALIDATION_ERROR");
+                });
+
+        verify(sectorRepository, never()).save(any());
+    }
+
+    @Test
+    void unSectorNoNumeradoQueSuperaLaCapacidadMaximaEsInvalido() {
+        UUID lugarId = UUID.randomUUID();
+        Lugar lugar = new Lugar();
+        lugar.setId(lugarId);
+        when(lugarRepository.findById(lugarId)).thenReturn(Optional.of(lugar));
+
+        assertThatThrownBy(() -> venueService.crearSector(lugarId,
+                new CrearSectorRequest("Campo", TipoSector.NO_NUMERADO, 20001, null, null)))
+                .isInstanceOfSatisfying(ApiException.class, ex -> {
+                    assertThat(ex.getStatus().value()).isEqualTo(400);
+                    assertThat(ex.getCode()).isEqualTo("VALIDATION_ERROR");
+                });
+
+        verify(sectorRepository, never()).save(any());
     }
 
     @Test

@@ -6,6 +6,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -14,8 +15,13 @@ import ar.edu.unicen.ticketya.catalog.dominio.EstadoEvento;
 import ar.edu.unicen.ticketya.catalog.dominio.TipoEvento;
 import ar.edu.unicen.ticketya.catalog.servicio.EventService;
 import ar.edu.unicen.ticketya.catalog.web.dto.CancelacionResponse;
+import ar.edu.unicen.ticketya.catalog.web.dto.CrearEventoRequest;
 import ar.edu.unicen.ticketya.catalog.web.dto.EventoBusquedaResponse;
+import ar.edu.unicen.ticketya.catalog.web.dto.EventoDetalleResponse;
+import ar.edu.unicen.ticketya.catalog.web.dto.EventoResponse;
 import ar.edu.unicen.ticketya.catalog.web.dto.PageResponse;
+import ar.edu.unicen.ticketya.catalog.web.dto.PrecioRequest;
+import ar.edu.unicen.ticketya.catalog.web.dto.PrecioResponse;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -137,6 +143,86 @@ class EventControllerTest {
         mockMvc.perform(get("/api/catalog/events").param("orden", "PRECIO"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("INVALID_SORT"));
+    }
+
+    @Test
+    void crearEventoMapeaElCuerpoYDevuelve201ConLocation() throws Exception {
+        UUID eventoId = UUID.randomUUID();
+        UUID lugarId = UUID.randomUUID();
+        UUID organizadorId = UUID.randomUUID();
+        OffsetDateTime fecha = OffsetDateTime.parse("2027-05-01T21:00:00-03:00");
+        when(eventService.crearEvento(any(CrearEventoRequest.class), eq(organizadorId)))
+                .thenReturn(new EventoResponse(eventoId, "Festival", null, TipoEvento.FESTIVAL,
+                        lugarId, "Estadio", "Tandil", organizadorId, fecha, EstadoEvento.BORRADOR,
+                        4, List.of("Artista A"), List.of()));
+
+        mockMvc.perform(post("/api/catalog/events")
+                        .header("X-User-Id", organizadorId.toString())
+                        .header("X-User-Role", "ORGANIZER")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"nombre":"Festival","tipo":"FESTIVAL","lugarId":"%s",
+                                 "fecha":"2027-05-01T21:00:00-03:00","participantes":["Artista A"]}
+                                """.formatted(lugarId)))
+                .andExpect(status().isCreated())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString(eventoId.toString())))
+                .andExpect(jsonPath("$.estado").value("BORRADOR"));
+
+        verify(eventService).crearEvento(any(CrearEventoRequest.class), eq(organizadorId));
+    }
+
+    @Test
+    void asignarPrecioMapeaPathYBodyYDevuelve200() throws Exception {
+        UUID eventoId = UUID.randomUUID();
+        UUID sectorId = UUID.randomUUID();
+        UUID organizadorId = UUID.randomUUID();
+        when(eventService.asignarPrecio(eq(eventoId), eq(sectorId), any(PrecioRequest.class), eq(organizadorId)))
+                .thenReturn(new PrecioResponse(eventoId, sectorId, new BigDecimal("15000")));
+
+        mockMvc.perform(put("/api/catalog/events/{eventoId}/prices/{sectorId}", eventoId, sectorId)
+                        .header("X-User-Id", organizadorId.toString())
+                        .header("X-User-Role", "ORGANIZER")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"precio\":15000}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.eventoId").value(eventoId.toString()))
+                .andExpect(jsonPath("$.sectorId").value(sectorId.toString()));
+
+        verify(eventService).asignarPrecio(eq(eventoId), eq(sectorId), any(PrecioRequest.class), eq(organizadorId));
+    }
+
+    @Test
+    void publicarMapeaElEventoYDevuelve200() throws Exception {
+        UUID eventoId = UUID.randomUUID();
+        UUID organizadorId = UUID.randomUUID();
+        when(eventService.publicar(eventoId, organizadorId))
+                .thenReturn(new EventoResponse(eventoId, "Festival", null, TipoEvento.FESTIVAL,
+                        UUID.randomUUID(), "Estadio", "Tandil", organizadorId,
+                        OffsetDateTime.parse("2027-05-01T21:00:00-03:00"), EstadoEvento.PUBLICADO,
+                        4, List.of("Artista A"), List.of()));
+
+        mockMvc.perform(post("/api/catalog/events/{id}/publish", eventoId)
+                        .header("X-User-Id", organizadorId.toString())
+                        .header("X-User-Role", "ORGANIZER"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(eventoId.toString()))
+                .andExpect(jsonPath("$.estado").value("PUBLICADO"));
+    }
+
+    @Test
+    void detalleDevuelveElEventoConSusSectores() throws Exception {
+        UUID eventoId = UUID.randomUUID();
+        UUID organizadorId = UUID.randomUUID();
+        when(eventService.detalle(eventoId))
+                .thenReturn(new EventoDetalleResponse(eventoId, "Festival", null, TipoEvento.FESTIVAL,
+                        UUID.randomUUID(), "Estadio", "Tandil", organizadorId,
+                        OffsetDateTime.parse("2027-05-01T21:00:00-03:00"), EstadoEvento.PUBLICADO,
+                        4, List.of("Artista A"), List.of()));
+
+        mockMvc.perform(get("/api/catalog/events/{id}", eventoId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(eventoId.toString()))
+                .andExpect(jsonPath("$.sectores").isArray());
     }
 
     @Test

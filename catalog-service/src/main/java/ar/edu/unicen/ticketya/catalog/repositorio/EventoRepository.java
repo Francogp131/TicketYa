@@ -19,11 +19,11 @@ public interface EventoRepository extends JpaRepository<Evento, UUID> {
               and e.estado in :estados
               and e.tipo in :tipos
               and (:filtrarOrganizador = false or e.organizadorId = :organizadorId)
-              and exists (
+              and (:filtrarParticipante = false or exists (
                     select p.id from EventoParticipante p
                     where p.eventoId = e.id
-                      and lower(p.nombre) like :participante)
-              and lower(l.ciudad) like :ciudad
+                      and lower(p.nombre) like :participante escape '\\'))
+              and lower(l.ciudad) like :ciudad escape '\\'
               and e.fecha >= :fechaDesde
               and e.fecha <= :fechaHasta
             """)
@@ -31,6 +31,7 @@ public interface EventoRepository extends JpaRepository<Evento, UUID> {
                         @Param("tipos") Collection<TipoEvento> tipos,
                         @Param("filtrarOrganizador") boolean filtrarOrganizador,
                         @Param("organizadorId") UUID organizadorId,
+                        @Param("filtrarParticipante") boolean filtrarParticipante,
                         @Param("participante") String participante,
                         @Param("ciudad") String ciudad,
                         @Param("fechaDesde") OffsetDateTime fechaDesde,

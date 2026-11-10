@@ -189,7 +189,7 @@ Sector no numerado:
 }
 ```
 
-Errores: `400 VALIDATION_ERROR` (capacidad ≤ 0, sector numerado sin filas), `403`, `404 VENUE_NOT_FOUND`.
+Errores: `400 VALIDATION_ERROR` (capacidad ≤ 0, sector numerado sin filas, capacidad > 20000, filas > 100 o asientosPorFila > 200), `403`, `404 VENUE_NOT_FOUND`, `409 SECTOR_ALREADY_EXISTS` (ya existe un sector con ese nombre en el lugar).
 
 ### 3.5 Listar sectores — `GET /api/catalog/venues/{venueId}/sectors` (público)
 
@@ -261,9 +261,11 @@ Sin cuerpo. **200**
 }
 ```
 
+Antes de marcar el evento, catalog frena la venta en inventory con `PATCH /internal/events/{eventoId}/state`; si inventory no responde, la cancelación no se persiste.
+
 `cancelacionPendiente: true` si catalog ya marcó el evento pero orders no respondió; un scheduler reintenta el aviso.
 
-Errores: `404 EVENT_NOT_FOUND`, `409 EVENT_NOT_CANCELLABLE` (ya cancelado o finalizado).
+Errores: `404 EVENT_NOT_FOUND`, `409 EVENT_NOT_CANCELLABLE` (ya cancelado o finalizado), `502 INVENTORY_UNAVAILABLE` (inventory no frenó la venta; el evento no se cancela).
 
 ### 3.10 Buscar eventos — `GET /api/catalog/events` (público)
 
@@ -280,7 +282,7 @@ Query params (todos opcionales y combinables):
 | `orden` | `FECHA_ASC`, `FECHA_DESC`, `PRECIO_ASC`, `PRECIO_DESC`, `RELEVANCIA` | Default `FECHA_ASC` |
 | `page`, `size` | entero | Paginación |
 
-Solo devuelve eventos en `PUBLICADO` o `AGOTADO`.
+Solo devuelve eventos en `PUBLICADO` o `AGOTADO`. Los caracteres `%`, `_` y `\` se tratan como literales (no como comodines de `LIKE`).
 
 **200**
 
@@ -508,6 +510,16 @@ Errores: `400 VALIDATION_ERROR`, `400 SECTOR_MISMATCH` (el asiento no pertenece 
 ```
 
 Idempotente por `eventoId` + `version`: reintentar no duplica filas ni reinicia disponibilidad ya vendida.
+
+### 4.6.1 Interno — cambiar estado del evento
+
+`PATCH /internal/events/{eventoId}/state`
+
+```json
+{ "estado": "CANCELADO" }
+```
+
+**204 No Content**. Catalog lo llama antes de cancelar (`CANCELADO`) o finalizar (`FINALIZADO`) para que inventory deje de vender. Idempotente.
 
 ### 4.7 Interno — consultar reserva para orders
 

@@ -146,6 +146,9 @@ public class EventService {
         if (evento.getEstado() != EstadoEvento.BORRADOR) {
             throw ApiException.conflict("EVENT_NOT_EDITABLE", "Solo se puede publicar un evento en borrador");
         }
+        if (!evento.getFecha().isAfter(OffsetDateTime.now(clock))) {
+            throw validacion("fecha", "el evento ya pasó y no se puede publicar");
+        }
 
         List<Sector> sectores = sectorRepository.findByLugarIdOrderByNombreAsc(evento.getLugarId());
         Map<UUID, EventoSectorPrecio> precios = precioRepository.findByEventoId(eventoId).stream()
@@ -239,6 +242,16 @@ public class EventService {
                     "No se puede cancelar un evento " + evento.getEstado().name().toLowerCase());
         }
 
+        if (evento.getEstado() == EstadoEvento.PUBLICADO || evento.getEstado() == EstadoEvento.AGOTADO) {
+            try {
+                inventoryClient.cambiarEstado(eventoId, EstadoEvento.CANCELADO.name());
+            } catch (RuntimeException ex) {
+                log.warn("No se pudo frenar la venta del evento {} en inventory; no se cancela", eventoId, ex);
+                throw new ApiException(HttpStatus.BAD_GATEWAY, "INVENTORY_UNAVAILABLE",
+                        "No se pudo frenar la venta en inventory; el evento no se canceló", List.of());
+            }
+        }
+
         evento.setEstado(EstadoEvento.CANCELADO);
         boolean pendiente = false;
         try {
@@ -281,9 +294,22 @@ public class EventService {
     public int finalizarEventosVencidos() {
         List<Evento> vencidos = eventoRepository.findByEstadoInAndFechaBefore(
                 List.of(EstadoEvento.PUBLICADO, EstadoEvento.AGOTADO), OffsetDateTime.now(clock));
-        vencidos.forEach(evento -> evento.setEstado(EstadoEvento.FINALIZADO));
-        eventoRepository.saveAll(vencidos);
-        return vencidos.size();
+        List<Evento> finalizados = new ArrayList<>();
+        for (Evento evento : vencidos) {
+            try {
+                inventoryClient.cambiarEstado(evento.getId(), EstadoEvento.FINALIZADO.name());
+            } catch (RuntimeException ex) {
+                log.warn("No se pudo finalizar el evento {} en inventory; se reintenta en la próxima corrida",
+                        evento.getId(), ex);
+                continue;
+            }
+            evento.setEstado(EstadoEvento.FINALIZADO);
+            finalizados.add(evento);
+        }
+        if (!finalizados.isEmpty()) {
+            eventoRepository.saveAll(finalizados);
+        }
+        return finalizados.size();
     }
 
     @Transactional
@@ -328,13 +354,16 @@ public class EventService {
         String ciudadNormalizada = normalizar(ciudad);
         List<TipoEvento> tipos = tipo == null ? List.of(TipoEvento.values()) : List.of(tipo);
         UUID organizadorFiltro = organizadorId == null ? SIN_ORGANIZADOR : organizadorId;
-        String participanteFiltro = participanteNormalizado == null ? "%" : "%" + participanteNormalizado + "%";
-        String ciudadFiltro = ciudadNormalizada == null ? "%" : ciudadNormalizada;
+        String participanteFiltro = participanteNormalizado == null
+                ? null
+                : "%" + escaparLike(participanteNormalizado) + "%";
+        String ciudadFiltro = ciudadNormalizada == null ? "%" : escaparLike(ciudadNormalizada);
         OffsetDateTime desdeFiltro = fechaDesde == null ? FECHA_MINIMA : fechaDesde;
         OffsetDateTime hastaFiltro = fechaHasta == null ? FECHA_MAXIMA : fechaHasta;
 
         List<Evento> eventos = eventoRepository.buscar(ESTADOS_VISIBLES, tipos, organizadorId != null,
-                organizadorFiltro, participanteFiltro, ciudadFiltro, desdeFiltro, hastaFiltro);
+                organizadorFiltro, participanteNormalizado != null, participanteFiltro, ciudadFiltro,
+                desdeFiltro, hastaFiltro);
         if (eventos.isEmpty()) {
             return new PageResponse<>(List.of(), page, size, 0, 0);
         }
@@ -398,6 +427,12 @@ public class EventService {
             return null;
         }
         return valor.trim().toLowerCase(Locale.ROOT);
+    }
+
+    private String escaparLike(String valor) {
+        return valor.replace("\\", "\\\\")
+                .replace("%", "\\%")
+                .replace("_", "\\_");
     }
 
     private InventorySnapshot armarSnapshot(Evento evento, List<Sector> sectores,
