@@ -13,7 +13,7 @@ Plan día por día para llegar a la Entrega 1 del TP TicketYa. El alcance funcio
 ## 2. Supuestos
 
 - Dedicación intensiva durante los 9 días (el cronograma asume jornadas completas; si el equipo tiene menos horas, aplicar el plan de contingencia de la sección 8).
-- El repositorio es público para lectura: `https://github.com/Francogp131/TicketYa` (rama `main`; escritura por colaboradores).
+- El repositorio del curso es público para lectura: `https://github.com/Pabloaguirre23/ArquitecturaWeb`; este proyecto vive en `TP-TicketYa/` (rama `main`).
 - Se trabaja en local; las bases se levantan con Docker y los servicios se ejecutan con Maven/IDE.
 - La interfaz gráfica y todo lo marcado como Entrega 2 queda fuera de alcance.
 - El equipo usa OpenSpec como fuente de verdad: primero se ajusta el spec, después el código.
