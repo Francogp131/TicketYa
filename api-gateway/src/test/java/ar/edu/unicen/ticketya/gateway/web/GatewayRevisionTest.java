@@ -63,4 +63,30 @@ class GatewayRevisionTest {
         llamar(metodo, ruta, ORGANIZER, "ORGANIZER")
                 .expectStatus().value(s -> assertThat(s).isNotIn(401, 403));
     }
+
+    @Test
+    void unaRutaInventadaSeDeniega() {
+        llamar("GET", "/api/catalog/inventado", CLIENT, "CLIENT").expectStatus().isForbidden();
+    }
+
+    @Test
+    void unCorrelationIdInvalidoSeReemplaza() {
+        client.post().uri("/api/orders")
+                .header("X-Correlation-Id", "malo")
+                .exchange()
+                .expectStatus().isUnauthorized()
+                .expectHeader().value("X-Correlation-Id", id -> {
+                    assertThat(id).isNotEqualTo("malo");
+                    assertThat(UUID.fromString(id)).isNotNull();
+                });
+    }
+
+    @Test
+    void unCorrelationIdValidoSeConserva() {
+        client.post().uri("/api/orders")
+                .header("X-Correlation-Id", ID)
+                .exchange()
+                .expectStatus().isUnauthorized()
+                .expectHeader().valueEquals("X-Correlation-Id", ID);
+    }
 }
