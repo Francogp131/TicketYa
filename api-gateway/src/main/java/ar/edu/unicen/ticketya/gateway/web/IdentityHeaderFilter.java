@@ -43,6 +43,7 @@ public class IdentityHeaderFilter implements org.springframework.cloud.gateway.f
 
     private static final Pattern PUBLIC_GET_PATTERN = Pattern.compile(
             "^/api/catalog/(events|venues)/[0-9a-fA-F-]{36}$"
+                    + "|^/api/catalog/venues/[0-9a-fA-F-]{36}/sectors$"
                     + "|^/api/inventory/events/[0-9a-fA-F-]{36}/availability$"
                     + "|^/api/inventory/events/[0-9a-fA-F-]{36}/seats$");
 
