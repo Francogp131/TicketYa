@@ -1,0 +1,86 @@
+# Evidencia de la revisión de catálogo - Día 9 (9/11/2026)
+
+Revisión de los puntos solicitados por Iván sobre `catalog-service`.
+
+- Repositorio: `https://github.com/Francogp131/TicketYa.git`
+- Rama: `fix/catalog-revision`, basada en `ef50e06` (merge del PR #25)
+- Entorno: Windows, Java 21.0.13, Maven 3.9, sin Docker local.
+
+## Commits
+
+| Commit | Cambio |
+|---|---|
+| `0240c18` | `fix(catalog): propagar cancelacion y finalizacion a inventory` |
+| `09964f8` | `fix(catalog): no publicar eventos con fecha pasada` |
+| `7067557` | `fix(catalog): busqueda con participante opcional y LIKE escapado` |
+| `e1c6c00` | `fix(catalog): limitar sectores y rechazar duplicados` |
+| `7fdc225` | `test(catalog): cubrir emparejamiento de controllers` |
+| `9a16d6d` | `chore(catalog): regenerar OpenAPI con limites de sector` |
+
+## Suite de catálogo
+
+```bash
+cd catalog-service
+mvn test
+```
+
+Resultado:
+
+```
+[INFO] Tests run: 76, Failures: 0, Errors: 0, Skipped: 6
+[INFO] BUILD SUCCESS
+```
+
+Los 6 omitidos son `EventoBusquedaIntegrationTest` (4) y `VenueSectorIntegrationTest` (2),
+ambos con Testcontainers; se ejecutan en CI donde hay Docker. El `OpenApiExportTest`
+regeneró `openapi/catalog-openapi.json` con los nuevos máximos de sector; la diferencia se
+commiteó en `9a16d6d`.
+
+## Detalle por punto
+
+### 1. Cancelación y finalización notifican a inventory
+
+- `EventService.cancelar` llama a `InventoryClient.cambiarEstado(eventoId, "CANCELADO")`
+  antes de mutar el estado local, solo si el evento estaba `PUBLICADO` o `AGOTADO`.
+  Si inventory falla responde `502 INVENTORY_UNAVAILABLE` y el evento queda intacto.
+- `EventService.finalizarEventosVencidos` notifica `FINALIZADO` evento por evento; si
+  inventory falla registra `warn`, omite ese evento y continúa con el resto para que el
+  scheduler reintente en la próxima corrida.
+- `InventoryRestClient` usa `JdkClientHttpRequestFactory` porque
+  `SimpleClientHttpRequestFactory` no soporta `PATCH`.
+- El endpoint `PATCH /internal/events/{eventoId}/state` queda documentado en
+  `docs/api-contract.md` (sección 4.6.1). Su implementación en `inventory-service` es la
+  tarea de Pablo; catálogo ya consume el contrato acordado.
+
+### 2. Fechas pasadas
+
+- `EventService.publicar` rechaza con `400 VALIDATION_ERROR` (`field: fecha`) si la fecha
+  no es posterior al reloj del servicio.
+- El scheduler reutiliza la misma validación, por lo que un evento vencido tampoco pasa a
+  `PUBLICADO`.
+
+### 3. Búsqueda con participante opcional y LIKE escapado
+
+- `EventoRepository.buscar` usa `:filtrarParticipante` en lugar de comparar contra `null`,
+  evitando problemas de tipado de parámetros en PostgreSQL.
+- `EventService` escapa `\`, `%` y `_` antes de armar los patrones; `participante` sigue
+  siendo coincidencia parcial y `ciudad` exacta. Un `%` o `_` enviado por el cliente se
+  busca como texto literal.
+- Regresión unitaria (`EventServiceTest`) y de integración
+  (`EventoBusquedaIntegrationTest#unComodinLiteralNoActuaComoComodin`).
+
+### 4. Topes y duplicados de sectores
+
+- `CrearSectorRequest`: `@Max(20000)` en `capacidad`, `@Max(100)` en `filas` y
+  `@Max(200)` en `asientosPorFila`.
+- `VenueService` valida además la capacidad total (`filas * asientosPorFila <= 20000`) y
+  rechaza duplicados por `(lugarId, nombre)` con `409 SECTOR_ALREADY_EXISTS`, apoyándose en
+  `SectorRepository.existsByLugarIdAndNombre` y en el `UNIQUE (lugar_id, nombre)` del schema.
+- Regresión unitaria (`VenueServiceTest`), de controller (`VenueControllerTest`) e
+  integración (`VenueSectorIntegrationTest`).
+
+### 5. Emparejamiento de controllers
+
+`EventControllerTest` cubre crear, asignar precio, publicar y detalle; `VenueControllerTest`
+cubre listar/obtener lugares, crear/listar sectores y los máximos de validación.
+`InternalEventControllerTest` ya cubría disponibilidad.
