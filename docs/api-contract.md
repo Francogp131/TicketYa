@@ -354,6 +354,18 @@ Llamado por inventory cuando la disponibilidad llega a 0 o vuelve a ser positiva
 
 OpenAPI: [`../openapi/inventory-openapi.json`](../openapi/inventory-openapi.json). Swagger UI en `http://localhost:8082/swagger-ui.html`.
 
+### 4.0 Interno — estado del evento
+
+`PATCH /internal/events/{eventoId}/state`
+
+Lo llama catalog cuando cancela o finaliza un evento.
+
+```json
+{ "estado": "CANCELADO" }
+```
+
+Estados aceptados: `CANCELADO`, `FINALIZADO`. **204**, también si ya estaba en ese estado. `404 EVENT_NOT_FOUND`. `400 VALIDATION_ERROR` si el estado no es uno de esos dos. `409 EVENT_NOT_EDITABLE` si el evento ya está en el otro estado terminal.
+
 ### 4.1 Disponibilidad — `GET /api/inventory/events/{eventoId}/availability` (público)
 
 **200**
@@ -452,7 +464,7 @@ Reglas:
 }
 ```
 
-Errores: `400 VALIDATION_ERROR`, `404 EVENT_NOT_FOUND`/`SECTOR_NOT_FOUND`, `409 SEAT_NOT_AVAILABLE`, `409 INSUFFICIENT_AVAILABILITY`, `409 EVENT_NOT_ON_SALE` (cancelado/finalizado), `422 CLIENT_LIMIT_EXCEEDED`.
+Errores: `400 VALIDATION_ERROR`, `400 SECTOR_MISMATCH` (el asiento no pertenece al sector del ítem), `404 EVENT_NOT_FOUND`/`SECTOR_NOT_FOUND`, `409 SEAT_NOT_AVAILABLE`, `409 INSUFFICIENT_AVAILABILITY`, `409 EVENT_NOT_ON_SALE` (cancelado), `409 EVENT_FINISHED` (la fecha del evento ya pasó), `422 CLIENT_LIMIT_EXCEEDED`.
 
 ### 4.4 Consultar reserva — `GET /api/inventory/reservations/{reservaId}` (dueño)
 
@@ -540,6 +552,7 @@ Errores: `409 RESERVATION_NOT_CONFIRMABLE`, `410 RESERVATION_EXPIRED`. Idempoten
 ```json
 {
   "eventoId": "1f2e...",
+  "clienteId": "2b3c4d5e-6f7a-4b8c-9d0e-1f2a3b4c5d6e",
   "referencia": "f1a2b3c4-d5e6-4f7a-8b9c-0d1e2f3a4b5c",
   "items": [
     { "sectorId": "9a1b...", "asientoId": "a1b2...", "cantidad": 1 }
@@ -552,6 +565,8 @@ Errores: `409 RESERVATION_NOT_CONFIRMABLE`, `410 RESERVATION_EXPIRED`. Idempoten
 no reponga dos veces la disponibilidad de una zona no numerada.
 
 Header opcional `Idempotency-Key`. Si orders reintenta la misma devolución, manda la misma clave: la segunda llamada no vuelve a sumar lugares. Sin la clave, un asiento igual no se libera dos veces (solo pasa de `VENDIDO` a `LIBRE` una vez); la zona sí necesita la clave para no reponerse dos veces.
+
+`clienteId` lo manda orders con el dueño de la entrada. En una zona, además de sumar `disponibles`, inventory resta esa cantidad de `cliente_evento.entradas_vendidas` (`GREATEST(0, …)`). Si el campo no viene, la zona se repone igual y el cupo del cliente no cambia. Un asiento vendido sigue liberando el cupo con el cliente de su reserva, aunque `clienteId` falte.
 
 ## 5. orders-service
 

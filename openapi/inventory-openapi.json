@@ -506,6 +506,99 @@
         }
       }
     },
+    "/internal/events/{eventoId}/state" : {
+      "patch" : {
+        "tags" : [ "Inventario interno" ],
+        "summary" : "Marcar el evento como cancelado o finalizado",
+        "description" : "Lo llama catalog. Acepta CANCELADO o FINALIZADO. Si el evento ya está en ese estado, responde 204 sin escribir. No se puede salir de un estado terminal.\n",
+        "operationId" : "actualizarEstado",
+        "parameters" : [ {
+          "name" : "eventoId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/EstadoEventoRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "204" : {
+            "description" : "Estado aplicado, o ya estaba en ese estado"
+          },
+          "400" : {
+            "description" : "Estado inválido",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Problema"
+                },
+                "examples" : {
+                  "VALIDATION_ERROR" : {
+                    "description" : "VALIDATION_ERROR",
+                    "value" : {
+                      "type" : "https://ticketya.local/errors/validation-error",
+                      "title" : "Bad Request",
+                      "status" : 400,
+                      "detail" : "La solicitud tiene campos inválidos",
+                      "instance" : "/api/inventory/reservations",
+                      "code" : "VALIDATION_ERROR",
+                      "errors" : [ {
+                        "field" : "items",
+                        "message" : "un ítem numerado requiere asientoIds y no admite cantidad"
+                      } ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "No existe el evento",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Problema"
+                },
+                "examples" : {
+                  "EVENT_NOT_FOUND" : {
+                    "description" : "EVENT_NOT_FOUND",
+                    "value" : {
+                      "type" : "https://ticketya.local/errors/event-not-found",
+                      "title" : "Not Found",
+                      "status" : 404,
+                      "detail" : "No existe el evento d0000000-0000-4000-8000-000000000001",
+                      "instance" : "/api/inventory/events/d0000000-0000-4000-8000-000000000001/availability",
+                      "code" : "EVENT_NOT_FOUND",
+                      "errors" : [ ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409" : {
+            "description" : "El evento ya está en un estado terminal distinto",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Problema"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/internal/reservations/{reservaId}" : {
       "get" : {
         "tags" : [ "Inventario interno" ],
@@ -906,6 +999,12 @@
               "$ref" : "#/components/schemas/Item"
             },
             "minItems" : 1
+          },
+          "clienteId" : {
+            "type" : "string",
+            "format" : "uuid",
+            "description" : "Dueño de las entradas. Obligatorio para reponer el cupo de una zona. Si falta, la zona vuelve a estar disponible pero el límite del cliente no se libera.",
+            "example" : "2b3c4d5e-6f7a-4b8c-9d0e-1f2a3b4c5d6e"
           }
         },
         "required" : [ "eventoId", "items" ]
@@ -1207,6 +1306,19 @@
           }
         },
         "required" : [ "eventoId", "items" ]
+      },
+      "EstadoEventoRequest" : {
+        "type" : "object",
+        "description" : "Estado terminal que catalog avisa a inventory.",
+        "properties" : {
+          "estado" : {
+            "type" : "string",
+            "enum" : [ "CANCELADO", "FINALIZADO" ],
+            "example" : "CANCELADO",
+            "minLength" : 1
+          }
+        },
+        "required" : [ "estado" ]
       },
       "AsientoMapaResponse" : {
         "type" : "object",
