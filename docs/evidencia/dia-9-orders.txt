@@ -1,0 +1,234 @@
+﻿[INFO] Scanning for projects...
+[INFO] 
+[INFO] ---------------< ar.edu.unicen.ticketya:orders-service >----------------
+[INFO] Building orders-service 0.0.1-SNAPSHOT
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ orders-service ---
+[INFO] Copying 1 resource from src\main\resources to target\classes
+[INFO] Copying 1 resource from src\main\resources to target\classes
+[INFO] 
+[INFO] --- compiler:3.14.1:compile (default-compile) @ orders-service ---
+[INFO] Nothing to compile - all classes are up to date.
+[INFO] 
+[INFO] --- resources:3.3.1:testResources (default-testResources) @ orders-service ---
+[INFO] skip non existing resourceDirectory D:\DATOS\Documents\0.Facultad\2026\Arquitectura Web\TP\TicketYa\orders-service\src\test\resources
+[INFO] 
+[INFO] --- compiler:3.14.1:testCompile (default-testCompile) @ orders-service ---
+[INFO] Nothing to compile - all classes are up to date.
+[INFO] 
+[INFO] --- surefire:3.5.6:test (default-test) @ orders-service ---
+[INFO] Using auto detected provider org.apache.maven.surefire.junitplatform.JUnitPlatformProvider
+[INFO] 
+[INFO] -------------------------------------------------------
+[INFO]  T E S T S
+[INFO] -------------------------------------------------------
+[INFO] Running ar.edu.unicen.ticketya.orders.servicio.DevolucionServiceTest
+mvn : Mockito is currently self-attaching to enable the inline-mock-maker. This will no longer work in future releases 
+of the JDK. Please add Mockito as an agent to your build as described in Mockito's documentation: 
+https://javadoc.io/doc/org.mockito/mockito-core/latest/org.mockito/org/mockito/Mockito.html#0.3
+En línea: 1 Carácter: 238
++ ... v:MAVEN_HOME\bin;$env:JAVA_HOME\bin;$env:PATH"; mvn test 2>&1 | Out-F ...
++                                                     ~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (Mockito is curr...ockito.html#0.3:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+WARNING: A Java agent has been loaded dynamically 
+(C:\Users\Usuario\.m2\repository\net\bytebuddy\byte-buddy-agent\1.17.8\byte-buddy-agent-1.17.8.jar)
+WARNING: If a serviceability tool is in use, please run with -XX:+EnableDynamicAgentLoading to hide this warning
+WARNING: If a serviceability tool is not in use, please run with -Djdk.instrument.traceUsage for more information
+WARNING: Dynamic loading of agents will be disallowed by default in a future release
+OpenJDK 64-Bit Server VM warning: Sharing is only supported for boot loader classes because bootstrap classpath has 
+been appended
+[INFO] Tests run: 8, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.397 s -- in ar.edu.unicen.ticketya.orders.servicio.DevolucionServiceTest
+[INFO] Running ar.edu.unicen.ticketya.orders.servicio.IdempotencyServiceTest
+[INFO] Tests run: 5, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.568 s -- in ar.edu.unicen.ticketya.orders.servicio.IdempotencyServiceTest
+17:25:23.427 [main] INFO org.testcontainers.DockerClientFactory -- Testcontainers version: 1.21.4
+17:25:23.613 [main] INFO org.testcontainers.dockerclient.DockerClientProviderStrategy -- Loaded org.testcontainers.dockerclient.NpipeSocketClientProviderStrategy from ~/.testcontainers.properties, will try it first
+17:25:23.849 [main] INFO org.testcontainers.dockerclient.DockerClientProviderStrategy -- Found Docker environment with local Npipe socket (npipe:////./pipe/docker_engine)
+17:25:23.850 [main] INFO org.testcontainers.DockerClientFactory -- Docker host IP address is localhost
+17:25:23.865 [main] INFO org.testcontainers.DockerClientFactory -- Connected to docker: 
+  Server Version: 29.9.2
+  API Version: 1.56
+  Operating System: Docker Desktop
+  Total Memory: 15926 MB
+  Labels: 
+    com.docker.desktop.address=npipe://\\.\pipe\docker_cli
+17:25:23.894 [main] INFO org.testcontainers.images.PullPolicy -- Image pull policy will be performed by: DefaultPullPolicy()
+17:25:23.896 [main] INFO org.testcontainers.utility.ImageNameSubstitutor -- Image name substitution will be performed by: DefaultImageNameSubstitutor (composite of 'ConfigurationFileImageNameSubstitutor' and 'PrefixingImageNameSubstitutor')
+17:25:23.964 [main] INFO tc.testcontainers/ryuk:0.12.0 -- Creating container for image: testcontainers/ryuk:0.12.0
+17:25:24.393 [main] INFO tc.testcontainers/ryuk:0.12.0 -- Container testcontainers/ryuk:0.12.0 is starting: 487d0b06d72bb5ef911d056c730eebe7d337aaf6de0d044807114981dad77856
+17:25:24.892 [main] INFO tc.testcontainers/ryuk:0.12.0 -- Container testcontainers/ryuk:0.12.0 started in PT0.9279754S
+17:25:24.907 [main] INFO org.testcontainers.utility.RyukResourceReaper -- Ryuk started - will monitor and terminate Testcontainers containers on JVM exit
+17:25:24.907 [main] INFO org.testcontainers.DockerClientFactory -- Checking the system...
+17:25:24.908 [main] INFO org.testcontainers.DockerClientFactory -- ?? Docker server version should be at least 1.6.0
+[INFO] Running ar.edu.unicen.ticketya.orders.servicio.OrderIdempotencyIntegrationTest
+17:25:24.965 [main] INFO org.springframework.test.context.support.AnnotationConfigContextLoaderUtils -- Could not detect default configuration classes for test class [ar.edu.unicen.ticketya.orders.servicio.OrderIdempotencyIntegrationTest]: OrderIdempotencyIntegrationTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+17:25:25.077 [main] INFO org.springframework.boot.test.context.SpringBootTestContextBootstrapper -- Found @SpringBootConfiguration ar.edu.unicen.ticketya.orders.OrdersServiceApplication for test class ar.edu.unicen.ticketya.orders.servicio.OrderIdempotencyIntegrationTest
+17:25:25.153 [main] INFO tc.postgres:16-alpine -- Creating container for image: postgres:16-alpine
+17:25:25.424 [main] INFO tc.postgres:16-alpine -- Container postgres:16-alpine is starting: 7eff98f945949a0c51d6a0e7b3013771a823bfe45143d041cc1bcc4848f1587e
+17:25:32.908 [main] INFO tc.postgres:16-alpine -- Container postgres:16-alpine started in PT7.7556166S
+17:25:32.909 [main] INFO tc.postgres:16-alpine -- Container is started (JDBC URL: jdbc:postgresql://localhost:63498/test?loggerLevel=OFF)
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::               (v3.5.16)
+
+2026-11-09T17:25:33.185-03:00  INFO 19692 --- [orders-service] [           main] .u.t.o.s.OrderIdempotencyIntegrationTest : Starting OrderIdempotencyIntegrationTest using Java 21.0.13 with PID 19692 (started by Usuario in D:\DATOS\Documents\0.Facultad\2026\Arquitectura Web\TP\TicketYa\orders-service)
+2026-11-09T17:25:33.186-03:00  INFO 19692 --- [orders-service] [           main] .u.t.o.s.OrderIdempotencyIntegrationTest : No active profile set, falling back to 1 default profile: "default"
+2026-11-09T17:25:34.013-03:00  INFO 19692 --- [orders-service] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-11-09T17:25:34.065-03:00  INFO 19692 --- [orders-service] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 44 ms. Found 6 JPA repository interfaces.
+2026-11-09T17:25:34.795-03:00  INFO 19692 --- [orders-service] [           main] org.flywaydb.core.FlywayExecutor         : Database: jdbc:postgresql://localhost:63498/test?loggerLevel=OFF (PostgreSQL 16.15)
+2026-11-09T17:25:34.830-03:00  INFO 19692 --- [orders-service] [           main] o.f.c.i.s.JdbcTableSchemaHistory         : Schema history table "public"."flyway_schema_history" does not exist yet
+2026-11-09T17:25:34.833-03:00  INFO 19692 --- [orders-service] [           main] o.f.core.internal.command.DbValidate     : Successfully validated 1 migration (execution time 00:00.014s)
+2026-11-09T17:25:34.847-03:00  INFO 19692 --- [orders-service] [           main] o.f.c.i.s.JdbcTableSchemaHistory         : Creating Schema History table "public"."flyway_schema_history" ...
+2026-11-09T17:25:34.901-03:00  INFO 19692 --- [orders-service] [           main] o.f.core.internal.command.DbMigrate      : Current version of schema "public": << Empty Schema >>
+2026-11-09T17:25:34.917-03:00  INFO 19692 --- [orders-service] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "public" to version "1 - init"
+2026-11-09T17:25:34.978-03:00  INFO 19692 --- [orders-service] [           main] o.f.core.internal.command.DbMigrate      : Successfully applied 1 migration to schema "public", now at version v1 (execution time 00:00.045s)
+2026-11-09T17:25:35.060-03:00  INFO 19692 --- [orders-service] [           main] o.hibernate.jpa.internal.util.LogHelper  : HHH000204: Processing PersistenceUnitInfo [name: default]
+2026-11-09T17:25:35.118-03:00  INFO 19692 --- [orders-service] [           main] org.hibernate.Version                    : HHH000412: Hibernate ORM core version 6.6.53.Final
+2026-11-09T17:25:35.148-03:00  INFO 19692 --- [orders-service] [           main] o.h.c.internal.RegionFactoryInitiator    : HHH000026: Second-level cache disabled
+2026-11-09T17:25:35.249-03:00  INFO 19692 --- [orders-service] [           main] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+2026-11-09T17:25:35.268-03:00  INFO 19692 --- [orders-service] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+2026-11-09T17:25:35.303-03:00  INFO 19692 --- [orders-service] [           main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection org.postgresql.jdbc.PgConnection@4ee8ea84
+2026-11-09T17:25:35.304-03:00  INFO 19692 --- [orders-service] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+2026-11-09T17:25:35.362-03:00  INFO 19692 --- [orders-service] [           main] org.hibernate.orm.connections.pooling    : HHH10001005: Database info:
+	Database JDBC URL [Connecting through datasource 'HikariDataSource (HikariPool-1)']
+	Database driver: undefined/unknown
+	Database version: 16.15
+	Autocommit mode: undefined/unknown
+	Isolation level: undefined/unknown
+	Minimum pool size: undefined/unknown
+	Maximum pool size: undefined/unknown
+2026-11-09T17:25:35.991-03:00  INFO 19692 --- [orders-service] [           main] o.h.e.t.j.p.i.JtaPlatformInitiator       : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2026-11-09T17:25:36.030-03:00  INFO 19692 --- [orders-service] [           main] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-11-09T17:25:37.219-03:00  INFO 19692 --- [orders-service] [           main] o.s.b.a.e.web.EndpointLinksResolver      : Exposing 2 endpoints beneath base path '/actuator'
+2026-11-09T17:25:37.304-03:00  INFO 19692 --- [orders-service] [           main] .u.t.o.s.OrderIdempotencyIntegrationTest : Started OrderIdempotencyIntegrationTest in 4.371 seconds (process running for 16.456)
+2026-11-09T17:25:37.393-03:00  WARN 19692 --- [orders-service] [           main] o.s.core.events.SpringDocAppInitializer  : SpringDoc /v3/api-docs endpoint is enabled by default. To disable it in production, set the property 'springdoc.api-docs.enabled=false'
+2026-11-09T17:25:37.393-03:00  WARN 19692 --- [orders-service] [           main] o.s.core.events.SpringDocAppInitializer  : SpringDoc /swagger-ui.html endpoint is enabled by default. To disable it in production, set the property 'springdoc.swagger-ui.enabled=false'
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 16.79 s -- in ar.edu.unicen.ticketya.orders.servicio.OrderIdempotencyIntegrationTest
+[INFO] Running ar.edu.unicen.ticketya.orders.servicio.OrderQueryServiceTest
+[INFO] Tests run: 5, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.125 s -- in ar.edu.unicen.ticketya.orders.servicio.OrderQueryServiceTest
+[INFO] Running ar.edu.unicen.ticketya.orders.servicio.OrderServiceTest
+[INFO] Tests run: 15, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.130 s -- in ar.edu.unicen.ticketya.orders.servicio.OrderServiceTest
+[INFO] Running ar.edu.unicen.ticketya.orders.servicio.TicketServiceTest
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.004 s -- in ar.edu.unicen.ticketya.orders.servicio.TicketServiceTest
+[INFO] Running ar.edu.unicen.ticketya.orders.web.InternalOrderControllerTest
+2026-11-09T17:25:41.968-03:00  INFO 19692 --- [orders-service] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [ar.edu.unicen.ticketya.orders.web.InternalOrderControllerTest]: InternalOrderControllerTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-11-09T17:25:41.991-03:00  INFO 19692 --- [orders-service] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration ar.edu.unicen.ticketya.orders.OrdersServiceApplication for test class ar.edu.unicen.ticketya.orders.web.InternalOrderControllerTest
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::               (v3.5.16)
+
+2026-11-09T17:25:42.009-03:00  INFO 19692 --- [orders-service] [           main] a.e.u.t.o.w.InternalOrderControllerTest  : Starting InternalOrderControllerTest using Java 21.0.13 with PID 19692 (started by Usuario in D:\DATOS\Documents\0.Facultad\2026\Arquitectura Web\TP\TicketYa\orders-service)
+2026-11-09T17:25:42.009-03:00  INFO 19692 --- [orders-service] [           main] a.e.u.t.o.w.InternalOrderControllerTest  : No active profile set, falling back to 1 default profile: "default"
+2026-11-09T17:25:42.203-03:00  INFO 19692 --- [orders-service] [           main] o.s.b.t.m.w.SpringBootMockServletContext : Initializing Spring TestDispatcherServlet ''
+2026-11-09T17:25:42.203-03:00  INFO 19692 --- [orders-service] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Initializing Servlet ''
+2026-11-09T17:25:42.204-03:00  INFO 19692 --- [orders-service] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Completed initialization in 1 ms
+2026-11-09T17:25:42.212-03:00  INFO 19692 --- [orders-service] [           main] a.e.u.t.o.w.InternalOrderControllerTest  : Started InternalOrderControllerTest in 0.219 seconds (process running for 21.364)
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.348 s -- in ar.edu.unicen.ticketya.orders.web.InternalOrderControllerTest
+[INFO] Running ar.edu.unicen.ticketya.orders.web.OpenApiExportTest
+2026-11-09T17:25:42.314-03:00  INFO 19692 --- [orders-service] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [ar.edu.unicen.ticketya.orders.web.OpenApiExportTest]: OpenApiExportTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-11-09T17:25:42.321-03:00  INFO 19692 --- [orders-service] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration ar.edu.unicen.ticketya.orders.OrdersServiceApplication for test class ar.edu.unicen.ticketya.orders.web.OpenApiExportTest
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::               (v3.5.16)
+
+2026-11-09T17:25:42.336-03:00  INFO 19692 --- [orders-service] [           main] a.e.u.t.orders.web.OpenApiExportTest     : Starting OpenApiExportTest using Java 21.0.13 with PID 19692 (started by Usuario in D:\DATOS\Documents\0.Facultad\2026\Arquitectura Web\TP\TicketYa\orders-service)
+2026-11-09T17:25:42.337-03:00  INFO 19692 --- [orders-service] [           main] a.e.u.t.orders.web.OpenApiExportTest     : No active profile set, falling back to 1 default profile: "default"
+2026-11-09T17:25:42.572-03:00  INFO 19692 --- [orders-service] [           main] o.s.b.t.m.w.SpringBootMockServletContext : Initializing Spring TestDispatcherServlet ''
+2026-11-09T17:25:42.572-03:00  INFO 19692 --- [orders-service] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Initializing Servlet ''
+2026-11-09T17:25:42.572-03:00  INFO 19692 --- [orders-service] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Completed initialization in 0 ms
+2026-11-09T17:25:42.576-03:00  INFO 19692 --- [orders-service] [           main] a.e.u.t.orders.web.OpenApiExportTest     : Started OpenApiExportTest in 0.253 seconds (process running for 21.728)
+2026-11-09T17:25:42.576-03:00  WARN 19692 --- [orders-service] [           main] o.s.core.events.SpringDocAppInitializer  : SpringDoc /v3/api-docs endpoint is enabled by default. To disable it in production, set the property 'springdoc.api-docs.enabled=false'
+2026-11-09T17:25:42.836-03:00  INFO 19692 --- [orders-service] [           main] o.springdoc.api.AbstractOpenApiResource  : Init duration for springdoc-openapi is: 248 ms
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.557 s -- in ar.edu.unicen.ticketya.orders.web.OpenApiExportTest
+[INFO] Running ar.edu.unicen.ticketya.orders.web.OrderControllerTest
+2026-11-09T17:25:42.872-03:00  INFO 19692 --- [orders-service] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [ar.edu.unicen.ticketya.orders.web.OrderControllerTest]: OrderControllerTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-11-09T17:25:42.882-03:00  INFO 19692 --- [orders-service] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration ar.edu.unicen.ticketya.orders.OrdersServiceApplication for test class ar.edu.unicen.ticketya.orders.web.OrderControllerTest
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::               (v3.5.16)
+
+2026-11-09T17:25:42.911-03:00  INFO 19692 --- [orders-service] [           main] a.e.u.t.orders.web.OrderControllerTest   : Starting OrderControllerTest using Java 21.0.13 with PID 19692 (started by Usuario in D:\DATOS\Documents\0.Facultad\2026\Arquitectura Web\TP\TicketYa\orders-service)
+2026-11-09T17:25:42.911-03:00  INFO 19692 --- [orders-service] [           main] a.e.u.t.orders.web.OrderControllerTest   : No active profile set, falling back to 1 default profile: "default"
+2026-11-09T17:25:43.025-03:00  INFO 19692 --- [orders-service] [           main] o.s.b.t.m.w.SpringBootMockServletContext : Initializing Spring TestDispatcherServlet ''
+2026-11-09T17:25:43.025-03:00  INFO 19692 --- [orders-service] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Initializing Servlet ''
+2026-11-09T17:25:43.026-03:00  INFO 19692 --- [orders-service] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Completed initialization in 1 ms
+2026-11-09T17:25:43.028-03:00  INFO 19692 --- [orders-service] [           main] a.e.u.t.orders.web.OrderControllerTest   : Started OrderControllerTest in 0.144 seconds (process running for 22.18)
+[INFO] Tests run: 10, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.287 s -- in ar.edu.unicen.ticketya.orders.web.OrderControllerTest
+[INFO] Running ar.edu.unicen.ticketya.orders.web.ReturnControllerTest
+2026-11-09T17:25:43.160-03:00  INFO 19692 --- [orders-service] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [ar.edu.unicen.ticketya.orders.web.ReturnControllerTest]: ReturnControllerTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-11-09T17:25:43.165-03:00  INFO 19692 --- [orders-service] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration ar.edu.unicen.ticketya.orders.OrdersServiceApplication for test class ar.edu.unicen.ticketya.orders.web.ReturnControllerTest
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::               (v3.5.16)
+
+2026-11-09T17:25:43.183-03:00  INFO 19692 --- [orders-service] [           main] a.e.u.t.orders.web.ReturnControllerTest  : Starting ReturnControllerTest using Java 21.0.13 with PID 19692 (started by Usuario in D:\DATOS\Documents\0.Facultad\2026\Arquitectura Web\TP\TicketYa\orders-service)
+2026-11-09T17:25:43.183-03:00  INFO 19692 --- [orders-service] [           main] a.e.u.t.orders.web.ReturnControllerTest  : No active profile set, falling back to 1 default profile: "default"
+2026-11-09T17:25:43.309-03:00  INFO 19692 --- [orders-service] [           main] o.s.b.t.m.w.SpringBootMockServletContext : Initializing Spring TestDispatcherServlet ''
+2026-11-09T17:25:43.310-03:00  INFO 19692 --- [orders-service] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Initializing Servlet ''
+2026-11-09T17:25:43.310-03:00  INFO 19692 --- [orders-service] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Completed initialization in 0 ms
+2026-11-09T17:25:43.312-03:00  INFO 19692 --- [orders-service] [           main] a.e.u.t.orders.web.ReturnControllerTest  : Started ReturnControllerTest in 0.143 seconds (process running for 22.464)
+[INFO] Tests run: 7, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.194 s -- in ar.edu.unicen.ticketya.orders.web.ReturnControllerTest
+[INFO] Running ar.edu.unicen.ticketya.orders.web.TicketControllerTest
+2026-11-09T17:25:43.355-03:00  INFO 19692 --- [orders-service] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [ar.edu.unicen.ticketya.orders.web.TicketControllerTest]: TicketControllerTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-11-09T17:25:43.364-03:00  INFO 19692 --- [orders-service] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration ar.edu.unicen.ticketya.orders.OrdersServiceApplication for test class ar.edu.unicen.ticketya.orders.web.TicketControllerTest
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::               (v3.5.16)
+
+2026-11-09T17:25:43.377-03:00  INFO 19692 --- [orders-service] [           main] a.e.u.t.orders.web.TicketControllerTest  : Starting TicketControllerTest using Java 21.0.13 with PID 19692 (started by Usuario in D:\DATOS\Documents\0.Facultad\2026\Arquitectura Web\TP\TicketYa\orders-service)
+2026-11-09T17:25:43.377-03:00  INFO 19692 --- [orders-service] [           main] a.e.u.t.orders.web.TicketControllerTest  : No active profile set, falling back to 1 default profile: "default"
+2026-11-09T17:25:43.491-03:00  INFO 19692 --- [orders-service] [           main] o.s.b.t.m.w.SpringBootMockServletContext : Initializing Spring TestDispatcherServlet ''
+2026-11-09T17:25:43.491-03:00  INFO 19692 --- [orders-service] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Initializing Servlet ''
+2026-11-09T17:25:43.491-03:00  INFO 19692 --- [orders-service] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Completed initialization in 0 ms
+2026-11-09T17:25:43.494-03:00  INFO 19692 --- [orders-service] [           main] a.e.u.t.orders.web.TicketControllerTest  : Started TicketControllerTest in 0.13 seconds (process running for 22.646)
+[INFO] Tests run: 5, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.171 s -- in ar.edu.unicen.ticketya.orders.web.TicketControllerTest
+[INFO] 
+[INFO] Results:
+[INFO] 
+[INFO] Tests run: 61, Failures: 0, Errors: 0, Skipped: 0
+[INFO] 
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  24.985 s
+[INFO] Finished at: 2026-11-09T17:25:44-03:00
+[INFO] ------------------------------------------------------------------------
