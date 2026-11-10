@@ -89,7 +89,7 @@ Parámetros: `page` (desde 0, default 0), `size` (default 20, máximo 100). Un `
 | `EstadoOrden` | `PENDIENTE_PAGO`, `PAGADA`, `RECHAZADA`, `ERROR_PAGO`, `REINTEGRO_PENDIENTE` |
 | `EstadoEntrada` | `VALIDA`, `UTILIZADA`, `DEVUELTA`, `EN_REINTEGRO`, `EN_DEVOLUCION` |
 | `EstadoDevolucion` | `PENDIENTE`, `PROCESANDO`, `APROBADA`, `RECHAZADA` |
-| `EstadoPago` | `PENDIENTE`, `APROBADO`, `RECHAZADO`, `REINTEGRADO`, `REINTEGRO_PENDIENTE` |
+| `EstadoPago` | `PENDIENTE`, `APROBADO`, `RECHAZADO`, `REINTEGRADO`, `REINTEGRO_PENDIENTE`, `PARCIALMENTE_REINTEGRADO` |
 | `MedioPago` | `TARJETA`, `EFECTIVO`, `TRANSFERENCIA` |
 | Token de la pasarela mock | `APROBADO`, `RECHAZADO`, `LENTO` |
 
@@ -262,11 +262,9 @@ Sin cuerpo. **200**
 }
 ```
 
-Antes de marcar el evento, catalog frena la venta en inventory con `PATCH /internal/events/{eventoId}/state`; si inventory no responde, la cancelación no se persiste.
+Catalog cierra primero la venta en inventory con `PATCH /internal/events/{eventoId}/state` y recién después avisa a orders. Si inventory falla, no se avisa a orders y `cancelacionPendiente` queda en `true`; el scheduler reintenta ambos avisos en orden. Si orders falla después de cerrar la venta, también queda pendiente.
 
-`cancelacionPendiente: true` si catalog ya marcó el evento pero orders no respondió; un scheduler reintenta el aviso.
-
-Errores: `404 EVENT_NOT_FOUND`, `409 EVENT_NOT_CANCELLABLE` (ya cancelado o finalizado), `502 INVENTORY_UNAVAILABLE` (inventory no frenó la venta; el evento no se cancela).
+Errores: `404 EVENT_NOT_FOUND`, `409 EVENT_NOT_CANCELLABLE` (ya cancelado o finalizado). Un fallo de inventory/orders no cambia el 200: se refleja en `cancelacionPendiente`.
 
 ### 3.10 Buscar eventos — `GET /api/catalog/events` (público)
 
@@ -467,7 +465,7 @@ Reglas:
 }
 ```
 
-Errores: `400 VALIDATION_ERROR`, `400 SECTOR_MISMATCH` (el asiento no pertenece al sector del ítem), `404 EVENT_NOT_FOUND`/`SECTOR_NOT_FOUND`, `409 SEAT_NOT_AVAILABLE`, `409 INSUFFICIENT_AVAILABILITY`, `409 EVENT_NOT_ON_SALE` (cancelado), `409 EVENT_FINISHED` (la fecha del evento ya pasó), `422 CLIENT_LIMIT_EXCEEDED`.
+Errores: `400 VALIDATION_ERROR`, `400 SECTOR_MISMATCH` (el asiento no pertenece al sector del ítem), `404 EVENT_NOT_FOUND`/`SECTOR_NOT_FOUND`, `409 SEAT_NOT_AVAILABLE`, `409 INSUFFICIENT_AVAILABILITY`, `409 EVENT_NOT_ON_SALE` (cancelado), `409 EVENT_FINISHED` (la fecha del evento ya pasó), `422 CLIENT_LIMIT_EXCEEDED`, `503 LOCK_TIMEOUT` (con `Retry-After: 1`).
 
 ### 4.4 Consultar reserva — `GET /api/inventory/reservations/{reservaId}` (dueño)
 
@@ -579,7 +577,7 @@ no reponga dos veces la disponibilidad de una zona no numerada.
 
 Header opcional `Idempotency-Key`. Si orders reintenta la misma devolución, manda la misma clave: la segunda llamada no vuelve a sumar lugares. Sin la clave, un asiento igual no se libera dos veces (solo pasa de `VENDIDO` a `LIBRE` una vez); la zona sí necesita la clave para no reponerse dos veces.
 
-`clienteId` lo manda orders con el dueño de la entrada. En una zona, además de sumar `disponibles`, inventory resta esa cantidad de `cliente_evento.entradas_vendidas` (`GREATEST(0, …)`). Si el campo no viene, la zona se repone igual y el cupo del cliente no cambia. Un asiento vendido sigue liberando el cupo con el cliente de su reserva, aunque `clienteId` falte.
+`clienteId` lo manda orders con el dueño de la entrada. En una zona, además de sumar `disponibles`, inventory resta esa cantidad de `cliente_evento.entradas_vendidas` (`GREATEST(0, …)`). Si hay algún ítem de zona (`asientoId` null) y falta `clienteId`, responde `400 CLIENT_ID_REQUIRED` y no aplica la devolución. Un asiento vendido sigue liberando el cupo con el cliente de su reserva, aunque `clienteId` falte. Errores: `400 CLIENT_ID_REQUIRED`, `400 VALIDATION_ERROR`.
 
 ## 5. orders-service
 

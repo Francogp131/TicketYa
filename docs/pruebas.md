@@ -59,10 +59,10 @@ Suite final del Día 10 (10/11/2026, CI de `main` en `8f8b50c`, con Docker):
 | Proyecto | Tests | Resultado |
 |---|---|---|
 | catalog-service | 82 | 0 fallos, 0 errores, 0 omitidos |
-| inventory-service | 39 | 0 fallos, 0 errores, 0 omitidos |
-| orders-service | 74 | 0 fallos, 0 errores, 0 omitidos |
+| inventory-service | 44 | 0 fallos, 0 errores, 0 omitidos |
+| orders-service | 75 | 0 fallos, 0 errores, 0 omitidos |
 | api-gateway | 19 | 0 fallos, 0 errores, 0 omitidos |
-| **Total** | **214** | **0 fallos, 0 errores, 0 omitidos** |
+| **Total** | **220** | **0 fallos, 0 errores, 0 omitidos** |
 
 Evidencia: GitHub Actions run `42884441398` y [`evidencia/dia-9-orders-fixes.txt`](evidencia/dia-9-orders-fixes.txt).
 
