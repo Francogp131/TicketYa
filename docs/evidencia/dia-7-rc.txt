@@ -41,7 +41,7 @@ Resultado: `ticketya-catalog-db`, `ticketya-inventory-db` y `ticketya-orders-db`
 ## 3. Suite completa en el clone
 
 ```bash
-export JAVA_HOME=/Users/Franco/Library/Java/JavaVirtualMachines/temurin-21.0.12.1/Contents/Home
+export JAVA_HOME=$JAVA_HOME
 cd catalog-service    && mvn clean test
 cd ../inventory-service && mvn clean test
 cd ../orders-service  && mvn clean test
