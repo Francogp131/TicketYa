@@ -191,7 +191,9 @@ class OrderServiceTest {
 
         assertThat(response.estado()).isEqualTo(EstadoOrden.REINTEGRO_PENDIENTE);
         assertThat(response.entradas()).isEmpty();
-        verify(inventoryClient).devolverItems(any(ReturnDto.class));
+        ArgumentCaptor<ReturnDto> returnDtoCaptor = ArgumentCaptor.forClass(ReturnDto.class);
+        verify(inventoryClient).devolverItems(returnDtoCaptor.capture());
+        assertThat(returnDtoCaptor.getValue().clienteId()).isEqualTo(reserva.clienteId());
         verify(inventoryClient, never()).liberarReserva(any(), anyString());
     }
 

@@ -107,7 +107,8 @@ public class DevolucionService {
             inventoryClient.devolverItems(new ReturnDto(
                     entrada.getEventoId(),
                     devolucion.getId(),
-                    List.of(new ReturnDto.Item(entrada.getSectorId(), entrada.getAsientoId(), 1))));
+                    List.of(new ReturnDto.Item(entrada.getSectorId(), entrada.getAsientoId(), 1)),
+                    entrada.getClienteId()));
         } catch (RuntimeException ex) {
             throw ApiException.unavailable("INVENTORY_UNAVAILABLE",
                     "No se pudo liberar el lugar en inventory; la devolución queda PROCESANDO");

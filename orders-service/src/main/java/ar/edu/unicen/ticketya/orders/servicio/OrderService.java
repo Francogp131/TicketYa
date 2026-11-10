@@ -272,7 +272,8 @@ public class OrderService {
                         item.getAsientoId() == null ? item.getCantidad() : 1))
                 .toList();
         try {
-            inventoryClient.devolverItems(new ReturnDto(reserva.eventoId(), referencia, devoluciones));
+            inventoryClient.devolverItems(new ReturnDto(reserva.eventoId(), referencia, devoluciones,
+                    reserva.clienteId()));
         } catch (RuntimeException ex) {
             // La orden ya quedó en REINTEGRO_PENDIENTE; se puede reintentar.
         }

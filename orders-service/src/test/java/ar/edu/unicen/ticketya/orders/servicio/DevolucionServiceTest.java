@@ -127,7 +127,9 @@ class DevolucionServiceTest {
         assertThat(response.estado()).isEqualTo(EstadoDevolucion.APROBADA);
         assertThat(entrada.getEstado()).isEqualTo(EstadoEntrada.DEVUELTA);
         assertThat(pago.getEstado()).isEqualTo(EstadoPago.REINTEGRADO);
-        verify(inventoryClient).devolverItems(any(ReturnDto.class));
+        ArgumentCaptor<ReturnDto> returnDtoCaptor = ArgumentCaptor.forClass(ReturnDto.class);
+        verify(inventoryClient).devolverItems(returnDtoCaptor.capture());
+        assertThat(returnDtoCaptor.getValue().clienteId()).isEqualTo(entrada.getClienteId());
         verify(paymentGateway).reintegrar(pago.getId());
     }
 
