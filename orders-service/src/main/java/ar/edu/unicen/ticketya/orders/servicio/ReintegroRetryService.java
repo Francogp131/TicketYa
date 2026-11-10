@@ -61,8 +61,10 @@ public class ReintegroRetryService {
         boolean hayPendientes = reintegros.stream().anyMatch(r -> r.getEstado() == EstadoReintegro.PENDIENTE);
         if (totalAprobado.compareTo(pago.getMonto()) >= 0) {
             pago.setEstado(EstadoPago.REINTEGRADO);
-        } else if (totalAprobado.compareTo(BigDecimal.ZERO) > 0 || hayPendientes) {
+        } else if (hayPendientes) {
             pago.setEstado(EstadoPago.REINTEGRO_PENDIENTE);
+        } else if (totalAprobado.compareTo(BigDecimal.ZERO) > 0) {
+            pago.setEstado(EstadoPago.PARCIALMENTE_REINTEGRADO);
         }
         pagoRepository.save(pago);
     }
