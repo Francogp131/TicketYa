@@ -1,0 +1,114 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  services:
+    name: build (${{ matrix.service }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        service:
+          - api-gateway
+          - catalog-service
+          - inventory-service
+          - orders-service
+          - recommendation-service
+          - notification-service
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configurar Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+
+      - name: Build y tests
+        working-directory: TP-TicketYa
+        run: |
+          if [ ! -f "${{ matrix.service }}/pom.xml" ]; then
+            echo "El servicio ${{ matrix.service }} no existe en esta rama; se omite."
+            exit 0
+          fi
+          cd "${{ matrix.service }}"
+          mvn -B -ntp verify
+
+  web:
+    name: build (web)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Detectar el proyecto web
+        id: web
+        run: |
+          if [ -f TP-TicketYa/web/package.json ]; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+            echo "web/ todavía no existe en esta rama; se omite."
+          fi
+
+      - name: Configurar Node 22
+        if: steps.web.outputs.exists == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: TP-TicketYa/web/package-lock.json
+
+      - name: Build, lint y tests
+        if: steps.web.outputs.exists == 'true'
+        working-directory: TP-TicketYa/web
+        run: |
+          npm ci --no-audit --no-fund
+          npm run build
+          npm run lint
+          npm run test
+
+  compose:
+    name: validar compose de desarrollo
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validar configuración
+        run: docker compose -f TP-TicketYa/docker-compose.dev.yml config
+
+  openapi:
+    name: validar OpenAPI
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validar archivos OpenAPI
+        run: |
+          shopt -s nullglob
+          archivos=(TP-TicketYa/openapi/*.json)
+          if [ ${#archivos[@]} -eq 0 ]; then
+            echo "No hay archivos OpenAPI en esta rama; se omite."
+            exit 0
+          fi
+          for f in "${archivos[@]}"; do
+            echo "Validando $f"
+            jq -e 'has("openapi") and has("paths")' "$f" > /dev/null
+          done
