@@ -14,14 +14,16 @@ Repositorio del curso: <https://github.com/Pabloaguirre23/ArquitecturaWeb> (este
 | `inventory-service` | 8082 | `inventory_db` (5434) | Disponibilidad, reservas temporales y no doble venta |
 | `orders-service` | 8083 | `orders_db` (5435) | Órdenes, pago mock, entradas/QR, devoluciones y cancelación |
 | `recommendation-service` | 8084 | `recommendation_db` (27017, MongoDB) | Preferencias, historial y recomendaciones |
+| `notification-service` | 8085 | `notification_db` (5436) | Esqueleto de notificaciones asíncronas |
+| `rabbitmq` | 5672 / 15672 | — | Bus de eventos (`orden.pagada` → historial) |
 
-Cada servicio es un proyecto Maven independiente. La comunicación entre servicios es REST por `/internal/**`; el cliente siempre entra por el gateway. Los servicios de la Entrega 2 (`queue-service`, `notification-service`) se agregan en las próximas tareas.
+Cada servicio es un proyecto Maven independiente. La comunicación entre servicios es REST por `/internal/**` y eventos por RabbitMQ; el cliente siempre entra por el gateway. `queue-service` se agrega en las próximas tareas.
 
 ## Requisitos
 
 - **Java 21** (Temurin recomendado)
 - **Maven 3.9+**
-- **Docker Desktop** (para PostgreSQL 16 y MongoDB 7)
+- **Docker Desktop** (para PostgreSQL 16, MongoDB 7 y RabbitMQ 3.13)
 - Git
 
 Verificar:
@@ -58,13 +60,14 @@ docker compose -f docker-compose.dev.yml up -d
 
 ### 2. Servicios
 
-En cuatro terminales distintas:
+En cinco terminales distintas:
 
 ```bash
 cd catalog-service && mvn spring-boot:run
 cd inventory-service && mvn spring-boot:run
 cd orders-service && mvn spring-boot:run
 cd recommendation-service && mvn spring-boot:run
+cd notification-service && mvn spring-boot:run
 ```
 
 Verificar:
@@ -74,6 +77,7 @@ curl http://localhost:8081/actuator/health
 curl http://localhost:8082/actuator/health
 curl http://localhost:8083/actuator/health
 curl http://localhost:8084/actuator/health
+curl http://localhost:8085/actuator/health
 ```
 
 ### 3. Gateway
@@ -89,6 +93,7 @@ curl http://localhost:8080/actuator/health
 - Inventory: <http://localhost:8082/swagger-ui.html>
 - Orders: <http://localhost:8083/swagger-ui.html>
 - Recommendation: <http://localhost:8084/swagger-ui.html>
+- Notification: <http://localhost:8085/swagger-ui.html>
 
 OpenAPI crudo: `http://localhost:<puerto>/v3/api-docs`.
 
@@ -100,14 +105,20 @@ Los servicios traen valores por defecto para desarrollo. Se pueden pisar con:
 |---|---|---|
 | `SERVER_PORT` | 8080/8081/8082/8083/8084 | Puerto del servicio |
 | `DB_URL` | `jdbc:postgresql://localhost:<5433/5434/5435>/<db>` | Conexión JDBC |
+| `NOTIFICATION_DB_URL` | `jdbc:postgresql://localhost:5436/notification_db` | Conexión JDBC de notification |
 | `DB_USER` | `ticketya` | Usuario de la base |
 | `DB_PASSWORD` | `ticketya` | Password de la base |
 | `MONGO_URI` | `mongodb://localhost:27017/recommendation_db` | Conexión MongoDB de recommendation |
+| `RABBITMQ_HOST` / `RABBITMQ_PORT` | `localhost` / `5672` | Broker de eventos |
+| `RABBITMQ_USER` / `RABBITMQ_PASSWORD` | `ticketya` / `ticketya` | Credenciales del broker |
 | `INTERNAL_TOKEN` | `ticketya-internal-dev` | Token de los endpoints `/internal/**` |
 | `RECOMMENDATION_SEED_ENABLED` | `true` | Seed de preferencias e historial |
+| `RECOMMENDATION_QUEUE` | `recommendation.history` | Cola del consumidor de `orden.pagada` |
 | `CATALOG_URL` | `http://localhost:8081` | Gateway → catalog |
 | `INVENTORY_URL` | `http://localhost:8082` | Gateway → inventory |
 | `ORDERS_URL` | `http://localhost:8083` | Gateway → orders |
+| `RECOMMENDATION_URL` | `http://localhost:8084` | Gateway → recommendation |
+| `NOTIFICATION_URL` | `http://localhost:8085` | Gateway → notification |
 | `CATALOG_FINALIZACION_MS` | `60000` | Frecuencia del job de eventos vencidos |
 | `CATALOG_CANCELACIONES_MS` | `60000` | Frecuencia del reintento de cancelaciones |
 | `INVENTORY_VENCIMIENTO_MS` | `30000` | Frecuencia del job de reservas vencidas |
@@ -142,10 +153,11 @@ Sin headers, el gateway responde 401 en formato RFC 7807. El contrato completo e
 | `inventory-service/` | Reservas y anti doble venta |
 | `orders-service/` | Compra, pago mock, QR, devoluciones |
 | `recommendation-service/` | Preferencias, historial y recomendaciones (MongoDB) |
+| `notification-service/` | Esqueleto de notificaciones (PostgreSQL + RabbitMQ) |
 | `api-gateway/` | Punto de entrada único |
 | `openspec/` | Especificaciones (propuesta → specs → diseño → tareas) |
 | `docs/` | Contrato, plan, checklist, arquitectura y briefs del equipo |
-| `docker-compose.dev.yml` | PostgreSQL 16 por servicio y MongoDB 7 |
+| `docker-compose.dev.yml` | PostgreSQL 16 por servicio, MongoDB 7 y RabbitMQ 3.13 |
 
 ## Tests
 

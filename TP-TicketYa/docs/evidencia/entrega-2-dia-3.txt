@@ -1,0 +1,100 @@
+Día 3 — 15/11/2026 — recommendation-service (P5)
+Tareas: 7.3 (consumidor de orden.pagada) y 7.4 (recomendaciones)
+
+1) Infraestructura
+$ docker compose -f docker-compose.dev.yml up -d recommendation-mongo rabbitmq
+ticketya-recommendation-mongo healthy
+ticketya-rabbitmq healthy
+
+$ curl http://localhost:8084/actuator/health
+{"status":"UP","components":{...,"mongo":{"status":"UP"},"rabbit":{"status":"UP"}}}
+
+2) Suite del servicio
+$ cd recommendation-service
+$ export JAVA_HOME=$(/usr/libexec/java_home -v 21)
+$ mvn -B -ntp test
+[INFO] Tests run: 5, Failures: 0 -- RecommendationMongoIntegrationTest
+[INFO] Tests run: 1, Failures: 0 -- OpenApiExportTest
+[INFO] Tests run: 8, Failures: 0 -- PreferenceControllerTest
+[INFO] Tests run: 3, Failures: 0 -- InternalPreferenceControllerTest
+[INFO] Tests run: 8, Failures: 0 -- PreferenceServiceTest
+[INFO] Tests run: 5, Failures: 0 -- RecommendationServiceTest
+[INFO] Tests run: 6, Failures: 0 -- HistorialServiceTest
+[INFO] Tests run: 4, Failures: 0 -- RecommendationControllerTest
+[INFO] Tests run: 3, Failures: 0 -- CatalogoRestClientTest
+[INFO] Tests run: 1, Failures: 0 -- RecommendationRabbitIntegrationTest
+[INFO] Tests run: 44, Failures: 0, Errors: 0, Skipped: 0
+[INFO] BUILD SUCCESS
+
+3) Consumidor RabbitMQ (7.3)
+- Se publicó orden.pagada en ticketya.events con routing key orden.pagada.
+- Log: "Historial registrado para cliente ... evento ... (eventId ...)".
+- Se reenvió el mismo evento: "Evento ... ya estaba en el historial; no se duplica".
+- Se publicó orden.reintegrada: no se registró.
+- Test: RecommendationRabbitIntegrationTest con Testcontainers mongo:7 + rabbitmq:3.13.
+- La cola recommendation.history tiene DLQ recommendation.history.dlq y default-requeue-rejected=false.
+
+4) Recomendaciones (7.4)
+
+Cliente con historial (Franco), catalog caído -> fallback eventos_vistos:
+$ curl -s http://localhost:8084/api/recommendations \
+    -H "X-User-Id: 33333333-3333-4333-8333-333333333333" -H "X-User-Role: CLIENT"
+{
+  "clienteId": "33333333-3333-4333-8333-333333333333",
+  "generadoEn": "2026-11-15T13:26:54Z",
+  "recomendaciones": [{
+    "eventoId": "d0000000-0000-4000-8000-000000000002",
+    "nombre": "El Avaro — Teatro Universitario",
+    "tipo": "TEATRO",
+    "artistas": ["Compañía Teatral Tandil"],
+    "ciudad": "Tandil",
+    "fechaEvento": "2027-04-18T23:30:00Z",
+    "altaDemanda": false,
+    "puntaje": 6,
+    "motivos": [
+      "En tu ciudad: Tandil",
+      "Popular: 2 compra(s) registrada(s)",
+      "Quienes compraron tus eventos también compraron este"
+    ]
+  }]
+}
+
+Cliente nuevo (sin preferencias ni historial):
+[('001', 'Festival de Rock Tandil 2027', 2, ['Popular: 2 compra(s) registrada(s)']),
+ ('002', 'El Avaro — Teatro Universitario', 2, ['Popular: 2 compra(s) registrada(s)']),
+ ('003', 'Arquitectura Web 2027 — Charla abierta', 1, ['Popular: 1 compra(s) registrada(s)'])]
+
+Sin identidad -> 401 UNAUTHORIZED.
+Rol ORGANIZER -> 403 FORBIDDEN.
+Sin candidatos -> 200 con recomendaciones: [].
+
+5) Ranking aplicado
+
+- +3 tipo favorito, +4 artista favorito, +2 ciudad.
+- Popularidad: hasta +5 por compras registradas.
+- Co-compra: hasta +6; se buscan los clientes que compraron los eventos del cliente y luego sus otros eventos.
+- Se excluyen comprados, cancelados/finalizados y fechas pasadas.
+- Fallback: snapshot eventos_vistos cuando catalog no responde; timeout 2s/3s y dos intentos para errores transitorios.
+
+6) OpenAPI y OpenSpec
+$ python3 -c "import json;d=json.load(open('openapi/recommendation-openapi.json'));print(list(d['paths']))"
+['/api/recommendations/preferences', '/internal/preferences/{clienteId}', '/api/recommendations']
+
+$ openspec validate entrega-2-completo --strict
+Change 'entrega-2-completo' is valid
+
+7) Verificación cruzada del avance de P1 en el mismo PR
+
+$ cd catalog-service && mvn -B -ntp test
+[INFO] Tests run: 94, Failures: 0, Errors: 0, Skipped: 0
+[INFO] BUILD SUCCESS
+
+$ cd notification-service && mvn -B -ntp test
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0
+[INFO] BUILD SUCCESS
+- NotificationServiceApplicationTests valida /actuator/health con Testcontainers PostgreSQL 16
+  y RabbitMQ 3.13: status UP, db UP, rabbit UP.
+- Con esta verificación se marca 1.8 como hecha (el commit original la dejó pendiente por no
+  tener Docker en el entorno de P1).
+
+Pendiente: 7.5 (GET /api/recommendations/events/{eventId}/similar), 2.7 (JWT) y la ruta del gateway.

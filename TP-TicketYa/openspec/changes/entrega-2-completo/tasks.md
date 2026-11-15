@@ -11,7 +11,7 @@
 - [ ] 1.5 (P4) Definir el sobre de eventos (`eventId`, `type`, `occurredAt`, `correlationId`, `version`, `payload`), las routing keys y las colas/DLQ de RabbitMQ en `docs/eventos.md`; verificar con un mensaje de ejemplo y la revisión de los consumidores.
 - [ ] 1.6 (P2) Crear `queue-service` como proyecto Maven independiente con Spring Boot 3.5, Java 21, Actuator, springdoc, Redis y Dockerfile; verificar `mvn -q -DskipTests package`, `/actuator/health` y la conexión a Redis.
 - [x] 1.7 (P5) Crear `recommendation-service` como proyecto Maven independiente con Spring Boot 3.5, Java 21, Actuator, springdoc, Spring Data MongoDB y Dockerfile; verificar build, health y conexión a MongoDB. _Hecho el Día 2: `mvn test` verde, `/actuator/health` UP con MongoDB y OpenAPI exportado._
-- [ ] 1.8 (P1) Crear `notification-service` como proyecto Maven independiente con Spring Boot 3.5, Java 21, Actuator, springdoc, Spring AMQP, PostgreSQL y Dockerfile; verificar build, health y conexión a la base y al broker. _(Esqueleto y `mvn package` OK. Health/Testcontainers pendientes: no hay Docker en el entorno local.)_
+- [x] 1.8 (P1) Crear `notification-service` como proyecto Maven independiente con Spring Boot 3.5, Java 21, Actuator, springdoc, Spring AMQP, PostgreSQL y Dockerfile; verificar build, health y conexión a la base y al broker. _Hecho: `mvn test` verde el Día 3 con Testcontainers PostgreSQL/RabbitMQ; el health reporta `db` y `rabbit` UP._
 
 ## 2. Seguridad JWT y autorización
 
@@ -63,8 +63,8 @@
 
 - [x] 7.1 (P5) Configurar MongoDB, colecciones `preferencias`, `historial_compras` y `eventos_vistos`, índices y datos de prueba; verificar que los índices existan y que un cliente tenga como máximo un documento de preferencias. _Hecho el Día 2: índices creados por `MongoIndexInitializer`, seed idempotente y test de Testcontainers verde; evidencia en `docs/evidencia/entrega-2-dia-2.txt`._
 - [x] 7.2 (P5) Implementar `PUT`/`GET /api/recommendations/preferences` con validación de tipos, artistas y ciudad, upsert idempotente y acceso solo al propio cliente; verificar 200, 400, 403 y actualización sin duplicados. _Hecho el Día 2: 200/400/401/403 probados con MockMvc y curl, y upsert sin duplicados contra MongoDB real._
-- [ ] 7.3 (P5) Consumir `orden.pagada` y registrar el historial de forma idempotente por `eventId`; verificar que un evento duplicado no duplique el historial y que una compra reintegrada no se registre.
-- [ ] 7.4 (P5) Implementar recomendaciones por preferencias y co-compra, con motivos, exclusión de eventos no elegibles, fallback de populares y resiliencia ante catalog; verificar cliente con historial, cliente nuevo, sin candidatos y catalog caído.
+- [x] 7.3 (P5) Consumir `orden.pagada` y registrar el historial de forma idempotente por `eventId`; verificar que un evento duplicado no duplique el historial y que una compra reintegrada no se registre. _Hecho el Día 3: listener RabbitMQ, upsert con índice único y test de Testcontainers con duplicado y reintegro._
+- [x] 7.4 (P5) Implementar recomendaciones por preferencias y co-compra, con motivos, exclusión de eventos no elegibles, fallback de populares y resiliencia ante catalog; verificar cliente con historial, cliente nuevo, sin candidatos y catalog caído. _Hecho el Día 3: ranking explicable, co-compra en dos consultas, fallback a `eventos_vistos` y tests unitarios/HTTP._
 - [ ] 7.5 (P5) Implementar `GET /api/recommendations/events/{eventId}/similar` y actualizar OpenAPI, README y contrato; verificar resultados ordenados por frecuencia y lista vacía cuando no hay datos.
 
 ## 8. notification-service: eventos, reintentos y consulta

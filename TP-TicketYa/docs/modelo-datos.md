@@ -320,15 +320,20 @@ tipo, artista y ciudad sin migraciones rígidas.
 - Un `clienteId` tiene como máximo un documento en `preferencias`; el índice único lo garantiza.
 - El historial no duplica una compra: la clave `(eventId, clienteId, eventoId)` es única.
 - `eventos_vistos._id` es el `eventoId` del catálogo.
+- El historial se alimenta con `orden.pagada` mediante un upsert con `$setOnInsert`; un
+  duplicado del mismo `eventId` no cambia el documento y `orden.reintegrada` no se registra.
 - El servicio solo lee y escribe su propia base; los datos de eventos llegan por eventos de
-  dominio y los candidatos publicados se consultan a catalog en las tareas 7.4–7.5.
+  dominio y los candidatos publicados se consultan a catalog en la tarea 7.4.
 
 ### Validación contra el código
 
 - `MongoIndexInitializer` crea los índices de la tabla anterior.
-- `RecommendationMongoIntegrationTest` (Testcontainers `mongo:7`) verifica índices, seed
-  idempotente y un solo documento de preferencias por cliente.
-- `PreferenceServiceTest` y `PreferenceControllerTest` cubren validación, ownership y upsert.
+- `RecommendationMongoIntegrationTest` (Testcontainers `mongo:7`) verifica índices, seed,
+  preferencias y el registro idempotente del historial.
+- `RecommendationRabbitIntegrationTest` (Testcontainers `mongo:7` + `rabbitmq:3.13`) verifica
+  que `orden.pagada` se consuma una sola vez y que un reintegro no entre al historial.
+- `PreferenceServiceTest`, `RecommendationServiceTest`, `HistorialServiceTest` y los tests de
+  controllers cubren validación, ranking, fallback y ownership.
 
 ## 5. Entidades solapadas entre bases
 

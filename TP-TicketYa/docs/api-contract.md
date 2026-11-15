@@ -124,6 +124,7 @@ Parámetros: `page` (desde 0, default 0), `size` (default 20, máximo 100). Un `
 | POST | `/api/orders/returns/{devolucionId}/reject` | ADMIN | 200 | orders |
 | GET | `/api/recommendations/preferences` | CLIENT | 200 | recommendation |
 | PUT | `/api/recommendations/preferences` | CLIENT | 200 | recommendation |
+| GET | `/api/recommendations` | CLIENT | 200 | recommendation |
 
 “Autenticado” significa `CLIENT`, `ORGANIZER` o `ADMIN`; el dueño del recurso se valida dentro del servicio.
 Los endpoints `/internal/**` no se listan porque no se exponen por el gateway.
@@ -807,6 +808,66 @@ Lo consume notification-service para decidir si avisa por artista favorito. Resp
 curl http://localhost:8084/internal/preferences/33333333-3333-4333-8333-333333333333 \
   -H "X-Internal-Token: ticketya-internal-dev"
 ```
+
+### 6.4 Recomendaciones — `GET /api/recommendations` (CLIENT)
+
+Devuelve eventos publicados y futuros ordenados por afinidad. Excluye lo ya comprado, lo cancelado y lo pasado. Cada ítem incluye los motivos y el puntaje usado para ordenar.
+
+```json
+{
+  "clienteId": "33333333-3333-4333-8333-333333333333",
+  "generadoEn": "2026-11-15T13:26:54Z",
+  "recomendaciones": [
+    {
+      "eventoId": "d0000000-0000-4000-8000-000000000002",
+      "nombre": "El Avaro — Teatro Universitario",
+      "tipo": "TEATRO",
+      "artistas": ["Compañía Teatral Tandil"],
+      "ciudad": "Tandil",
+      "fechaEvento": "2027-04-18T23:30:00Z",
+      "altaDemanda": false,
+      "puntaje": 6,
+      "motivos": [
+        "En tu ciudad: Tandil",
+        "Popular: 2 compra(s) registrada(s)",
+        "Quienes compraron tus eventos también compraron este"
+      ]
+    }
+  ]
+}
+```
+
+- Cliente sin preferencias ni historial: recibe los populares de su ciudad o los generales si no declaró ciudad.
+- Sin candidatos: `200` con `recomendaciones: []`.
+- Catalog caído o sin el endpoint interno de 3.5: se usa el snapshot `eventos_vistos` y se registra la degradación.
+- `401` sin identidad y `403` para roles distintos de `CLIENT`.
+
+### 6.5 Evento consumido — `orden.pagada`
+
+recommendation-service consume el sobre de la tarea 1.5 desde `ticketya.events` con routing key `orden.pagada`:
+
+```json
+{
+  "eventId": "e0000000-0000-4000-8000-000000000001",
+  "type": "orden.pagada",
+  "occurredAt": "2026-11-15T12:00:00Z",
+  "correlationId": "5d1f...",
+  "version": 1,
+  "payload": {
+    "ordenId": "f0000000-0000-4000-8000-000000000001",
+    "clienteId": "33333333-3333-4333-8333-333333333333",
+    "eventoId": "d0000000-0000-4000-8000-000000000001",
+    "eventoNombre": "Festival de Rock Tandil 2027",
+    "eventoTipo": "FESTIVAL",
+    "artistas": ["Los Piojos", "Callejeros"],
+    "ciudad": "Tandil",
+    "fechaEvento": "2027-03-15T00:00:00Z",
+    "estado": "PAGADA"
+  }
+}
+```
+
+El historial es idempotente por `(eventId, clienteId, eventoId)`. Un evento duplicado no se registra dos veces; `orden.reintegrada` y los estados distintos de `PAGADA` no entran al historial. La cola `recommendation.history` tiene DLQ `recommendation.history.dlq`.
 
 ## 7. Flujo de compra de punta a punta
 
