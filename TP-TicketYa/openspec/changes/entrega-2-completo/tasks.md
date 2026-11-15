@@ -11,7 +11,7 @@
 - [ ] 1.5 (P4) Definir el sobre de eventos (`eventId`, `type`, `occurredAt`, `correlationId`, `version`, `payload`), las routing keys y las colas/DLQ de RabbitMQ en `docs/eventos.md`; verificar con un mensaje de ejemplo y la revisión de los consumidores.
 - [ ] 1.6 (P2) Crear `queue-service` como proyecto Maven independiente con Spring Boot 3.5, Java 21, Actuator, springdoc, Redis y Dockerfile; verificar `mvn -q -DskipTests package`, `/actuator/health` y la conexión a Redis.
 - [x] 1.7 (P5) Crear `recommendation-service` como proyecto Maven independiente con Spring Boot 3.5, Java 21, Actuator, springdoc, Spring Data MongoDB y Dockerfile; verificar build, health y conexión a MongoDB. _Hecho el Día 2: `mvn test` verde, `/actuator/health` UP con MongoDB y OpenAPI exportado._
-- [ ] 1.8 (P1) Crear `notification-service` como proyecto Maven independiente con Spring Boot 3.5, Java 21, Actuator, springdoc, Spring AMQP, PostgreSQL y Dockerfile; verificar build, health y conexión a la base y al broker.
+- [ ] 1.8 (P1) Crear `notification-service` como proyecto Maven independiente con Spring Boot 3.5, Java 21, Actuator, springdoc, Spring AMQP, PostgreSQL y Dockerfile; verificar build, health y conexión a la base y al broker. _(Esqueleto y `mvn package` OK. Health/Testcontainers pendientes: no hay Docker en el entorno local.)_
 
 ## 2. Seguridad JWT y autorización
 
@@ -26,7 +26,7 @@
 
 ## 3. catalog-service: alta demanda, edición, outbox y cache
 
-- [ ] 3.1 (P1) Migración Flyway nueva para `evento.alta_demanda`, límite por cliente configurable y edición de evento publicado; implementar `PUT /api/catalog/events/{id}` con validaciones de dueño, fecha y estado. Verificar tests de edición válida, 403, 409 y 400, y que el snapshot de inventario se actualice.
+- [x] 3.1 (P1) Migración Flyway nueva para `evento.alta_demanda`, límite por cliente configurable y edición de evento publicado; implementar `PUT /api/catalog/events/{id}` con validaciones de dueño, fecha y estado. Verificar tests de edición válida, 403, 409 y 400, y que el snapshot de inventario se actualice. _(Hecho el Día 1: migración V5, edición parcial, snapshot versionado y tests verdes. Cambio de lugar publicado queda 409 hasta que inventory soporte reemplazo de sectores/asientos; reducción de límite con ventas queda pendiente de contrato con orders/inventory.)_
 - [ ] 3.2 (P1) Crear `outbox_event` y el publicador de eventos de catálogo (`evento.publicado`, `evento.actualizado`, `evento.cancelado`) con reintentos e idempotencia; verificar que el evento se escriba en la misma transacción y que un fallo de RabbitMQ no pierda el cambio.
 - [ ] 3.3 (P1) Configurar Redis Cache en catalog-service para lugares, detalle estático y búsqueda, con TTL configurables, claves por parámetros, `sync=true` y cabecera `X-Cache`; verificar hit, miss, expiración y que la disponibilidad y los asientos nunca se cacheen.
 - [ ] 3.4 (P1) Invalidar cache al publicar, editar, cancelar o cambiar precios; verificar que el detalle y las búsquedas afectadas se recalculen y que un Redis caído degrade a la base sin romper la consulta.

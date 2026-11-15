@@ -210,7 +210,8 @@ Errores: `400 VALIDATION_ERROR` (capacidad ≤ 0, sector numerado sin filas, cap
   "lugarId": "5c9b1f3e-2a4d-4f5e-9a8b-1c2d3e4f5a6b",
   "fecha": "2027-01-15T21:00:00-03:00",
   "participantes": ["Artista A", "Artista B"],
-  "limitePorCliente": 4
+  "limitePorCliente": 4,
+  "altaDemanda": true
 }
 ```
 
@@ -227,12 +228,40 @@ Errores: `400 VALIDATION_ERROR` (capacidad ≤ 0, sector numerado sin filas, cap
   "fecha": "2027-01-15T21:00:00-03:00",
   "estado": "BORRADOR",
   "limitePorCliente": 4,
+  "altaDemanda": true,
   "participantes": ["Artista A", "Artista B"],
   "precios": []
 }
 ```
 
 Errores: `400 VALIDATION_ERROR` (fecha pasada, tipo inválido, límite ≤ 0, participantes vacío), `403`, `404 VENUE_NOT_FOUND`.
+
+### 3.6.1 Editar evento — `PUT /api/catalog/events/{eventoId}` (ORGANIZER)
+
+Edición parcial: solo se actualizan los campos enviados. Se puede usar en `BORRADOR`, `PUBLICADO` y `AGOTADO`; un evento `CANCELADO` o `FINALIZADO` responde `409`.
+
+```json
+{
+  "nombre": "Festival de Verano 2027",
+  "descripcion": "Nueva descripción",
+  "tipo": "FESTIVAL",
+  "fecha": "2027-06-01T21:00:00-03:00",
+  "participantes": ["Artista A", "Artista C"],
+  "limitePorCliente": 6
+}
+```
+
+**200** con `EventResponse`. Si el evento está `PUBLICADO` o `AGOTADO`, catalog envía el snapshot completo a inventory con `version` incrementada y el nuevo `altaDemanda`.
+
+Reglas:
+
+- `altaDemanda` solo se puede cambiar mientras el evento está en `BORRADOR`; después responde `409`.
+- `fecha` debe ser futura.
+- `limitePorCliente` debe ser mayor a cero.
+- `participantes`, si viene, reemplaza la lista completa y no puede quedar vacío.
+- El lugar solo se puede cambiar en `BORRADOR`. En eventos publicados/agotados responde `409` hasta que inventory soporte reemplazar sus sectores y asientos.
+
+Errores: `400 VALIDATION_ERROR` (fecha pasada, límite ≤ 0, participantes vacío, nombre vacío), `401 UNAUTHORIZED`, `403 NOT_EVENT_OWNER`, `404 EVENT_NOT_FOUND`/`VENUE_NOT_FOUND`, `409 EVENT_NOT_EDITABLE` (evento terminal, cambio de alta demanda o de lugar publicado), `409 EVENT_INCOMPLETE`, `502 INVENTORY_UNAVAILABLE`.
 
 ### 3.7 Asignar precio — `PUT /api/catalog/events/{eventoId}/prices/{sectorId}` (ORGANIZER)
 
@@ -300,6 +329,7 @@ Solo devuelve eventos en `PUBLICADO` o `AGOTADO`. Los caracteres `%`, `_` y `\` 
       "lugarNombre": "Estadio Municipal",
       "fecha": "2027-01-15T21:00:00-03:00",
       "estado": "PUBLICADO",
+      "altaDemanda": true,
       "precioDesde": 8000.00
     }
   ],
@@ -329,6 +359,7 @@ Errores: `400 INVALID_DATE_RANGE` (`fechaDesde` posterior a `fechaHasta`), `400 
   "fecha": "2027-01-15T21:00:00-03:00",
   "estado": "PUBLICADO",
   "limitePorCliente": 4,
+  "altaDemanda": true,
   "participantes": ["Artista A", "Artista B"],
   "sectores": [
     {
@@ -488,8 +519,9 @@ Errores: `400 VALIDATION_ERROR`, `400 SECTOR_MISMATCH` (el asiento no pertenece 
   "eventoId": "1f2e3d4c-5b6a-4978-8a9b-0c1d2e3f4a5b",
   "nombre": "Festival de Verano",
   "fecha": "2027-01-15T21:00:00-03:00",
+  "altaDemanda": true,
   "limitePorCliente": 4,
-  "version": 1,
+  "version": 2,
   "sectores": [
     {
       "sectorId": "9a1b...",
@@ -512,7 +544,7 @@ Errores: `400 VALIDATION_ERROR`, `400 SECTOR_MISMATCH` (el asiento no pertenece 
 { "eventoId": "1f2e...", "sectores": 1, "asientos": 200, "idempotente": true }
 ```
 
-Idempotente por `eventoId` + `version`: reintentar no duplica filas ni reinicia disponibilidad ya vendida.
+Idempotente por `eventoId` + `version`: reintentar no duplica filas ni reinicia disponibilidad ya vendida. Catalog incrementa `version` en cada publicación o edición de un evento publicado; `altaDemanda` es opcional para inventory hasta la tarea 5.1 (las versiones actuales ignoran campos desconocidos).
 
 ### 4.6.1 Interno — cambiar estado del evento
 
