@@ -1,0 +1,2 @@
+-- Migración inicial de notification-service.
+-- La tabla notificacion y sus índices se agregan en la tarea 8.1.
