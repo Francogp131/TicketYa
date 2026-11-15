@@ -21,11 +21,12 @@
 | [`equipo/entrega-2/`](equipo/entrega-2/README.md) | Briefs por integrante para la Entrega 2 | P5 | Día 0 | Listo |
 | [`features-y-user-stories.md`](features-y-user-stories.md) | Features y US-01 a US-38 con criterios de aceptación | P1/P2/P3 | Día 0 | Listo |
 | [`api-contract.md`](api-contract.md) | Contrato REST: método, ruta, parámetros, códigos y ejemplos JSON | P1/P2/P3 | Día 0 | Listo (1.3) |
+| [`eventos.md`](eventos.md) | Sobre de eventos, routing keys, colas/DLQ y payloads | P4/P5 | Día 1 y 3 | Borrador para 1.5; consumidor de 7.3 alineado |
 | [`arquitectura.md`](arquitectura.md) | Diagrama de módulos, secuencia de compra (aprobado/rechazado/vencido), límites de servicio y consistencia | P4/P5 | Día 3 a 9 | Listo; deuda conocida documentada |
 | [`modelo-datos.md`](modelo-datos.md) | ER por microservicio, claves, relaciones y entidades solapadas | P1/P2/P3/P5 | Día 5 | Listo (5.5) |
-| [`decisiones.md`](decisiones.md) | ADR cortas: decisión, alternativas y consecuencias | P4/P5 | Día 5 a 9 | Listo (ADR-001 a ADR-013) |
-| [`pruebas.md`](pruebas.md) | Estrategia, comandos y evidencia de concurrencia, suite y E2E | P5 | Día 5 a 9 | En revisión; se actualiza con los fixes |
-| [`evidencia/`](evidencia/) | Salidas de suite, E2E y clone limpio de los Días 4 a 9 | P5 | Día 4 a 9 | Listo hasta el Día 8; se agrega evidencia del Día 9 |
+| [`decisiones.md`](decisiones.md) | ADR cortas: decisión, alternativas y consecuencias | P4/P5 | Día 5 a 9 | Listo (ADR-001 a ADR-018) |
+| [`pruebas.md`](pruebas.md) | Estrategia, comandos y evidencia de concurrencia, suite, E2E, multi-instancia y carga | P5 | Día 5 a 9 | En revisión; incluye plan multi-instancia y estrategia de carga temprana |
+| [`evidencia/`](evidencia/) | Salidas de suite, E2E y clone limpio de los Días 4 a 9 | P5 | Día 4 a 9 | Listo hasta el Día 9; se agregan días 2 y 3 de la Entrega 2 |
 | `../openspec/changes/entrega-1-core/` | Propuesta, specs, diseño y tareas del cambio | Todos | Día 0 | Listo |
 | `../openspec/changes/entrega-2-completo/` | Propuesta, 15 specs, diseño y 64 tareas de la Entrega 2 | Todos | Día 0 | Listo (validado) |
 | `../catalog-service/README.md` | Responsabilidad, endpoints, modelo y comandos del servicio | P1 | Día 1 a 4 | Día 4 |

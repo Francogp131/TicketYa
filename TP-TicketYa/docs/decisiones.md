@@ -1,9 +1,15 @@
-# Decisiones de arquitectura (ADR) — Entrega 1
+# Decisiones de arquitectura (ADR) — Entregas 1 y 2
 
-Registro corto de las decisiones que sostienen la Entrega 1. Cada ADR indica la decisión,
-las alternativas que se descartaron y las consecuencias que aceptamos. El desarrollo técnico
-completo está en [`../openspec/changes/entrega-1-core/design.md`](../openspec/changes/entrega-1-core/design.md)
-y los diagramas en [`arquitectura.md`](arquitectura.md).
+Registro corto de las decisiones que sostienen la Entrega 1 y la Entrega 2. Cada ADR indica
+la decisión, las alternativas que se descartaron y las consecuencias que aceptamos. El
+desarrollo técnico completo está en
+[`../openspec/changes/entrega-1-core/design.md`](../openspec/changes/entrega-1-core/design.md)
+y [`../openspec/changes/entrega-2-completo/design.md`](../openspec/changes/entrega-2-completo/design.md);
+los diagramas en [`arquitectura.md`](arquitectura.md).
+
+Las ADR-001 a ADR-013 son de la Entrega 1. Las ADR-014 a ADR-018 documentan las decisiones
+transversales de la Entrega 2: patrones del enunciado, gateway reactivo, payload de
+`orden.pagada` y sobre de eventos.
 
 ## ADR-001 — Microservicios por dominio con base propia
 
@@ -96,3 +102,85 @@ y los diagramas en [`arquitectura.md`](arquitectura.md).
 - **Consecuencias:** el flujo feliz y los rechazos están cubiertos; los fallos extremos
   requieren un test de integración y seguimiento. No se debe declarar la consistencia como
   total hasta implementar la saga.
+
+## ADR-014 — No se implementa un BFF
+
+- **Contexto:** el enunciado menciona el patrón BFF y la Entrega 2 suma una UI web opcional.
+- **Decisión:** no se crea un servicio BFF. `api-gateway` sigue siendo el punto único de
+  entrada, valida JWT y aplica la matriz de roles; la UI consume los endpoints públicos. Si
+  una pantalla necesita agregar datos, se resuelve con una llamada adicional o con un
+  `GatewayFilter` de composición, no con un despliegue nuevo.
+- **Alternativas:** BFF dedicado para la UI (duplica ruteo, seguridad y despliegue); GraphQL
+  (fuera de alcance y sin equipo familiarizado); que la UI llame directo a cada servicio
+  (rompe el punto único de entrada).
+- **Consecuencias:** menos servicios que mantener y un solo lugar de autorización. La UI
+  puede requerir más de una llamada por pantalla. Si en el futuro hay varios clientes con
+  necesidades muy distintas, la decisión se revisa con una ADR nueva.
+
+## ADR-015 — No se usa Service Discovery
+
+- **Contexto:** los servicios se ejecutan con Docker Compose y el gateway conoce sus URLs por
+  variables de entorno. El enunciado menciona Service Discovery.
+- **Decisión:** no se agrega Eureka, Consul ni un registro propio. El DNS de Compose resuelve
+  los nombres (`catalog-service`, `inventory-service`, etc.) y el gateway rutea con las URLs
+  configuradas en `application.yml`/`.env`. No hay escalado dinámico en el alcance.
+- **Alternativas:** Eureka/Consul (infraestructura y configuración extra para un entorno
+  fijo); Spring Cloud LoadBalancer con lista estática (solo si se escala inventory);
+  Kubernetes (fuera de alcance).
+- **Consecuencias:** menos componentes y arranque reproducible. Para correr dos réplicas de
+  un servicio hace falta un load balancer o un cliente que reparta; no se promete escalado
+  transparente. Si se despliega en Kubernetes, el descubrimiento lo provee la plataforma.
+
+## ADR-016 — El gateway WebFlux no bloquea el event loop al leer `auth_db`
+
+- **Contexto:** `api-gateway` usa `spring-cloud-starter-gateway`, que es WebFlux, y la tarea
+  2.1 le agrega login contra `auth_db`. Una consulta JDBC/JPA sin aislar bloquea el event loop.
+- **Decisión:** no se agrega JPA al gateway. La opción preferida es **R2DBC** para la tabla
+  `usuario` (`spring-boot-starter-data-r2dbc` + driver `r2dbc-postgresql`), manteniendo Flyway
+  con JDBC solo en el arranque para migrar `auth_db`. Si el equipo prioriza minimizar
+  dependencias, se permite `JdbcTemplate` dentro de
+  `Mono.fromCallable(...).subscribeOn(Schedulers.boundedElastic())`, **solo en el login**.
+  La validación del JWT es stateless y no consulta la base en cada request.
+- **Alternativas:** gateway MVC + JPA (migración grande y el filtro actual ya es reactivo);
+  JDBC bloqueante en el event loop (rechazado); un `auth-service` separado (suma un
+  despliegue y una base para una tabla pequeña).
+- **Consecuencias:** el camino reactivo queda sin bloqueos. R2DBC suma un driver y un
+  repositorio reactivo; la variante `boundedElastic` exige disciplina para no repetirla en
+  otros flujos. Flyway sigue usando JDBC en el arranque, lo cual es aceptable porque no corre
+  en el event loop.
+
+## ADR-017 — `orden.pagada` lleva el snapshot del evento
+
+- **Contexto:** recommendation-service necesita `eventoTipo`, `artistas` y `ciudad` para el
+  historial. `orders` solo guarda `eventoNombre` y `eventoFecha`, e `inventory` devuelve solo
+  nombre y fecha en la reserva. Si el evento se publica con lo que hay hoy, el historial queda
+  incompleto.
+- **Decisión:** orders guarda el snapshot completo al crear la orden. catalog incluye
+  `tipo`, `artistas` y `ciudad` en el snapshot de publicación hacia inventory; inventory los
+  persiste y los devuelve en la reserva; orders los guarda en `orden` (migración 6.1:
+  `evento_tipo`, `evento_artistas`, `evento_ciudad`) y los publica en `orden.pagada`. Si el
+  equipo no extiende el snapshot de inventory, orders consulta el endpoint interno de catalog
+  (3.5) al crear la orden y guarda el mismo snapshot; no se acepta que recommendation los
+  busque después.
+- **Alternativas:** que recommendation enriquezca el historial consultando catalog al
+  consumir (si catalog está caído, el historial queda pobre); publicar solo IDs y enriquecer
+  en la UI (peor); pedirle los datos al cliente (no confiable).
+- **Consecuencias:** el evento es autosuficiente y el historial refleja el evento al momento
+  de la compra. La migración 6.1 y el snapshot catalog→inventory→orders deben coordinarse
+  entre P1, P2 y P3; Caro valida el contrato.
+
+## ADR-018 — Sobre de eventos versionado y contrato compartido
+
+- **Contexto:** la tarea 1.5 no estaba congelada y recommendation ya implementó un consumidor.
+  Sin un contrato único, cada productor puede publicar un JSON distinto.
+- **Decisión:** [`eventos.md`](eventos.md) define el sobre
+  (`eventId`, `type`, `occurredAt`, `correlationId`, `version`, `payload`), las routing keys,
+  las colas/DLQ y los payloads de `orden.pagada`, `orden.reintegrada`, `evento.*`,
+  `devolucion.aprobada` y `entrada.utilizada`. El fixture
+  [`ejemplos/orden-pagada.json`](ejemplos/orden-pagada.json) se comparte con un test de
+  contrato. Los cambios son aditivos; un cambio incompatible requiere `type` o `version`
+  nueva. La entrega es al menos una vez y los consumidores deduplican por `eventId`.
+- **Alternativas:** JSON distinto por servicio (deriva inevitable); Avro/Protobuf y un
+  registry (sobredimensionado para el TP); no versionar (rompe consumidores en silencio).
+- **Consecuencias:** P4 congela 1.5; P1/P3 implementan productores contra el mismo documento;
+  P5 mantiene el test del fixture. Los errores van a DLQ y no se reencolan infinitamente.

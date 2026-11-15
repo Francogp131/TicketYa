@@ -30,6 +30,9 @@ Restricciones que condicionan el diseño:
 - Recomendaciones con machine learning; se usa un ranking explicable por reglas y co-compra.
 - Alta disponibilidad, Kubernetes, multi-región y despliegue en nube.
 - Event sourcing completo o transacciones distribuidas 2PC.
+- BFF dedicado y Service Discovery (Eureka/Consul); se justifican como no-goals en
+  [`docs/decisiones.md`](../../../docs/decisiones.md) (ADR-014 y ADR-015). El gateway y el
+  DNS de Compose cubren el alcance.
 
 ## Decisions
 
@@ -53,7 +56,7 @@ Regla: ningún servicio lee ni escribe las tablas o colecciones de otro. Los cru
 
 ### 2. Seguridad: JWT en el gateway y roles en los servicios
 
-- `api-gateway` incorpora Spring Security WebFlux y JJWT. `POST /api/auth/login` valida email y contraseña BCrypt contra la tabla `usuario` de `auth_db` (misma base del gateway) y emite un JWT HS256 con `sub`, `role`, `email`, `exp` (8 h) y `jti`.
+- `api-gateway` incorpora Spring Security WebFlux y JJWT. `POST /api/auth/login` valida email y contraseña BCrypt contra la tabla `usuario` de `auth_db` (misma base del gateway) y emite un JWT HS256 con `sub`, `role`, `email`, `exp` (8 h) y `jti`. El acceso a `auth_db` no bloquea el event loop: R2DBC (opción preferida) o `JdbcTemplate` dentro de `boundedElastic` solo en el login; ver ADR-016. No se agrega JPA al gateway y el JWT se valida en memoria, sin consultar la base por request.
 - El filtro de seguridad valida la firma y la expiración, aplica una matriz de rutas por método y rol, elimina cualquier `X-User-*` enviado por el cliente y propaga `X-User-Id`, `X-User-Role`, `X-User-Email` y `X-Correlation-Id`.
 - Los roles son `CLIENT`, `ORGANIZER`, `ADMIN` y `ACCESS_STAFF`. La matriz es *default deny*: una ruta nueva sin regla no es accesible hasta declararla.
 - Los servicios confían en los encabezados del gateway, pero igualmente exigen identidad en endpoints protegidos y aplican la regla de negocio (por ejemplo, dueño de la orden). Los endpoints `/internal/**` exigen `X-Internal-Token`; el gateway borra ese encabezado del tráfico externo.
@@ -109,6 +112,7 @@ El historial se alimenta con `orden.pagada`; el consumo es idempotente por `even
 
 - Exchange `ticketya.events` de tipo topic. Routing keys: `evento.publicado`, `evento.actualizado`, `evento.cancelado`, `orden.pagada`, `orden.reintegrada`, `devolucion.aprobada`, `entrada.utilizada`.
 - Colas: `notification.order`, `notification.event`, `notification.favorite`, `recommendation.history`; cada una con DLX/DLQ (`*.dlq`) y reintentos con backoff.
+- El sobre versionado, los payloads y el fixture compartido están en [`docs/eventos.md`](../../../docs/eventos.md) (ADR-018).
 - `notification-service` persiste `notificacion` (`id`, `destinatario`, `email`, `tipo`, `payload`, `estado`, `intentos`, `next_retry_at`, `created_at`, `sent_at`, `error`) en `notification_db`.
 - El envío se hace detrás de una interfaz `NotificationSender` con implementación mock que loguea email/push y marca `ENVIADA`. Si falla, se reintenta hasta 5 veces con backoff; luego `FALLIDA` y a la DLQ.
 - La confirmación de compra consume `orden.pagada`; la cancelación y el cambio consumen eventos de catálogo; el artista favorito consume `evento.publicado` y consulta preferencias a recommendation-service por `/internal/**` con timeout y fallback a no notificar.
@@ -123,6 +127,7 @@ El historial se alimenta con `orden.pagada`; el consumo es idempotente por `even
 - Si falla un paso posterior al pago, se ejecuta la compensación en orden inverso: reintegro, liberación de inventario, orden `ERROR_PAGO`/`REINTEGRO_PENDIENTE`. Nunca se marca `PAGADA` sin entradas válidas.
 - `catalog-service` y `orders-service` escriben un `outbox_event` en la misma transacción del cambio de negocio. Un publicador programado toma los pendientes con `FOR UPDATE SKIP LOCKED`, publica a RabbitMQ y marca `PUBLICADO`; si falla, reintenta con backoff. Esto da al menos una entrega y evita el dual-write.
 - Los consumidores guardan `eventId` procesados en una tabla/colección de idempotencia y aplican el efecto una sola vez. Los eventos llevan `eventId`, `type`, `occurredAt`, `correlationId`, `version` y `payload`.
+- `orden.pagada` lleva el snapshot del evento (`eventoTipo`, `artistas`, `ciudad`, `fechaEvento`) para que recommendation no dependa de catalog al construir el historial; ver ADR-017 y [`docs/eventos.md`](../../../docs/eventos.md).
 - Consistencia: fuerte dentro de cada servicio (transacción local + constraints), eventual entre servicios. La disponibilidad y la orden se leen de su dueño; reportes y recomendaciones toleran retardo acotado. Se documenta en `docs/arquitectura.md`.
 
 **Alternativas consideradas:** 2PC (no disponible entre servicios y sobredimensionado); event sourcing (cambia el modelo y el equipo no llega); coreografía pura (más difícil de depurar la compra); publicar directo a RabbitMQ dentro de la transacción (dual-write y eventos fantasma).
@@ -170,7 +175,7 @@ Migraciones Flyway nuevas (nunca se edita una aplicada):
 
 - `catalog_db`: `evento.alta_demanda`, `evento.updated_at` si falta, `outbox_event`, `audit_log`.
 - `inventory_db`: `evento_inventario.alta_demanda`, `reserva.origen`/`queue_jti`, índices de vencimiento.
-- `orders_db`: `orden.cliente_email`, `orden.evento_organizador_id`, `orden.sector_nombre` (snapshot), `entrada.used_at`, `entrada.used_by`, `saga_compra`, `outbox_event`, `audit_log`, índices de reporte (`entrada(evento_id, sector_id, estado)`, `orden(evento_id, estado)`).
+- `orders_db`: `orden.cliente_email`, `orden.evento_organizador_id`, `orden.sector_nombre` (snapshot), `orden.evento_tipo`, `orden.evento_artistas`, `orden.evento_ciudad` (snapshot para `orden.pagada`), `entrada.used_at`, `entrada.used_by`, `saga_compra`, `outbox_event`, `audit_log`, índices de reporte (`entrada(evento_id, sector_id, estado)`, `orden(evento_id, estado)`).
 - `notification_db`: `notificacion`, `evento_procesado`.
 - `auth_db`: `usuario` (id, email único, password_hash, role, activo).
 - MongoDB: colecciones e índices de la decisión 3.
@@ -205,8 +210,23 @@ Entidades solapadas: evento y organizador se copian como snapshot en orders; cap
 - Errores RFC 7807 con `code` de negocio; nuevos códigos: `QUEUE_REQUIRED`, `QUEUE_TOKEN_INVALID`, `QUEUE_CLOSED`, `ACCESS_DENIED`, `TICKET_ALREADY_USED`, `REPORT_FORBIDDEN`.
 - Los endpoints internos no se publican en el OpenAPI público.
 
+### 15. Patrones del enunciado y decisiones transversales
+
+| Patrón / decisión | Estado | Referencia |
+|---|---|---|
+| API Gateway | Usado: punto único, JWT y roles | Decisión 2, ADR-003 |
+| Circuit Breaker | Usado en clientes salientes con Resilience4j | Decisión 8 |
+| Saga | Usado: compra orquestada con compensaciones | Decisión 7, ADR-007/013 |
+| BFF | No usado: el gateway y la UI cubren el alcance | ADR-014 |
+| Service Discovery | No usado: DNS de Compose y URLs por entorno | ADR-015 |
+| Gateway y `auth_db` | R2DBC o `boundedElastic`; nunca JDBC en el event loop | ADR-016 |
+| Payload de `orden.pagada` | Snapshot del evento al comprar | ADR-017 |
+| Sobre de eventos | Versionado, con fixture y test de contrato | ADR-018, `docs/eventos.md` |
+
 ## Risks / Trade-offs
 
+- **El gateway bloquea el event loop al leer `auth_db`** → se usa R2DBC o `boundedElastic` solo en el login (ADR-016); el JWT no consulta la base por request.
+- **`orden.pagada` sale incompleto de orders** → migración 6.1 con snapshot de tipo/artistas/ciudad y contrato en `docs/eventos.md`; validación de P3/P1/P2 (ADR-017).
 - **JWT rompe el flujo de la Entrega 1** → se implementa primero en el gateway, se actualizan Postman y tests, y los servicios siguen leyendo los mismos headers. Se coordina en un solo PR de contrato.
 - **Redis como almacén primario de la fila** → AOF y healthcheck; si se pierde el estado, la fila se cierra y se documenta la recuperación. No se promete continuidad perfecta.
 - **Tokens de fila reutilizables dentro de 5 min** → el límite por cliente y la no doble venta siguen vigentes; se documenta como simplificación.

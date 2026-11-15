@@ -321,3 +321,76 @@ Swagger UI: <http://localhost:8081/swagger-ui.html>.
 Se agregaron tests de la capa HTTP para altas, listado, devoluciones, entradas y cancelación
 interna. Suite de orders: 61 tests, 0 fallos. Evidencia:
 [`evidencia/dia-9-orders.txt`](evidencia/dia-9-orders.txt).
+
+## 10. No doble venta con múltiples instancias (plan, tarea 5.4/10.1)
+
+La garantía de no doble venta es de la base (ADR-006): `UNIQUE (evento_id, asiento_id)`,
+`CHECK (disponibles >= 0)` y updates condicionales. La prueba de 100 hilos de
+`ConcurrenciaPostgresTest` corre en una sola JVM; para evidencia multi-instancia se agrega esta
+corrida.
+
+**Objetivo:** dos procesos de `inventory-service` contra la misma `inventory_db`, recibiendo
+el mismo asiento en paralelo. Debe haber exactamente un ganador.
+
+**Preparación:**
+
+```bash
+docker compose -f docker-compose.dev.yml up -d inventory-db
+cd inventory-service
+
+# Dos instancias, misma base, puertos distintos
+SERVER_PORT=8082 mvn spring-boot:run &
+SERVER_PORT=8083 mvn spring-boot:run &
+```
+
+**Corrida:** 200 requests concurrentes, alternando `localhost:8082` y `localhost:8083`, con
+clientes distintos para no chocar con el límite por cliente:
+
+```bash
+for i in $(seq 1 200); do
+  PORT=$((8082 + (i % 2)))
+  CLIENTE=$( [ $((i % 2)) -eq 0 ] && echo 33333333-3333-4333-8333-333333333333 \
+                                     || echo 44444444-4444-4444-8444-444444444444 )
+  curl -s -o /dev/null -w "%{http_code}\n" -X POST "http://localhost:$PORT/api/inventory/reservations" \
+    -H "Content-Type: application/json" \
+    -H "X-User-Id: $CLIENTE" -H "X-User-Role: CLIENT" \
+    -d '{"eventoId":"d0000000-0000-4000-8000-000000000001",
+         "items":[{"sectorId":"b0000000-0000-4000-8000-000000000001",
+                   "asientoIds":["c0000000-0000-4000-8000-010101000000"]}]}' &
+done | sort | uniq -c
+wait
+```
+
+**Esperado:** un `201` y el resto `409 SEAT_NOT_AVAILABLE`. Verificar en la base que hay una
+sola reserva vigente para ese asiento. Repetir con una zona `NO_NUMERADO` para el cupo y con
+dos clientes para el límite.
+
+**Nota:** si se quiere pasar por el gateway, el gateway actual rutea a una URL fija; hace
+falta un load balancer o `lb://` + Spring Cloud LoadBalancer. Para la garantía de no doble
+venta no es necesario: dos instancias y la misma base alcanzan.
+
+**Estado:** pendiente de ejecutar; se registra en `docs/evidencia/entrega-2-dia-6.txt` cuando
+esté el compose integral (9.6) o con las dos instancias manuales antes.
+
+## 11. Integración, carga y CI sin esperar el compose integral
+
+La dependencia 10.1/10.3/10.4 → 9.6 es un riesgo de cronograma. Se mitiga así:
+
+1. **10.1 no espera 9.6:** el módulo de integración usa Testcontainers y el
+   `docker-compose.dev.yml`; el primer flujo (login → búsqueda → reserva → compra → QR) se
+   corre con los servicios levantados con Maven y las bases en Docker.
+2. **Walking skeleton del compose (Día 4):** gateway + catalog + inventory + orders + bases,
+   sin observabilidad. P4/P5. El compose integral completo (9.6) sigue siendo el Día 6.
+3. **CI raíz:** `.github/workflows/ci.yml` en la raíz del repo del curso (no dentro de
+   `TP-TicketYa/`). Construye y testea cada servicio existente, valida el compose y el
+   OpenAPI, y corre build/lint/test de `web` cuando exista. Se activa al mergear el PR #8;
+   hasta entonces los PRs no tienen checks. Es la tarea 9.7 de P4.
+4. **Carga temprana:** el plan JMeter se escribe y se corre con 100 usuarios contra el entorno
+   parcial antes del Día 6. Las corridas de 500 y 1000 usuarios se hacen sobre el compose
+   integral (Día 7–8) y se documentan con hardware, throughput, p50/p95/p99 y errores.
+5. **Evidencia separada:** la prueba multi-instancia (§10) y la carga son evidencias
+   independientes; no bloquean la suite de integración ni el cierre de la documentación.
+
+Riesgo residual: si P4 está saturado con JWT (2.1–2.3), el compose de integración y el plan
+de carga se reasignan a P5/P2. El compose integral no debe ser un cuello de botella de una
+sola persona.

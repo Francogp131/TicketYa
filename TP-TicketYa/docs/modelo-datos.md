@@ -285,6 +285,11 @@ erDiagram
 | `devolucion` | `entrada_id` → `entrada` | `estado` en `PENDIENTE`/`PROCESANDO`/`APROBADA`/`RECHAZADA`; índice único parcial `uq_devolucion_abierta`: una sola devolución abierta por entrada |
 | `idempotency_key` | `key` PK | `estado` en `EN_PROCESO`/`COMPLETADA`; `request_hash` detecta cuerpo distinto; `response_status`/`response_body` guardan la respuesta original; `expires_at` para limpieza |
 
+La migración 6.1 agrega a `orden` el snapshot `evento_tipo`, `evento_artistas` y
+`evento_ciudad` (además de los existentes `evento_nombre`/`evento_fecha`) para publicar
+`orden.pagada` completo, según ADR-017 y [`eventos.md`](eventos.md). El origen es el snapshot
+de catalog hacia inventory, que inventory devuelve en la reserva.
+
 Índices: `idx_orden_cliente` (listado propio), `idx_orden_evento` (cancelación de evento), `idx_pago_orden`, `idx_entrada_cliente`, `idx_entrada_evento`, `idx_devolucion_estado` e `idx_idempotency_expira`.
 
 ### Entidades solapadas con otras bases
@@ -343,6 +348,7 @@ tipo, artista y ciudad sin migraciones rígidas.
 | `sector.id` | catalog | `sector_inventario.sector_id`, `orden_item.sector_id`, `entrada.sector_id` | Disponibilidad y snapshot de compra |
 | `asiento.id` | catalog | `asiento_inventario.asiento_id`, `orden_item.asiento_id`, `entrada.asiento_id` | No doble venta y QR por lugar |
 | `evento.nombre` / `evento.fecha` | catalog | `evento_inventario`, `orden`, `entrada` | Consultas y devoluciones sin llamada cruzada |
+| `evento.tipo` / `artistas` / `ciudad` | catalog | `evento_inventario`, `orden` (migración 6.1) | Ranking de recomendaciones y payload de `orden.pagada` |
 | `reserva.id` | inventory | `orden.reserva_id` | Confirmar, liberar o devolver la reserva |
 | `cliente_id` / `organizador_id` | identidad (fuera de las bases) | `reserva.cliente_id`, `orden.cliente_id`, `entrada.cliente_id`, `evento.organizador_id`, `preferencias.clienteId`, `historial_compras.clienteId` | Autorización y consultas propias |
 | `evento.id`, `tipo`, `artistas`, `ciudad`, `fecha` | catalog | `eventos_vistos`, `historial_compras` y eventos de dominio | Recomendaciones y motivos sin llamada cruzada |

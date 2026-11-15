@@ -1,0 +1,45 @@
+Ajustes de arquitectura — 15/11/2026
+Sugerencias incorporadas sin tocar código de otros servicios.
+
+1) Sobre de eventos y payload de orden.pagada
+- `docs/eventos.md`: sobre versionado, routing keys, colas/DLQ, payloads de `orden.pagada`,
+  `orden.reintegrada`, `evento.*`, `devolucion.aprobada` y `entrada.utilizada`.
+- `docs/ejemplos/orden-pagada.json`: fixture compartido.
+- `OrdenPagadaEventContractTest`: lee el fixture y lo deserializa con el mismo record del
+  listener. Si el contrato cambia, el test falla.
+- Decisión de origen de `eventoTipo`/`artistas`/`ciudad`: snapshot al comprar (ADR-017);
+  migración 6.1 de orders y snapshot catalog → inventory → orders.
+- `docs/api-contract.md` §6.5 y `recommendation-service/README.md` enlazan al contrato.
+
+2) Decisiones documentadas
+`docs/decisiones.md` pasa a ADR-001..ADR-018:
+- ADR-014: no se implementa BFF.
+- ADR-015: no se usa Service Discovery (DNS de Compose + URLs por entorno).
+- ADR-016: gateway WebFlux sin bloqueo de `auth_db` (R2DBC o boundedElastic solo login).
+- ADR-017: `orden.pagada` con snapshot del evento.
+- ADR-018: sobre de eventos versionado y fixture compartido.
+`design.md` agrega la tabla de patrones del enunciado y las referencias.
+
+3) Multi-instancia y cronograma
+- `docs/pruebas.md` §10: plan de no doble venta con dos instancias de inventory contra la
+  misma `inventory_db` (201/409 y una sola reserva vigente).
+- `docs/pruebas.md` §11: 10.1 no espera 9.6; walking skeleton del compose el Día 4; carga de
+  100 usuarios antes del Día 6; 500/1000 sobre el integral.
+
+4) CI raíz
+- `.github/workflows/ci.yml` en la raíz del repo del curso (no dentro de `TP-TicketYa/`):
+  matriz de servicios existentes, web condicional, compose y OpenAPI.
+- Se activa al mergear el PR #8; hasta entonces GitHub no ejecuta checks en los PRs.
+- Validado con Ruby YAML (`YAML OK`, jobs: services, web, compose, openapi).
+
+5) Verificación
+$ cd recommendation-service
+$ mvn -B -ntp test
+[INFO] Tests run: 45, Failures: 0, Errors: 0, Skipped: 0
+[INFO] BUILD SUCCESS
+
+$ openspec validate entrega-2-completo --strict
+Change 'entrega-2-completo' is valid
+
+No se modificó código de catalog, inventory, orders, notification ni api-gateway: las
+decisiones que requieren cambios allí quedan como contrato/plan para sus dueños.

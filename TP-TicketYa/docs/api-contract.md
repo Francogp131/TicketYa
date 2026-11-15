@@ -869,6 +869,8 @@ recommendation-service consume el sobre de la tarea 1.5 desde `ticketya.events` 
 
 El historial es idempotente por `(eventId, clienteId, eventoId)`. Un evento duplicado no se registra dos veces; `orden.reintegrada` y los estados distintos de `PAGADA` no entran al historial. La cola `recommendation.history` tiene DLQ `recommendation.history.dlq`.
 
+El contrato canónico del sobre y de todos los payloads está en [`eventos.md`](eventos.md), con el fixture [`ejemplos/orden-pagada.json`](ejemplos/orden-pagada.json). orders debe publicar `eventoTipo`, `artistas` y `ciudad` desde el snapshot de la orden (ADR-017 y migración 6.1); no se acepta que recommendation los consulte a catalog al consumir.
+
 ## 7. Flujo de compra de punta a punta
 
 ```bash

@@ -19,6 +19,8 @@ implementación arranca el Día 1.
 | recommendation-service | Build, tests, health y Docker OK | `recommendation-service/` (tareas 1.7, 7.1–7.4) |
 | notification-service (esqueleto) | Build, health y Testcontainers OK | `notification-service/` (tarea 1.8) |
 | Acceso al repo del curso | 5 colaboradores con push; branch protection pendiente | Tarea 1.1 |
+| Sobre de eventos y payloads | Borrador con fixture y test de contrato | [`eventos.md`](eventos.md) (1.5, pendiente de congelar) |
+| ADR de la Entrega 2 | ADR-014 a ADR-018 | [`decisiones.md`](decisiones.md) |
 | Contrato v2 y matriz de roles | Pendiente | `docs/api-contract.md` |
 | JWT y autorización | Pendiente | Tareas 2.1–2.8 |
 | Fila virtual | Pendiente | Tareas 4.1–4.4, 5.1 |
@@ -49,7 +51,7 @@ implementación arranca el Día 1.
 
 - [ ] **Microservicios Spring Boot independientes:** siete servicios y el gateway, cada uno con su `pom.xml`, build y ejecución separada. → 9.5, 9.6
 - [ ] **Punto de entrada único:** todo el tráfico externo entra por el gateway; las bases y brokers no están publicados. → 9.6
-- [ ] **Comunicación asíncrona justificada:** RabbitMQ para notificaciones, historial de recomendaciones y eventos de catálogo; documentación de por qué. → 1.5, 6.3, 8.2
+- [ ] **Comunicación asíncrona justificada:** RabbitMQ para notificaciones, historial de recomendaciones y eventos de catálogo; documentación de por qué. → 1.5, 6.3, 8.2. _(Contrato y fixture en [`eventos.md`](eventos.md); falta congelar y publicar desde los productores.)_
 - [x] **Base NoSQL:** MongoDB para preferencias e historial, con justificación y consultas. → 7.1. Evidencia: [`recommendation-service/README.md`](../recommendation-service/README.md#modelo-mongodb), índices verificados en `RecommendationMongoIntegrationTest` y [`evidencia/entrega-2-dia-2.txt`](evidencia/entrega-2-dia-2.txt).
 - [ ] **Consistencia entre servicios y compensaciones:** saga de compra, outbox, idempotencia y política de consistencia documentada. → 6.2, 6.3, 3.2
 - [ ] **Resiliencia:** timeouts, reintentos, circuit breaker y fallback en pasarela, inventory, catalog, queue y notification. → 5.3, 6.6, 2.3
@@ -76,7 +78,7 @@ implementación arranca el Día 1.
 - [ ] **ER por microservicio actualizado** con tablas nuevas, claves, relaciones y entidades solapadas. → 10.6
 - [ ] **Modelo MongoDB** con colecciones, documentos e índices. → 10.6
 - [ ] **Estrategia de consistencia** (fuerte vs. eventual) y manejo de fallos parciales documentado. → 6.2, 6.3, 10.5
-- [ ] **Decisiones tecnológicas justificadas:** MongoDB, Redis, RabbitMQ, JWT, Resilience4j, outbox, saga, cache y observabilidad. → 10.6
+- [ ] **Decisiones tecnológicas justificadas:** MongoDB, Redis, RabbitMQ, JWT, Resilience4j, outbox, saga, cache y observabilidad. → 10.6. _(ADR-014 a ADR-018 cubren BFF, Service Discovery, gateway/`auth_db`, payload de `orden.pagada` y sobre de eventos.)_
 
 ## 5. Diseño de API REST
 

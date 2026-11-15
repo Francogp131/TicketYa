@@ -135,7 +135,7 @@ Mientras P1 no implemente 3.5, el servicio usa `eventos_vistos`. El cliente apli
 
 ## Consumidor de `orden.pagada`
 
-El listener `OrdenPagadaListener` consume `ticketya.events` con routing key `orden.pagada` en la cola `recommendation.history` y delega en `HistorialService`.
+El listener `OrdenPagadaListener` consume `ticketya.events` con routing key `orden.pagada` en la cola `recommendation.history` y delega en `HistorialService`. El contrato canónico, la topología y el fixture compartido están en [`docs/eventos.md`](../docs/eventos.md); el payload debe incluir `eventoTipo`, `artistas` y `ciudad` desde el snapshot de orders (ADR-017).
 
 ```json
 {
