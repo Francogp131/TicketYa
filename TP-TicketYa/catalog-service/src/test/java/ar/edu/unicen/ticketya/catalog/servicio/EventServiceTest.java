@@ -29,6 +29,7 @@ import ar.edu.unicen.ticketya.catalog.repositorio.SectorRepository;
 import ar.edu.unicen.ticketya.catalog.web.ApiException;
 import ar.edu.unicen.ticketya.catalog.web.dto.CancelacionResponse;
 import ar.edu.unicen.ticketya.catalog.web.dto.CrearEventoRequest;
+import ar.edu.unicen.ticketya.catalog.web.dto.EditarEventoRequest;
 import ar.edu.unicen.ticketya.catalog.web.dto.EventoBusquedaResponse;
 import ar.edu.unicen.ticketya.catalog.web.dto.EventoResponse;
 import ar.edu.unicen.ticketya.catalog.web.dto.PageResponse;
@@ -44,6 +45,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
@@ -85,7 +87,7 @@ class EventServiceTest {
     void unEventoConFechaPasadaEsInvalido() {
         CrearEventoRequest request = new CrearEventoRequest("Viejo", null, TipoEvento.RECITAL,
                 UUID.randomUUID(), OffsetDateTime.parse("2020-01-01T20:00:00-03:00"),
-                List.of("Artista"), 4);
+                List.of("Artista"), 4, false);
 
         assertThatThrownBy(() -> eventService.crearEvento(request, UUID.randomUUID()))
                 .isInstanceOfSatisfying(ApiException.class, ex -> {
@@ -128,6 +130,7 @@ class EventServiceTest {
     @Test
     void publicarConInventarioOkDejaElEventoPublicado() {
         Evento evento = evento(UUID.randomUUID(), UUID.randomUUID());
+        evento.setAltaDemanda(true);
         Sector sector = sector(evento.getLugarId(), "Platea");
         EventoSectorPrecio precio = new EventoSectorPrecio(evento.getId(), sector.getId(), new BigDecimal("15000"));
         Lugar lugar = new Lugar();
@@ -146,7 +149,12 @@ class EventServiceTest {
         EventoResponse response = eventService.publicar(evento.getId(), evento.getOrganizadorId());
 
         assertThat(response.estado()).isEqualTo(EstadoEvento.PUBLICADO);
-        verify(inventoryClient).publicarInventario(any());
+        assertThat(response.altaDemanda()).isTrue();
+        assertThat(evento.getInventarioVersion()).isEqualTo(1L);
+        ArgumentCaptor<InventorySnapshot> snapshot = ArgumentCaptor.forClass(InventorySnapshot.class);
+        verify(inventoryClient).publicarInventario(snapshot.capture());
+        assertThat(snapshot.getValue().version()).isEqualTo(1L);
+        assertThat(snapshot.getValue().altaDemanda()).isTrue();
     }
 
     @Test
@@ -196,6 +204,146 @@ class EventServiceTest {
                 });
         assertThat(evento.getEstado()).isEqualTo(EstadoEvento.BORRADOR);
         verify(eventoRepository, never()).save(any());
+    }
+
+    @Test
+    void editarUnEventoPublicadoActualizaDatosYPublicaSnapshotConVersionNueva() {
+        Evento evento = evento(UUID.randomUUID(), UUID.randomUUID());
+        evento.setEstado(EstadoEvento.PUBLICADO);
+        evento.setInventarioVersion(1L);
+        Sector sector = sector(evento.getLugarId(), "Platea");
+        EventoSectorPrecio precio = new EventoSectorPrecio(evento.getId(), sector.getId(),
+                new BigDecimal("15000"));
+        Lugar lugar = lugar(evento.getLugarId(), "Estadio", "Tandil");
+        OffsetDateTime nuevaFecha = OffsetDateTime.parse("2027-06-01T21:00:00-03:00");
+
+        when(eventoRepository.findById(evento.getId())).thenReturn(Optional.of(evento));
+        when(sectorRepository.findByLugarIdOrderByNombreAsc(evento.getLugarId())).thenReturn(List.of(sector));
+        when(precioRepository.findByEventoId(evento.getId())).thenReturn(List.of(precio));
+        when(asientoRepository.findBySectorIdOrderByFilaAscNumeroAsc(sector.getId())).thenReturn(List.of());
+        when(eventoRepository.save(any(Evento.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(lugarRepository.findById(evento.getLugarId())).thenReturn(Optional.of(lugar));
+        when(participanteRepository.findByEventoIdOrderByNombreAsc(evento.getId())).thenReturn(List.of());
+
+        EventoResponse response = eventService.editarEvento(evento.getId(),
+                new EditarEventoRequest("Festival editado", "Nueva descripción", null, null,
+                        nuevaFecha, null, 6, null),
+                evento.getOrganizadorId());
+
+        assertThat(response.nombre()).isEqualTo("Festival editado");
+        assertThat(response.descripcion()).isEqualTo("Nueva descripción");
+        assertThat(response.fecha()).isEqualTo(nuevaFecha);
+        assertThat(response.limitePorCliente()).isEqualTo(6);
+        assertThat(evento.getInventarioVersion()).isEqualTo(2L);
+        ArgumentCaptor<InventorySnapshot> snapshot = ArgumentCaptor.forClass(InventorySnapshot.class);
+        verify(inventoryClient).publicarInventario(snapshot.capture());
+        assertThat(snapshot.getValue().version()).isEqualTo(2L);
+        assertThat(snapshot.getValue().fecha()).isEqualTo(nuevaFecha);
+        assertThat(snapshot.getValue().limitePorCliente()).isEqualTo(6);
+    }
+
+    @Test
+    void noSePuedeEditarElEventoDeOtroOrganizador() {
+        Evento evento = evento(UUID.randomUUID(), UUID.randomUUID());
+        when(eventoRepository.findById(evento.getId())).thenReturn(Optional.of(evento));
+
+        assertThatThrownBy(() -> eventService.editarEvento(evento.getId(),
+                new EditarEventoRequest("Nuevo", null, null, null, null, null, null, null),
+                UUID.randomUUID()))
+                .isInstanceOfSatisfying(ApiException.class, ex -> {
+                    assertThat(ex.getStatus().value()).isEqualTo(403);
+                    assertThat(ex.getCode()).isEqualTo("NOT_EVENT_OWNER");
+                });
+        verify(inventoryClient, never()).publicarInventario(any());
+    }
+
+    @Test
+    void noSePuedeEditarUnEventoTerminal() {
+        Evento evento = evento(UUID.randomUUID(), UUID.randomUUID());
+        evento.setEstado(EstadoEvento.CANCELADO);
+        when(eventoRepository.findById(evento.getId())).thenReturn(Optional.of(evento));
+
+        assertThatThrownBy(() -> eventService.editarEvento(evento.getId(),
+                new EditarEventoRequest("Nuevo", null, null, null, null, null, null, null),
+                evento.getOrganizadorId()))
+                .isInstanceOfSatisfying(ApiException.class, ex -> {
+                    assertThat(ex.getStatus().value()).isEqualTo(409);
+                    assertThat(ex.getCode()).isEqualTo("EVENT_NOT_EDITABLE");
+                });
+        verify(inventoryClient, never()).publicarInventario(any());
+    }
+
+    @Test
+    void editarConFechaPasadaDevuelve400YNoPublicaInventario() {
+        Evento evento = evento(UUID.randomUUID(), UUID.randomUUID());
+        when(eventoRepository.findById(evento.getId())).thenReturn(Optional.of(evento));
+
+        assertThatThrownBy(() -> eventService.editarEvento(evento.getId(),
+                new EditarEventoRequest(null, null, null, null,
+                        OffsetDateTime.parse("2020-01-01T21:00:00-03:00"), null, null, null),
+                evento.getOrganizadorId()))
+                .isInstanceOfSatisfying(ApiException.class, ex -> {
+                    assertThat(ex.getStatus().value()).isEqualTo(400);
+                    assertThat(ex.getCode()).isEqualTo("VALIDATION_ERROR");
+                });
+        verify(eventoRepository, never()).save(any());
+        verify(inventoryClient, never()).publicarInventario(any());
+    }
+
+    @Test
+    void noSePuedeCambiarAltaDemandaDespuesDePublicar() {
+        Evento evento = evento(UUID.randomUUID(), UUID.randomUUID());
+        evento.setEstado(EstadoEvento.PUBLICADO);
+        when(eventoRepository.findById(evento.getId())).thenReturn(Optional.of(evento));
+
+        assertThatThrownBy(() -> eventService.editarEvento(evento.getId(),
+                new EditarEventoRequest(null, null, null, null, null, null, null, true),
+                evento.getOrganizadorId()))
+                .isInstanceOfSatisfying(ApiException.class, ex -> {
+                    assertThat(ex.getStatus().value()).isEqualTo(409);
+                    assertThat(ex.getCode()).isEqualTo("EVENT_NOT_EDITABLE");
+                });
+        assertThat(evento.isAltaDemanda()).isFalse();
+        verify(inventoryClient, never()).publicarInventario(any());
+    }
+
+    @Test
+    void editarUnBorradorNoPublicaInventarioYPermiteCambiarAltaDemanda() {
+        Evento evento = evento(UUID.randomUUID(), UUID.randomUUID());
+        Lugar lugar = lugar(evento.getLugarId(), "Estadio", "Tandil");
+        when(eventoRepository.findById(evento.getId())).thenReturn(Optional.of(evento));
+        when(eventoRepository.save(any(Evento.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(lugarRepository.findById(evento.getLugarId())).thenReturn(Optional.of(lugar));
+        when(participanteRepository.findByEventoIdOrderByNombreAsc(evento.getId())).thenReturn(List.of());
+        when(precioRepository.findByEventoId(evento.getId())).thenReturn(List.of());
+
+        EventoResponse response = eventService.editarEvento(evento.getId(),
+                new EditarEventoRequest("Borrador editado", null, null, null, null, null, 8, true),
+                evento.getOrganizadorId());
+
+        assertThat(response.altaDemanda()).isTrue();
+        assertThat(response.limitePorCliente()).isEqualTo(8);
+        assertThat(evento.isAltaDemanda()).isTrue();
+        verify(inventoryClient, never()).publicarInventario(any());
+    }
+
+    @Test
+    void noSePuedeCambiarElLugarDeUnEventoPublicado() {
+        Evento evento = evento(UUID.randomUUID(), UUID.randomUUID());
+        evento.setEstado(EstadoEvento.PUBLICADO);
+        UUID nuevoLugarId = UUID.randomUUID();
+        when(eventoRepository.findById(evento.getId())).thenReturn(Optional.of(evento));
+        when(lugarRepository.findById(nuevoLugarId))
+                .thenReturn(Optional.of(lugar(nuevoLugarId, "Otro estadio", "Olavarria")));
+
+        assertThatThrownBy(() -> eventService.editarEvento(evento.getId(),
+                new EditarEventoRequest(null, null, null, nuevoLugarId, null, null, null, null),
+                evento.getOrganizadorId()))
+                .isInstanceOfSatisfying(ApiException.class, ex -> {
+                    assertThat(ex.getStatus().value()).isEqualTo(409);
+                    assertThat(ex.getCode()).isEqualTo("EVENT_NOT_EDITABLE");
+                });
+        verify(inventoryClient, never()).publicarInventario(any());
     }
 
     @Test

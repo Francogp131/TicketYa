@@ -21,6 +21,7 @@ public record EventoResponse(
         OffsetDateTime fecha,
         EstadoEvento estado,
         Integer limitePorCliente,
+        boolean altaDemanda,
         List<String> participantes,
         List<PrecioResponse> precios) {
 
@@ -38,6 +39,7 @@ public record EventoResponse(
                 Fechas.argentina(evento.getFecha()),
                 evento.getEstado(),
                 evento.getLimitePorCliente(),
+                evento.isAltaDemanda(),
                 participantes,
                 precios);
     }

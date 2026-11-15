@@ -13,6 +13,7 @@ public record InventorySnapshot(
         UUID eventoId,
         String nombre,
         OffsetDateTime fecha,
+        boolean altaDemanda,
         int limitePorCliente,
         long version,
         List<SectorSnapshot> sectores) {

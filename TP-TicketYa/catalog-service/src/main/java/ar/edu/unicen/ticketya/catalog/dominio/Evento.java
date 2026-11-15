@@ -47,6 +47,12 @@ public class Evento {
     @Column(name = "limite_por_cliente", nullable = false)
     private Integer limitePorCliente = 4;
 
+    @Column(name = "alta_demanda", nullable = false)
+    private boolean altaDemanda = false;
+
+    @Column(name = "inventario_version", nullable = false)
+    private long inventarioVersion = 0L;
+
     @Column(name = "cancelacion_pendiente", nullable = false)
     private boolean cancelacionPendiente = false;
 
@@ -141,6 +147,22 @@ public class Evento {
 
     public void setLimitePorCliente(Integer limitePorCliente) {
         this.limitePorCliente = limitePorCliente;
+    }
+
+    public boolean isAltaDemanda() {
+        return altaDemanda;
+    }
+
+    public void setAltaDemanda(boolean altaDemanda) {
+        this.altaDemanda = altaDemanda;
+    }
+
+    public long getInventarioVersion() {
+        return inventarioVersion;
+    }
+
+    public void setInventarioVersion(long inventarioVersion) {
+        this.inventarioVersion = inventarioVersion;
     }
 
     public boolean isCancelacionPendiente() {

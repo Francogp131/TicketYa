@@ -16,5 +16,6 @@ public record EventoBusquedaResponse(
         String lugarNombre,
         OffsetDateTime fecha,
         EstadoEvento estado,
+        boolean altaDemanda,
         BigDecimal precioDesde) {
 }

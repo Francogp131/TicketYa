@@ -20,6 +20,7 @@ public record EventoDetalleResponse(
         OffsetDateTime fecha,
         EstadoEvento estado,
         Integer limitePorCliente,
+        boolean altaDemanda,
         List<String> participantes,
         List<SectorDetalleResponse> sectores) {
 }

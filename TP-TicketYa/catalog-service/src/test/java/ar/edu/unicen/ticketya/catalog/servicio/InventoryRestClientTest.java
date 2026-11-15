@@ -182,6 +182,7 @@ class InventoryRestClientTest {
             UUID.randomUUID(),
             "Festival",
             OffsetDateTime.parse("2027-01-15T21:00:00-03:00"),
+            true,
             4,
             1L,
             List.of(new InventorySnapshot.SectorSnapshot(

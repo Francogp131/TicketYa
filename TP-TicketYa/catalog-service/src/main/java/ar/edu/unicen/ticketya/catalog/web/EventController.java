@@ -4,6 +4,7 @@ import ar.edu.unicen.ticketya.catalog.dominio.TipoEvento;
 import ar.edu.unicen.ticketya.catalog.servicio.EventService;
 import ar.edu.unicen.ticketya.catalog.web.dto.CancelacionResponse;
 import ar.edu.unicen.ticketya.catalog.web.dto.CrearEventoRequest;
+import ar.edu.unicen.ticketya.catalog.web.dto.EditarEventoRequest;
 import ar.edu.unicen.ticketya.catalog.web.dto.EventoBusquedaResponse;
 import ar.edu.unicen.ticketya.catalog.web.dto.EventoDetalleResponse;
 import ar.edu.unicen.ticketya.catalog.web.dto.EventoResponse;
@@ -56,6 +57,28 @@ public class EventController {
         identity.requireRole("ORGANIZER");
         EventoResponse response = eventService.crearEvento(request, identity.userId());
         return ResponseEntity.created(URI.create("/api/catalog/events/" + response.id())).body(response);
+    }
+
+    @PutMapping("/{eventoId}")
+    @Operation(summary = "Editar un evento",
+            description = "Actualiza solo los campos enviados. Si el evento está publicado o agotado, "
+                    + "refresca el snapshot de inventory con una versión nueva.")
+    @ApiResponse(responseCode = "200", description = "Evento actualizado")
+    @ApiResponse(responseCode = "400", description = "Datos inválidos o fecha pasada (VALIDATION_ERROR)")
+    @ApiResponse(responseCode = "401", description = "Falta identidad (UNAUTHORIZED)")
+    @ApiResponse(responseCode = "403", description = "Rol insuficiente o evento de otro organizador (FORBIDDEN, NOT_EVENT_OWNER)")
+    @ApiResponse(responseCode = "404", description = "Evento o lugar inexistente (EVENT_NOT_FOUND, VENUE_NOT_FOUND)")
+    @ApiResponse(responseCode = "409", description = "Evento terminal, lugar de evento publicado o "
+            + "cambio de alta demanda publicado (EVENT_NOT_EDITABLE); evento incompleto (EVENT_INCOMPLETE)")
+    @ApiResponse(responseCode = "502", description = "Inventory no confirmó el snapshot (INVENTORY_UNAVAILABLE)")
+    public EventoResponse editar(
+            @PathVariable UUID eventoId,
+            @Valid @RequestBody EditarEventoRequest request,
+            @RequestHeader(value = "X-User-Id", required = false) String userId,
+            @RequestHeader(value = "X-User-Role", required = false) String userRole) {
+        RequestIdentity identity = RequestIdentity.require(userId, userRole);
+        identity.requireRole("ORGANIZER");
+        return eventService.editarEvento(eventoId, request, identity.userId());
     }
 
     @PutMapping("/{eventoId}/prices/{sectorId}")

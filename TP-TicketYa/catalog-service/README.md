@@ -16,7 +16,8 @@ Servicio de catálogo de TicketYa: lugares, sectores, asientos, eventos, precios
 | GET | `/api/catalog/venues/{venueId}` | público | Detalle de un lugar |
 | POST | `/api/catalog/venues/{venueId}/sectors` | ADMIN | Crea un sector y genera sus asientos si es numerado |
 | GET | `/api/catalog/venues/{venueId}/sectors` | público | Lista sectores del lugar |
-| POST | `/api/catalog/events` | ORGANIZER | Crea un evento en `BORRADOR` |
+| POST | `/api/catalog/events` | ORGANIZER | Crea un evento en `BORRADOR`; acepta `altaDemanda` y `limitePorCliente` |
+| PUT | `/api/catalog/events/{eventoId}` | ORGANIZER | Edita parcialmente un evento; si está publicado, refresca el snapshot de inventory |
 | PUT | `/api/catalog/events/{eventoId}/prices/{sectorId}` | ORGANIZER | Asigna el precio de un sector |
 | POST | `/api/catalog/events/{eventoId}/publish` | ORGANIZER | Publica y envía el snapshot a inventory |
 | POST | `/api/catalog/events/{eventoId}/cancel` | ADMIN | Cancela el evento y avisa a orders e inventory (`PATCH /internal/events/{eventoId}/state`) |
@@ -43,12 +44,14 @@ Tablas Flyway en [`src/main/resources/db/migration`](src/main/resources/db/migra
 - `lugar` — nombre, dirección, ciudad, latitud/longitud.
 - `sector` — pertenece a un lugar; `NUMERADO` exige filas y asientos por fila.
 - `asiento` — se genera al crear un sector numerado (`filas × asientosPorFila`).
-- `evento` — estado `BORRADOR/PUBLICADO/AGOTADO/CANCELADO/FINALIZADO`, organizador, límite por cliente y `cancelacion_pendiente` para el reintento del aviso a orders.
+- `evento` — estado `BORRADOR/PUBLICADO/AGOTADO/CANCELADO/FINALIZADO`, organizador, límite por cliente, `alta_demanda`, `inventario_version` y `cancelacion_pendiente` para el reintento del aviso a orders.
 - `evento_participante` y `evento_sector_precio` — participantes y precio por sector.
 
-Las migraciones `V3` y `V4` agregan la cancelación pendiente y refuerzan en la base las reglas de `tipo` de evento y capacidad de sectores numerados. El ER validado está en [`docs/modelo-datos.md`](../docs/modelo-datos.md).
+Las migraciones `V3` y `V4` agregan la cancelación pendiente y refuerzan en la base las reglas de `tipo` de evento y capacidad de sectores numerados. `V5` agrega `alta_demanda` e `inventario_version`, con backfill en `1` para eventos ya publicados o agotados. El ER validado está en [`docs/modelo-datos.md`](../docs/modelo-datos.md).
 
 Al publicar, el servicio envía a inventory el snapshot del evento (sectores, precios, capacidad y asientos) por `POST /internal/events/{id}/inventory`. Si inventory falla, el evento sigue en `BORRADOR` y se responde `502 INVENTORY_UNAVAILABLE`.
+
+La edición (`PUT /api/catalog/events/{eventoId}`) es parcial: actualiza solo los campos enviados, valida dueño, fecha futura y estado editable. El cambio de `altaDemanda` solo se permite en `BORRADOR`. Si el evento está `PUBLICADO` o `AGOTADO`, catalog incrementa `version`, reenvía el snapshot completo y persiste la nueva versión; si inventory falla responde `502 INVENTORY_UNAVAILABLE` y no aplica los cambios. El cambio de lugar de un evento publicado responde `409` hasta que inventory soporte reemplazar sectores y asientos.
 
 ## Variables de entorno
 

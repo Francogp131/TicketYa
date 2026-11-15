@@ -26,5 +26,7 @@ public record CrearEventoRequest(
         @Schema(description = "Artistas o participantes", example = "[\"Artista A\", \"Artista B\"]")
         @NotEmpty List<@NotBlank @Size(max = 150) String> participantes,
         @Schema(description = "Máximo de entradas por cliente", example = "4")
-        @Min(1) Integer limitePorCliente) {
+        @Min(1) Integer limitePorCliente,
+        @Schema(description = "Requiere fila virtual antes de comprar", example = "true")
+        Boolean altaDemanda) {
 }
