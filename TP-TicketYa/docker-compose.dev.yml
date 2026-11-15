@@ -52,6 +52,23 @@ services:
       timeout: 3s
       retries: 10
 
+  notification-db:
+    image: postgres:16-alpine
+    container_name: ticketya-notification-db
+    environment:
+      POSTGRES_DB: notification_db
+      POSTGRES_USER: ticketya
+      POSTGRES_PASSWORD: ticketya
+    ports:
+      - "5436:5432"
+    volumes:
+      - notification_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ticketya -d notification_db"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
   recommendation-mongo:
     image: mongo:7
     container_name: ticketya-recommendation-mongo
@@ -65,8 +82,27 @@ services:
       timeout: 5s
       retries: 10
 
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    container_name: ticketya-rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: ticketya
+      RABBITMQ_DEFAULT_PASS: ticketya
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
 volumes:
   catalog_data:
   inventory_data:
   orders_data:
+  notification_data:
   recommendation_mongo_data:
+  rabbitmq_data:
