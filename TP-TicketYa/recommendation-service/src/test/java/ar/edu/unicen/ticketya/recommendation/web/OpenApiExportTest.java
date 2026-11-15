@@ -6,6 +6,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import ar.edu.unicen.ticketya.recommendation.config.OpenApiConfig;
 import ar.edu.unicen.ticketya.recommendation.servicio.PreferenceService;
+import ar.edu.unicen.ticketya.recommendation.servicio.RecommendationService;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.nio.charset.StandardCharsets;
@@ -29,7 +30,8 @@ import org.springframework.test.web.servlet.MockMvc;
  * Exporta el OpenAPI generado por springdoc a openapi/recommendation-openapi.json
  * (relativo a la raíz del repositorio, un nivel arriba de recommendation-service).
  */
-@WebMvcTest(controllers = {PreferenceController.class, InternalPreferenceController.class})
+@WebMvcTest(controllers = {PreferenceController.class, InternalPreferenceController.class,
+        RecommendationController.class})
 @ImportAutoConfiguration({SpringDocConfiguration.class, SpringDocWebMvcConfiguration.class})
 @EnableConfigurationProperties(SpringDocConfigProperties.class)
 @Import({OpenApiConfig.class, InternalToken.class})
@@ -41,6 +43,8 @@ class OpenApiExportTest {
 
     @MockitoBean
     private PreferenceService preferenceService;
+    @MockitoBean
+    private RecommendationService recommendationService;
 
     @Test
     void exportaElOpenApiDeRecommendation() throws Exception {
@@ -51,12 +55,13 @@ class OpenApiExportTest {
                 .getContentAsString(StandardCharsets.UTF_8);
 
         JsonNode documento = new ObjectMapper().readTree(json);
-        assertThat(documento.at("/paths").size()).isEqualTo(2);
+        assertThat(documento.at("/paths").size()).isEqualTo(3);
         assertThat(documento.at("/components/schemas/ProblemDetail").isMissingNode()).isFalse();
         assertThat(documento.at("/components/securitySchemes/bearerAuth").isMissingNode()).isFalse();
         assertThat(documento.at("/components/securitySchemes/X-User-Id").isMissingNode()).isFalse();
         assertThat(documento.at("/components/securitySchemes/X-User-Role").isMissingNode()).isFalse();
         assertThat(documento.at("/components/securitySchemes/X-Internal-Token").isMissingNode()).isFalse();
+        assertThat(documento.at("/paths/~1api~1recommendations/get").isMissingNode()).isFalse();
         assertThat(documento.at("/paths/~1api~1recommendations~1preferences/put").isMissingNode()).isFalse();
         assertThat(documento.at("/paths/~1internal~1preferences~1{clienteId}/get").isMissingNode())
                 .isFalse();

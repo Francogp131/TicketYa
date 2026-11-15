@@ -8,6 +8,15 @@ spring:
     mongodb:
       uri: ${MONGO_URI:mongodb://localhost:27017/recommendation_db}
       auto-index-creation: false
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USER:ticketya}
+    password: ${RABBITMQ_PASSWORD:ticketya}
+    connection-timeout: 5s
+    listener:
+      simple:
+        default-requeue-rejected: false
 
 management:
   endpoints:
@@ -28,3 +37,10 @@ recommendation:
     ensure-indexes: ${RECOMMENDATION_ENSURE_INDEXES:true}
   seed:
     enabled: ${RECOMMENDATION_SEED_ENABLED:true}
+  rabbit:
+    queue: ${RECOMMENDATION_QUEUE:recommendation.history}
+  catalog:
+    url: ${CATALOG_URL:http://localhost:8081}
+    timeout:
+      connect-ms: ${CATALOG_CONNECT_TIMEOUT_MS:2000}
+      read-ms: ${CATALOG_READ_TIMEOUT_MS:3000}

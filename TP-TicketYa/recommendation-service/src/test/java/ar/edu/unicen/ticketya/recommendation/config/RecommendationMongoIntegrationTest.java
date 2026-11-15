@@ -3,11 +3,16 @@ package ar.edu.unicen.ticketya.recommendation.config;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import ar.edu.unicen.ticketya.recommendation.dominio.HistorialCompra;
 import ar.edu.unicen.ticketya.recommendation.dominio.Preferencia;
+import ar.edu.unicen.ticketya.recommendation.evento.OrdenPagadaEvent;
+import ar.edu.unicen.ticketya.recommendation.evento.OrdenPagadaPayload;
 import ar.edu.unicen.ticketya.recommendation.repositorio.PreferenciaRepository;
+import ar.edu.unicen.ticketya.recommendation.servicio.HistorialService;
 import ar.edu.unicen.ticketya.recommendation.servicio.PreferenceService;
 import ar.edu.unicen.ticketya.recommendation.web.dto.PreferenciasRequest;
 import ar.edu.unicen.ticketya.recommendation.web.dto.PreferenciasResponse;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -31,7 +36,9 @@ import org.testcontainers.junit.jupiter.Testcontainers;
  */
 @SpringBootTest(properties = {
         "recommendation.seed.enabled=true",
-        "recommendation.mongo.ensure-indexes=true"
+        "recommendation.mongo.ensure-indexes=true",
+        "spring.rabbitmq.listener.simple.auto-startup=false",
+        "spring.rabbitmq.dynamic=false"
 })
 @Testcontainers(disabledWithoutDocker = true)
 class RecommendationMongoIntegrationTest {
@@ -58,6 +65,9 @@ class RecommendationMongoIntegrationTest {
 
     @Autowired
     private PreferenciaRepository preferenciaRepository;
+
+    @Autowired
+    private HistorialService historialService;
 
     @Test
     void creaLosIndicesDeclaradosYRepetirlosEsIdempotente() {
@@ -117,6 +127,47 @@ class RecommendationMongoIntegrationTest {
         duplicado.setCiudad("Tandil");
         assertThatThrownBy(() -> mongoTemplate.insert(duplicado))
                 .isInstanceOf(DuplicateKeyException.class);
+    }
+
+    @Test
+    void registraOrdenPagadaUnaSolaVezPorEventoDeDominio() {
+        String clienteId = UUID.randomUUID().toString();
+        String eventoId = UUID.randomUUID().toString();
+        String ordenId = UUID.randomUUID().toString();
+        String eventId = UUID.randomUUID().toString();
+        OrdenPagadaEvent event = new OrdenPagadaEvent(eventId, OrdenPagadaEvent.TIPO,
+                Instant.parse("2026-11-15T12:00:00Z"), UUID.randomUUID().toString(), 1,
+                new OrdenPagadaPayload(ordenId, clienteId, eventoId, "Festival", "FESTIVAL",
+                        List.of("Los Piojos"), "Tandil", Instant.parse("2027-03-15T00:00:00Z"),
+                        OrdenPagadaPayload.ESTADO_PAGADA));
+
+        assertThat(historialService.registrar(event)).isTrue();
+        assertThat(historialService.registrar(event)).isFalse();
+
+        Query query = Query.query(Criteria.where("eventId").is(eventId)
+                .and("clienteId").is(clienteId)
+                .and("eventoId").is(eventoId));
+        assertThat(mongoTemplate.count(query, HistorialCompra.class)).isEqualTo(1);
+        HistorialCompra compra = mongoTemplate.findOne(query, HistorialCompra.class);
+        assertThat(compra).isNotNull();
+        assertThat(compra.getTipo()).isEqualTo("FESTIVAL");
+        assertThat(compra.getOrdenId()).isEqualTo(ordenId);
+    }
+
+    @Test
+    void unEventoReintegradoNoEntraAlHistorial() {
+        String clienteId = UUID.randomUUID().toString();
+        String eventoId = UUID.randomUUID().toString();
+        String eventId = UUID.randomUUID().toString();
+        OrdenPagadaEvent event = new OrdenPagadaEvent(eventId, "orden.reintegrada",
+                Instant.parse("2026-11-15T12:00:00Z"), UUID.randomUUID().toString(), 1,
+                new OrdenPagadaPayload(UUID.randomUUID().toString(), clienteId, eventoId,
+                        "Festival", "FESTIVAL", List.of(), "Tandil",
+                        Instant.parse("2027-03-15T00:00:00Z"), OrdenPagadaPayload.ESTADO_PAGADA));
+
+        assertThat(historialService.registrar(event)).isFalse();
+        assertThat(mongoTemplate.count(Query.query(Criteria.where("eventId").is(eventId)),
+                HistorialCompra.class)).isZero();
     }
 
     private List<String> nombresDeIndices(String coleccion) {
