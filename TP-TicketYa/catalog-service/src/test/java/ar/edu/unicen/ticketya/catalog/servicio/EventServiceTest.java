@@ -1,4 +1,4 @@
-﻿package ar.edu.unicen.ticketya.catalog.servicio;
+package ar.edu.unicen.ticketya.catalog.servicio;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
