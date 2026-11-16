@@ -1,4 +1,4 @@
-server:
+﻿server:
   port: ${SERVER_PORT:8081}
 
 spring:
@@ -29,6 +29,12 @@ spring:
     redis:
       time-to-live: ${CATALOG_CACHE_TTL:60s}
       cache-null-values: false
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USER:ticketya}
+    password: ${RABBITMQ_PASSWORD:ticketya}
+    connection-timeout: 5s
 
 management:
   endpoints:
@@ -62,3 +68,9 @@ catalog:
     venue-ttl: ${CATALOG_CACHE_VENUE_TTL:10m}
     event-detail-ttl: ${CATALOG_CACHE_EVENT_DETAIL_TTL:2m}
     search-ttl: ${CATALOG_CACHE_SEARCH_TTL:30s}
+  internal-token: ${INTERNAL_TOKEN:ticketya-internal-dev}
+  outbox:
+    publish-ms: ${CATALOG_OUTBOX_PUBLISH_MS:2000}
+    batch-size: ${CATALOG_OUTBOX_BATCH_SIZE:50}
+    max-attempts: ${CATALOG_OUTBOX_MAX_ATTEMPTS:10}
+    base-backoff-seconds: ${CATALOG_OUTBOX_BACKOFF_SECONDS:5}
