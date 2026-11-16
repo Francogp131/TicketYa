@@ -63,7 +63,7 @@ public class VenueService {
         int p = normalizarPage(page);
         int s = normalizarSize(size);
         String key = p + ":" + s;
-        return catalogCacheService.getOrLoad(CacheConfig.VENUES, key, PageResponse.class,
+        return catalogCacheService.getOrLoad(CacheConfig.VENUES, key,
                 () -> listarLugares(p, s));
     }
 
@@ -77,7 +77,7 @@ public class VenueService {
     }
 
     public CatalogCacheService.CacheResult<LugarResponse> obtenerLugarCacheable(UUID lugarId) {
-        return catalogCacheService.getOrLoad(CacheConfig.VENUE, lugarId, LugarResponse.class,
+        return catalogCacheService.getOrLoad(CacheConfig.VENUE, lugarId,
                 () -> obtenerLugar(lugarId));
     }
 
@@ -140,7 +140,7 @@ public class VenueService {
     }
 
     public CatalogCacheService.CacheResult<List<SectorResponse>> listarSectoresCacheable(UUID lugarId) {
-        return catalogCacheService.getOrLoad(CacheConfig.VENUE_SECTORS, lugarId, List.class,
+        return catalogCacheService.getOrLoad(CacheConfig.VENUE_SECTORS, lugarId,
                 () -> listarSectores(lugarId));
     }
 

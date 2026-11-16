@@ -312,7 +312,7 @@ public class EventService {
 
     public CatalogCacheService.CacheResult<EventoDetalleResponse> detalleCacheable(UUID eventoId) {
         CatalogCacheService.CacheResult<EventoDetalleEstatico> estatico = catalogCacheService.getOrLoad(
-                CacheConfig.EVENT_DETAIL_STATIC, eventoId, EventoDetalleEstatico.class,
+                CacheConfig.EVENT_DETAIL_STATIC, eventoId,
                 () -> cargarDetalleEstatico(eventoId));
         Map<UUID, Integer> disponibilidad = obtenerDisponibilidad(eventoId);
         EventoDetalleResponse response = componerDetalle(estatico.value(), disponibilidad);
@@ -519,7 +519,7 @@ public class EventService {
             TipoEvento tipo, UUID organizadorId, String participante, String ciudad,
             OffsetDateTime fechaDesde, OffsetDateTime fechaHasta, String orden, int page, int size) {
         String key = searchKey(tipo, organizadorId, participante, ciudad, fechaDesde, fechaHasta, orden, page, size);
-        return catalogCacheService.getOrLoad(CacheConfig.EVENT_SEARCH, key, PageResponse.class,
+        return catalogCacheService.getOrLoad(CacheConfig.EVENT_SEARCH, key,
                 () -> buscar(tipo, organizadorId, participante, ciudad, fechaDesde, fechaHasta, orden, page, size));
     }
 

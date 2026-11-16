@@ -1,7 +1,6 @@
 package ar.edu.unicen.ticketya.catalog.servicio;
 
 import ar.edu.unicen.ticketya.catalog.config.CacheConfig;
-import java.util.Collection;
 import java.util.function.Supplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,18 +19,16 @@ public class CatalogCacheService {
         this.cacheManager = cacheManager;
     }
 
-    public <T> CacheResult<T> getOrLoad(String cacheName, Object key, Class<T> type, Supplier<T> loader) {
+    @SuppressWarnings("unchecked")
+    public <T> CacheResult<T> getOrLoad(String cacheName, Object key, Supplier<T> loader) {
         Cache cache = cache(cacheName);
         if (cache == null) {
             return new CacheResult<>(loader.get(), "BYPASS");
         }
         try {
             Cache.ValueWrapper wrapper = cache.get(key);
-            if (wrapper != null) {
-                Object value = wrapper.get();
-                if (type.isInstance(value)) {
-                    return new CacheResult<>(type.cast(value), "HIT");
-                }
+            if (wrapper != null && wrapper.get() != null) {
+                return new CacheResult<>((T) wrapper.get(), "HIT");
             }
         } catch (RuntimeException ex) {
             log.warn("Cache GET degradado cache={} key={}: {}", cacheName, key, ex.getMessage());
