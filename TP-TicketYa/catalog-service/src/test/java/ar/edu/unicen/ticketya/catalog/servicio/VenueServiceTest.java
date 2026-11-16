@@ -39,6 +39,9 @@ class VenueServiceTest {
     @Mock
     private AsientoRepository asientoRepository;
 
+    @Mock
+    private CatalogCacheService catalogCacheService;
+
     @InjectMocks
     private VenueService venueService;
 

@@ -1,5 +1,6 @@
 package ar.edu.unicen.ticketya.catalog.web;
 
+import ar.edu.unicen.ticketya.catalog.servicio.CatalogCacheService;
 import ar.edu.unicen.ticketya.catalog.servicio.VenueService;
 import ar.edu.unicen.ticketya.catalog.web.dto.CrearLugarRequest;
 import ar.edu.unicen.ticketya.catalog.web.dto.CrearSectorRequest;
@@ -9,6 +10,7 @@ import ar.edu.unicen.ticketya.catalog.web.dto.SectorResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import java.net.URI;
 import java.util.List;
@@ -89,7 +91,10 @@ public class VenueController {
     @Operation(summary = "Listar sectores de un lugar")
     @ApiResponse(responseCode = "200", description = "Sectores del lugar")
     @ApiResponse(responseCode = "404", description = "El lugar no existe (VENUE_NOT_FOUND)")
-    public List<SectorResponse> listarSectores(@PathVariable UUID venueId) {
-        return venueService.listarSectores(venueId);
+    public List<SectorResponse> listarSectores(@PathVariable UUID venueId, HttpServletRequest request) {
+        CatalogCacheService.CacheResult<List<SectorResponse>> result =
+                venueService.listarSectoresCacheable(venueId);
+        CacheStatusFilter.mark(request, result.header());
+        return result.value();
     }
 }

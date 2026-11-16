@@ -13,6 +13,7 @@ import ar.edu.unicen.ticketya.catalog.web.dto.CrearSectorRequest;
 import ar.edu.unicen.ticketya.catalog.web.dto.LugarResponse;
 import ar.edu.unicen.ticketya.catalog.web.dto.PageResponse;
 import ar.edu.unicen.ticketya.catalog.web.dto.SectorResponse;
+import ar.edu.unicen.ticketya.catalog.config.CacheConfig;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -33,13 +34,16 @@ public class VenueService {
     private final LugarRepository lugarRepository;
     private final SectorRepository sectorRepository;
     private final AsientoRepository asientoRepository;
+    private final CatalogCacheService catalogCacheService;
 
     public VenueService(LugarRepository lugarRepository,
                         SectorRepository sectorRepository,
-                        AsientoRepository asientoRepository) {
+                        AsientoRepository asientoRepository,
+                        CatalogCacheService catalogCacheService) {
         this.lugarRepository = lugarRepository;
         this.sectorRepository = sectorRepository;
         this.asientoRepository = asientoRepository;
+        this.catalogCacheService = catalogCacheService;
     }
 
     @Transactional
@@ -50,7 +54,17 @@ public class VenueService {
         lugar.setCiudad(request.ciudad().trim());
         lugar.setLatitud(request.latitud());
         lugar.setLongitud(request.longitud());
-        return LugarResponse.from(lugarRepository.save(lugar));
+        LugarResponse response = LugarResponse.from(lugarRepository.save(lugar));
+        catalogCacheService.clear(CacheConfig.VENUES);
+        return response;
+    }
+
+    public CatalogCacheService.CacheResult<PageResponse<LugarResponse>> listarLugaresCacheable(int page, int size) {
+        int p = normalizarPage(page);
+        int s = normalizarSize(size);
+        String key = p + ":" + s;
+        return catalogCacheService.getOrLoad(CacheConfig.VENUES, key, PageResponse.class,
+                () -> listarLugares(p, s));
     }
 
     @Transactional(readOnly = true)
@@ -60,6 +74,11 @@ public class VenueService {
         List<LugarResponse> contenido = resultado.getContent().stream().map(LugarResponse::from).toList();
         return new PageResponse<>(contenido, resultado.getNumber(), resultado.getSize(),
                 resultado.getTotalElements(), resultado.getTotalPages());
+    }
+
+    public CatalogCacheService.CacheResult<LugarResponse> obtenerLugarCacheable(UUID lugarId) {
+        return catalogCacheService.getOrLoad(CacheConfig.VENUE, lugarId, LugarResponse.class,
+                () -> obtenerLugar(lugarId));
     }
 
     @Transactional(readOnly = true)
@@ -116,7 +135,13 @@ public class VenueService {
             sector = sectorRepository.save(sector);
         }
 
+        catalogCacheService.evict(CacheConfig.VENUE_SECTORS, lugarId);
         return SectorResponse.from(sector, asientos.size());
+    }
+
+    public CatalogCacheService.CacheResult<List<SectorResponse>> listarSectoresCacheable(UUID lugarId) {
+        return catalogCacheService.getOrLoad(CacheConfig.VENUE_SECTORS, lugarId, List.class,
+                () -> listarSectores(lugarId));
     }
 
     @Transactional(readOnly = true)
