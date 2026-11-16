@@ -1,4 +1,4 @@
-server:
+﻿server:
   port: ${SERVER_PORT:8085}
 
 spring:
@@ -39,3 +39,4 @@ notification:
   sender:
     max-attempts: ${NOTIFICATION_MAX_ATTEMPTS:3}
     backoff-seconds: ${NOTIFICATION_BACKOFF_SECONDS:30}
+  internal-token: ${INTERNAL_TOKEN:ticketya-internal-dev}

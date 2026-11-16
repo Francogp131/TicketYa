@@ -1,4 +1,4 @@
-package ar.edu.unicen.ticketya.catalog.web;
+﻿package ar.edu.unicen.ticketya.catalog.web;
 
 import ar.edu.unicen.ticketya.catalog.servicio.CatalogCacheService;
 import ar.edu.unicen.ticketya.catalog.servicio.VenueService;
@@ -56,16 +56,22 @@ public class VenueController {
     @ApiResponse(responseCode = "200", description = "Página de lugares")
     public PageResponse<LugarResponse> listar(
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size) {
-        return venueService.listarLugares(page, size);
+            @RequestParam(defaultValue = "20") int size,
+            HttpServletRequest request) {
+        CatalogCacheService.CacheResult<PageResponse<LugarResponse>> result =
+                venueService.listarLugaresCacheable(page, size);
+        CacheStatusFilter.mark(request, result.header());
+        return result.value();
     }
 
     @GetMapping("/{venueId}")
     @Operation(summary = "Obtener un lugar")
     @ApiResponse(responseCode = "200", description = "Detalle del lugar")
     @ApiResponse(responseCode = "404", description = "El lugar no existe (VENUE_NOT_FOUND)")
-    public LugarResponse obtener(@PathVariable UUID venueId) {
-        return venueService.obtenerLugar(venueId);
+    public LugarResponse obtener(@PathVariable UUID venueId, HttpServletRequest request) {
+        CatalogCacheService.CacheResult<LugarResponse> result = venueService.obtenerLugarCacheable(venueId);
+        CacheStatusFilter.mark(request, result.header());
+        return result.value();
     }
 
     @PostMapping("/{venueId}/sectors")

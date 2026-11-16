@@ -1,4 +1,4 @@
-package ar.edu.unicen.ticketya.catalog.web;
+﻿package ar.edu.unicen.ticketya.catalog.web;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -11,6 +11,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import ar.edu.unicen.ticketya.catalog.dominio.TipoSector;
+import ar.edu.unicen.ticketya.catalog.servicio.CatalogCacheService;
 import ar.edu.unicen.ticketya.catalog.servicio.VenueService;
 import ar.edu.unicen.ticketya.catalog.web.dto.CrearLugarRequest;
 import ar.edu.unicen.ticketya.catalog.web.dto.CrearSectorRequest;
@@ -150,26 +151,17 @@ class VenueControllerTest {
     @Test
     void listarLugaresDevuelveLaPagina() throws Exception {
         UUID id = UUID.randomUUID();
-        when(venueService.listarLugares(0, 20))
-                .thenReturn(new PageResponse<>(List.of(new LugarResponse(id, "Estadio", "Calle 1", "Tandil",
-                        new BigDecimal("-37.3"), new BigDecimal("-59.1"))), 0, 20, 1, 1));
+        when(venueService.listarLugaresCacheable(0, 20)).thenReturn(new CatalogCacheService.CacheResult<>(new PageResponse<>(List.of(new LugarResponse(id, "Estadio", "Calle 1", "Tandil", new BigDecimal("-37.3"), new BigDecimal("-59.1"))), 0, 20, 1, 1), "HIT"));
 
-        mockMvc.perform(get("/api/catalog/venues"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.content[0].id").value(id.toString()))
-                .andExpect(jsonPath("$.totalElements").value(1));
+        mockMvc.perform(get("/api/catalog/venues")).andExpect(status().isOk()).andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.header().string("X-Cache", "HIT")).andExpect(jsonPath("$.content[0].id").value(id.toString())).andExpect(jsonPath("$.totalElements").value(1));
     }
 
     @Test
     void obtenerLugarDevuelve200() throws Exception {
         UUID id = UUID.randomUUID();
-        when(venueService.obtenerLugar(id))
-                .thenReturn(new LugarResponse(id, "Estadio", "Calle 1", "Tandil",
-                        new BigDecimal("-37.3"), new BigDecimal("-59.1")));
+        when(venueService.obtenerLugarCacheable(id)).thenReturn(new CatalogCacheService.CacheResult<>(new LugarResponse(id, "Estadio", "Calle 1", "Tandil", new BigDecimal("-37.3"), new BigDecimal("-59.1")), "MISS"));
 
-        mockMvc.perform(get("/api/catalog/venues/{id}", id))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.nombre").value("Estadio"));
+        mockMvc.perform(get("/api/catalog/venues/{id}", id)).andExpect(status().isOk()).andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.header().string("X-Cache", "MISS")).andExpect(jsonPath("$.nombre").value("Estadio"));
     }
 
     @Test
@@ -197,21 +189,16 @@ class VenueControllerTest {
     @Test
     void listarSectoresDevuelveLaListaDelLugar() throws Exception {
         UUID venueId = UUID.randomUUID();
-        when(venueService.listarSectores(venueId))
-                .thenReturn(List.of(new SectorResponse(UUID.randomUUID(), venueId, "Platea",
-                        TipoSector.NUMERADO, 6, 2, 3, 6)));
+        when(venueService.listarSectoresCacheable(venueId)).thenReturn(new CatalogCacheService.CacheResult<>(List.of(new SectorResponse(UUID.randomUUID(), venueId, "Platea",
+                        TipoSector.NUMERADO, 6, 2, 3, 6))), "HIT");
 
-        mockMvc.perform(get("/api/catalog/venues/{id}/sectors", venueId))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].nombre").value("Platea"))
-                .andExpect(jsonPath("$[0].capacidad").value(6));
+        mockMvc.perform(get("/api/catalog/venues/{id}/sectors", venueId)).andExpect(status().isOk()).andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.header().string("X-Cache", "HIT")).andExpect(jsonPath("$[0].nombre").value("Platea")).andExpect(jsonPath("$[0].capacidad").value(6));
     }
 
     @Test
     void lugarInexistenteDevuelve404() throws Exception {
         UUID id = UUID.randomUUID();
-        when(venueService.obtenerLugar(id))
-                .thenThrow(ApiException.notFound("VENUE_NOT_FOUND", "No existe"));
+        when(venueService.obtenerLugarCacheable(id)).thenThrow(ApiException.notFound("VENUE_NOT_FOUND", "No existe"));
 
         mockMvc.perform(get("/api/catalog/venues/{id}", id))
                 .andExpect(status().isNotFound())

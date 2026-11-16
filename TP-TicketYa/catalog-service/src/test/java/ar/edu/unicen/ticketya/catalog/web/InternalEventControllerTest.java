@@ -1,9 +1,10 @@
-package ar.edu.unicen.ticketya.catalog.web;
+﻿package ar.edu.unicen.ticketya.catalog.web;
 
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -13,11 +14,15 @@ import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 @WebMvcTest(InternalEventController.class)
+@Import(InternalToken.class)
+@TestPropertySource(properties = "catalog.internal-token=test-internal-token")
 class InternalEventControllerTest {
 
     @Autowired
@@ -31,11 +36,23 @@ class InternalEventControllerTest {
         UUID eventoId = UUID.randomUUID();
 
         mockMvc.perform(patch("/internal/events/{id}/availability", eventoId)
+                        .header("X-Internal-Token", "test-internal-token")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"agotado\":true}"))
                 .andExpect(status().isNoContent());
 
         verify(eventService).actualizarDisponibilidad(eventoId, true);
+    }
+
+    @Test
+    void sinTokenInternoDevuelve401() throws Exception {
+        mockMvc.perform(patch("/internal/events/{id}/availability", UUID.randomUUID())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"agotado\":true}"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value("UNAUTHORIZED"));
+
+        verifyNoInteractions(eventService);
     }
 
     @Test
@@ -45,6 +62,7 @@ class InternalEventControllerTest {
                 .when(eventService).actualizarDisponibilidad(eq(eventoId), anyBoolean());
 
         mockMvc.perform(patch("/internal/events/{id}/availability", eventoId)
+                        .header("X-Internal-Token", "test-internal-token")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"agotado\":false}"))
                 .andExpect(status().isNotFound())
@@ -54,6 +72,7 @@ class InternalEventControllerTest {
     @Test
     void unCuerpoSinAgotadoDevuelve400() throws Exception {
         mockMvc.perform(patch("/internal/events/{id}/availability", UUID.randomUUID())
+                        .header("X-Internal-Token", "test-internal-token")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{}"))
                 .andExpect(status().isBadRequest())

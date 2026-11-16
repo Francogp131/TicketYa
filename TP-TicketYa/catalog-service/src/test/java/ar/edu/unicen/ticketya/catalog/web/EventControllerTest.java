@@ -118,8 +118,7 @@ class EventControllerTest {
 
     @Test
     void rangoDeFechasInvalidoDevuelve400() throws Exception {
-        when(eventService.buscar(any(), any(), any(), any(), any(), any(), any(), any(Integer.class), any(Integer.class)))
-                .thenThrow(ApiException.badRequest("INVALID_DATE_RANGE", "rango invÃ¡lido"));
+        when(eventService.buscarCacheable(any(), any(), any(), any(), any(), any(), any(), any(Integer.class), any(Integer.class))).thenThrow(ApiException.badRequest("INVALID_DATE_RANGE", "rango inválido"));
 
         mockMvc.perform(get("/api/catalog/events")
                         .param("fechaDesde", "2027-12-31T00:00:00-03:00")
@@ -131,8 +130,7 @@ class EventControllerTest {
 
     @Test
     void ordenInvalidoDevuelve400() throws Exception {
-        when(eventService.buscar(any(), any(), any(), any(), any(), any(), any(), any(Integer.class), any(Integer.class)))
-                .thenThrow(ApiException.badRequest("INVALID_SORT", "orden invÃ¡lido"));
+        when(eventService.buscarCacheable(any(), any(), any(), any(), any(), any(), any(), any(Integer.class), any(Integer.class))).thenThrow(ApiException.badRequest("INVALID_SORT", "orden inválido"));
 
         mockMvc.perform(get("/api/catalog/events").param("orden", "PRECIO"))
                 .andExpect(status().isBadRequest())
