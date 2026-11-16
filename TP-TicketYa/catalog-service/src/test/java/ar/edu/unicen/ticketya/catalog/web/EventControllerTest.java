@@ -1,4 +1,4 @@
-package ar.edu.unicen.ticketya.catalog.web;
+﻿package ar.edu.unicen.ticketya.catalog.web;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -13,6 +13,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import ar.edu.unicen.ticketya.catalog.dominio.EstadoEvento;
 import ar.edu.unicen.ticketya.catalog.dominio.TipoEvento;
+import ar.edu.unicen.ticketya.catalog.servicio.CatalogCacheService;
 import ar.edu.unicen.ticketya.catalog.servicio.EventService;
 import ar.edu.unicen.ticketya.catalog.web.dto.CancelacionResponse;
 import ar.edu.unicen.ticketya.catalog.web.dto.CrearEventoRequest;
@@ -87,9 +88,7 @@ class EventControllerTest {
                 TipoEvento.FESTIVAL, "Tandil", "Estadio Municipal",
                 OffsetDateTime.parse("2027-03-14T21:00:00-03:00"),
                 EstadoEvento.PUBLICADO, false, new BigDecimal("18000"));
-        when(eventService.buscar(eq(TipoEvento.FESTIVAL), eq(organizadorId), eq("Los Piojos"),
-                eq("Tandil"), eq(desde), eq(hasta), eq("FECHA_DESC"), eq(1), eq(10)))
-                .thenReturn(new PageResponse<>(List.of(evento), 1, 10, 1, 1));
+        when(eventService.buscarCacheable(eq(TipoEvento.FESTIVAL), eq(organizadorId), eq("Los Piojos"), eq("Tandil"), eq(desde), eq(hasta), eq("FECHA_DESC"), eq(1), eq(10))).thenReturn(new CatalogCacheService.CacheResult<>(new PageResponse<>(List.of(evento), 1, 10, 1, 1), "HIT"));
 
         mockMvc.perform(get("/api/catalog/events")
                         .param("tipo", "FESTIVAL")
@@ -101,20 +100,14 @@ class EventControllerTest {
                         .param("orden", "FECHA_DESC")
                         .param("page", "1")
                         .param("size", "10"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.content[0].id").value(eventoId.toString()))
-                .andExpect(jsonPath("$.content[0].ciudad").value("Tandil"))
-                .andExpect(jsonPath("$.totalElements").value(1))
-                .andExpect(jsonPath("$.totalPages").value(1));
+                .andExpect(status().isOk()).andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.header().string("X-Cache", "HIT")).andExpect(jsonPath("$.content[0].id").value(eventoId.toString())).andExpect(jsonPath("$.content[0].ciudad").value("Tandil")).andExpect(jsonPath("$.totalElements").value(1)).andExpect(jsonPath("$.totalPages").value(1));
 
-        verify(eventService).buscar(TipoEvento.FESTIVAL, organizadorId, "Los Piojos", "Tandil",
-                desde, hasta, "FECHA_DESC", 1, 10);
+        verify(eventService).buscarCacheable(TipoEvento.FESTIVAL, organizadorId, "Los Piojos", "Tandil", desde, hasta, "FECHA_DESC", 1, 10);
     }
 
     @Test
     void buscarSinResultadosDevuelve200ConListaVacia() throws Exception {
-        when(eventService.buscar(any(), any(), any(), any(), any(), any(), any(), any(Integer.class), any(Integer.class)))
-                .thenReturn(new PageResponse<>(List.of(), 0, 20, 0, 0));
+        when(eventService.buscarCacheable(any(), any(), any(), any(), any(), any(), any(), any(Integer.class), any(Integer.class))).thenReturn(new CatalogCacheService.CacheResult<>(new PageResponse<>(List.of(), 0, 20, 0, 0), "MISS"));
 
         mockMvc.perform(get("/api/catalog/events"))
                 .andExpect(status().isOk())
@@ -126,7 +119,7 @@ class EventControllerTest {
     @Test
     void rangoDeFechasInvalidoDevuelve400() throws Exception {
         when(eventService.buscar(any(), any(), any(), any(), any(), any(), any(), any(Integer.class), any(Integer.class)))
-                .thenThrow(ApiException.badRequest("INVALID_DATE_RANGE", "rango inválido"));
+                .thenThrow(ApiException.badRequest("INVALID_DATE_RANGE", "rango invÃ¡lido"));
 
         mockMvc.perform(get("/api/catalog/events")
                         .param("fechaDesde", "2027-12-31T00:00:00-03:00")
@@ -139,7 +132,7 @@ class EventControllerTest {
     @Test
     void ordenInvalidoDevuelve400() throws Exception {
         when(eventService.buscar(any(), any(), any(), any(), any(), any(), any(), any(Integer.class), any(Integer.class)))
-                .thenThrow(ApiException.badRequest("INVALID_SORT", "orden inválido"));
+                .thenThrow(ApiException.badRequest("INVALID_SORT", "orden invÃ¡lido"));
 
         mockMvc.perform(get("/api/catalog/events").param("orden", "PRECIO"))
                 .andExpect(status().isBadRequest())
@@ -177,7 +170,7 @@ class EventControllerTest {
         UUID eventoId = UUID.randomUUID();
         UUID organizadorId = UUID.randomUUID();
         when(eventService.editarEvento(eq(eventoId), any(EditarEventoRequest.class), eq(organizadorId)))
-                .thenReturn(new EventoResponse(eventoId, "Festival editado", "Nueva descripción",
+                .thenReturn(new EventoResponse(eventoId, "Festival editado", "Nueva descripciÃ³n",
                         TipoEvento.FESTIVAL, UUID.randomUUID(), "Estadio", "Tandil", organizadorId,
                         OffsetDateTime.parse("2027-06-01T21:00:00-03:00"), EstadoEvento.PUBLICADO,
                         6, true, List.of("Artista A"), List.of()));
@@ -187,7 +180,7 @@ class EventControllerTest {
                         .header("X-User-Role", "ORGANIZER")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"nombre":"Festival editado","descripcion":"Nueva descripción",
+                                {"nombre":"Festival editado","descripcion":"Nueva descripciÃ³n",
                                  "fecha":"2027-06-01T21:00:00-03:00","limitePorCliente":6}
                                 """))
                 .andExpect(status().isOk())
@@ -289,16 +282,9 @@ class EventControllerTest {
     void detalleDevuelveElEventoConSusSectores() throws Exception {
         UUID eventoId = UUID.randomUUID();
         UUID organizadorId = UUID.randomUUID();
-        when(eventService.detalle(eventoId))
-                .thenReturn(new EventoDetalleResponse(eventoId, "Festival", null, TipoEvento.FESTIVAL,
-                        UUID.randomUUID(), "Estadio", "Tandil", organizadorId,
-                        OffsetDateTime.parse("2027-05-01T21:00:00-03:00"), EstadoEvento.PUBLICADO,
-                        4, false, List.of("Artista A"), List.of()));
+        when(eventService.detalleCacheable(eventoId)).thenReturn(new CatalogCacheService.CacheResult<>(new EventoDetalleResponse(eventoId, "Festival", null, TipoEvento.FESTIVAL, UUID.randomUUID(), "Estadio", "Tandil", organizadorId, OffsetDateTime.parse("2027-05-01T21:00:00-03:00"), EstadoEvento.PUBLICADO, 4, false, List.of("Artista A"), List.of()), "MISS"));
 
-        mockMvc.perform(get("/api/catalog/events/{id}", eventoId))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(eventoId.toString()))
-                .andExpect(jsonPath("$.sectores").isArray());
+        mockMvc.perform(get("/api/catalog/events/{id}", eventoId)).andExpect(status().isOk()).andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.header().string("X-Cache", "MISS")).andExpect(jsonPath("$.id").value(eventoId.toString())).andExpect(jsonPath("$.sectores").isArray());
     }
 
     @Test

@@ -1,6 +1,7 @@
-package ar.edu.unicen.ticketya.catalog.web;
+﻿package ar.edu.unicen.ticketya.catalog.web;
 
 import ar.edu.unicen.ticketya.catalog.dominio.TipoEvento;
+import ar.edu.unicen.ticketya.catalog.servicio.CatalogCacheService;
 import ar.edu.unicen.ticketya.catalog.servicio.EventService;
 import ar.edu.unicen.ticketya.catalog.web.dto.CancelacionResponse;
 import ar.edu.unicen.ticketya.catalog.web.dto.CrearEventoRequest;
@@ -15,6 +16,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import java.net.URI;
 import java.time.OffsetDateTime;
@@ -33,7 +35,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/catalog/events")
-@Tag(name = "Eventos", description = "Eventos, precios, publicación, estados y búsqueda")
+@Tag(name = "Eventos", description = "Eventos, precios, publicaciÃ³n, estados y bÃºsqueda")
 public class EventController {
 
     private final EventService eventService;
@@ -45,7 +47,7 @@ public class EventController {
     @PostMapping
     @Operation(summary = "Crear un evento", description = "El evento nace en BORRADOR. Requiere rol ORGANIZER.")
     @ApiResponse(responseCode = "201", description = "Evento creado")
-    @ApiResponse(responseCode = "400", description = "Fecha pasada o datos inválidos (VALIDATION_ERROR)")
+    @ApiResponse(responseCode = "400", description = "Fecha pasada o datos invÃ¡lidos (VALIDATION_ERROR)")
     @ApiResponse(responseCode = "401", description = "Falta identidad (UNAUTHORIZED)")
     @ApiResponse(responseCode = "403", description = "Rol insuficiente (FORBIDDEN)")
     @ApiResponse(responseCode = "404", description = "El lugar no existe (VENUE_NOT_FOUND)")
@@ -61,16 +63,16 @@ public class EventController {
 
     @PutMapping("/{eventoId}")
     @Operation(summary = "Editar un evento",
-            description = "Actualiza solo los campos enviados. Si el evento está publicado o agotado, "
-                    + "refresca el snapshot de inventory con una versión nueva.")
+            description = "Actualiza solo los campos enviados. Si el evento estÃ¡ publicado o agotado, "
+                    + "refresca el snapshot de inventory con una versiÃ³n nueva.")
     @ApiResponse(responseCode = "200", description = "Evento actualizado")
-    @ApiResponse(responseCode = "400", description = "Datos inválidos o fecha pasada (VALIDATION_ERROR)")
+    @ApiResponse(responseCode = "400", description = "Datos invÃ¡lidos o fecha pasada (VALIDATION_ERROR)")
     @ApiResponse(responseCode = "401", description = "Falta identidad (UNAUTHORIZED)")
     @ApiResponse(responseCode = "403", description = "Rol insuficiente o evento de otro organizador (FORBIDDEN, NOT_EVENT_OWNER)")
     @ApiResponse(responseCode = "404", description = "Evento o lugar inexistente (EVENT_NOT_FOUND, VENUE_NOT_FOUND)")
     @ApiResponse(responseCode = "409", description = "Evento terminal, lugar de evento publicado o "
             + "cambio de alta demanda publicado (EVENT_NOT_EDITABLE); evento incompleto (EVENT_INCOMPLETE)")
-    @ApiResponse(responseCode = "502", description = "Inventory no confirmó el snapshot (INVENTORY_UNAVAILABLE)")
+    @ApiResponse(responseCode = "502", description = "Inventory no confirmÃ³ el snapshot (INVENTORY_UNAVAILABLE)")
     public EventoResponse editar(
             @PathVariable UUID eventoId,
             @Valid @RequestBody EditarEventoRequest request,
@@ -103,13 +105,13 @@ public class EventController {
 
     @PostMapping("/{eventoId}/publish")
     @Operation(summary = "Publicar un evento",
-            description = "Envía el snapshot a inventory de forma idempotente. Si inventory falla, el evento sigue en BORRADOR.")
+            description = "EnvÃ­a el snapshot a inventory de forma idempotente. Si inventory falla, el evento sigue en BORRADOR.")
     @ApiResponse(responseCode = "200", description = "Evento publicado")
     @ApiResponse(responseCode = "401", description = "Falta identidad (UNAUTHORIZED)")
     @ApiResponse(responseCode = "403", description = "Rol insuficiente o evento de otro organizador (FORBIDDEN, NOT_EVENT_OWNER)")
     @ApiResponse(responseCode = "404", description = "El evento no existe (EVENT_NOT_FOUND)")
     @ApiResponse(responseCode = "409", description = "Evento incompleto (EVENT_INCOMPLETE) o no editable (EVENT_NOT_EDITABLE)")
-    @ApiResponse(responseCode = "502", description = "Inventory no confirmó el snapshot (INVENTORY_UNAVAILABLE)")
+    @ApiResponse(responseCode = "502", description = "Inventory no confirmÃ³ el snapshot (INVENTORY_UNAVAILABLE)")
     public EventoResponse publicar(
             @PathVariable UUID eventoId,
             @RequestHeader(value = "X-User-Id", required = false) String userId,
@@ -126,7 +128,7 @@ public class EventController {
     @ApiResponse(responseCode = "401", description = "Falta identidad (UNAUTHORIZED)")
     @ApiResponse(responseCode = "403", description = "Rol insuficiente (FORBIDDEN)")
     @ApiResponse(responseCode = "404", description = "El evento no existe (EVENT_NOT_FOUND)")
-    @ApiResponse(responseCode = "409", description = "El evento ya está cancelado o finalizado (EVENT_NOT_CANCELLABLE)")
+    @ApiResponse(responseCode = "409", description = "El evento ya estÃ¡ cancelado o finalizado (EVENT_NOT_CANCELLABLE)")
     public CancelacionResponse cancelar(
             @PathVariable UUID eventoId,
             @RequestHeader(value = "X-User-Id", required = false) String userId,
@@ -155,9 +157,13 @@ public class EventController {
             @Parameter(description = "FECHA_ASC, FECHA_DESC, PRECIO_ASC, PRECIO_DESC o RELEVANCIA")
             @RequestParam(defaultValue = "FECHA_ASC") String orden,
             @Parameter(description = "Número de página, desde 0") @RequestParam(defaultValue = "0") int page,
-            @Parameter(description = "Tamaño de página, entre 1 y 100") @RequestParam(defaultValue = "20") int size) {
-        return eventService.buscar(tipo, organizadorId, participante, ciudad,
-                fechaDesde, fechaHasta, orden, page, size);
+            @Parameter(description = "Tamaño de página, entre 1 y 100") @RequestParam(defaultValue = "20") int size,
+            HttpServletRequest request) {
+        CatalogCacheService.CacheResult<PageResponse<EventoBusquedaResponse>> result =
+                eventService.buscarCacheable(tipo, organizadorId, participante, ciudad,
+                        fechaDesde, fechaHasta, orden, page, size);
+        CacheStatusFilter.mark(request, result.header());
+        return result.value();
     }
 
     @GetMapping("/{eventoId}")
@@ -166,7 +172,9 @@ public class EventController {
     @ApiResponse(responseCode = "200", description = "Detalle del evento")
     @ApiResponse(responseCode = "404", description = "El evento no existe o no es visible (EVENT_NOT_FOUND)")
     @ApiResponse(responseCode = "503", description = "No se pudo consultar inventory (INVENTORY_UNAVAILABLE)")
-    public EventoDetalleResponse detalle(@PathVariable UUID eventoId) {
-        return eventService.detalle(eventoId);
+    public EventoDetalleResponse detalle(@PathVariable UUID eventoId, HttpServletRequest request) {
+        CatalogCacheService.CacheResult<EventoDetalleResponse> result = eventService.detalleCacheable(eventoId);
+        CacheStatusFilter.mark(request, result.header());
+        return result.value();
     }
 }

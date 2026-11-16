@@ -8,6 +8,7 @@ import ar.edu.unicen.ticketya.catalog.dominio.EventoSectorPrecio;
 import ar.edu.unicen.ticketya.catalog.dominio.Lugar;
 import ar.edu.unicen.ticketya.catalog.dominio.Sector;
 import ar.edu.unicen.ticketya.catalog.dominio.TipoEvento;
+import ar.edu.unicen.ticketya.catalog.config.CacheConfig;
 import ar.edu.unicen.ticketya.catalog.repositorio.AsientoRepository;
 import ar.edu.unicen.ticketya.catalog.repositorio.EventoParticipanteRepository;
 import ar.edu.unicen.ticketya.catalog.repositorio.EventoRepository;
@@ -36,7 +37,9 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
+import java.util.StringJoiner;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -66,6 +69,7 @@ public class EventService {
     private final InventoryClient inventoryClient;
     private final OrdersClient ordersClient;
     private final Clock clock;
+    private final CatalogCacheService catalogCacheService;
 
     public EventService(EventoRepository eventoRepository,
                         LugarRepository lugarRepository,
@@ -75,7 +79,8 @@ public class EventService {
                         EventoSectorPrecioRepository precioRepository,
                         InventoryClient inventoryClient,
                         OrdersClient ordersClient,
-                        Clock clock) {
+                        Clock clock,
+                        CatalogCacheService catalogCacheService) {
         this.eventoRepository = eventoRepository;
         this.lugarRepository = lugarRepository;
         this.sectorRepository = sectorRepository;
@@ -85,6 +90,7 @@ public class EventService {
         this.inventoryClient = inventoryClient;
         this.ordersClient = ordersClient;
         this.clock = clock;
+        this.catalogCacheService = catalogCacheService;
     }
 
     @Transactional
@@ -178,6 +184,7 @@ public class EventService {
         evento.setEstado(EstadoEvento.PUBLICADO);
         evento = eventoRepository.save(evento);
         Lugar lugar = lugarRepository.findById(evento.getLugarId()).orElseThrow();
+        invalidarCachesEvento(eventoId);
         return EventoResponse.from(evento, lugar.getNombre(), lugar.getCiudad(),
                 participanteRepository.findByEventoIdOrderByNombreAsc(eventoId).stream()
                         .map(EventoParticipante::getNombre).toList(),
@@ -286,6 +293,7 @@ public class EventService {
         evento = eventoRepository.save(evento);
         Lugar lugar = lugarRepository.findById(evento.getLugarId())
                 .orElseThrow(() -> ApiException.notFound("VENUE_NOT_FOUND", "No existe el lugar del evento"));
+        invalidarCachesEvento(eventoId);
         return EventoResponse.from(evento, lugar.getNombre(), lugar.getCiudad(),
                 participantes.stream().map(EventoParticipante::getNombre).toList(),
                 precios.stream()
@@ -294,59 +302,64 @@ public class EventService {
                         .toList());
     }
 
+    public CatalogCacheService.CacheResult<EventoDetalleResponse> detalleCacheable(UUID eventoId) {
+        CatalogCacheService.CacheResult<EventoDetalleEstatico> estatico = catalogCacheService.getOrLoad(
+                CacheConfig.EVENT_DETAIL_STATIC, eventoId, EventoDetalleEstatico.class,
+                () -> cargarDetalleEstatico(eventoId));
+        Map<UUID, Integer> disponibilidad = obtenerDisponibilidad(eventoId);
+        EventoDetalleResponse response = componerDetalle(estatico.value(), disponibilidad);
+        return new CatalogCacheService.CacheResult<>(response, estatico.header());
+    }
+
     @Transactional(readOnly = true)
-    public EventoDetalleResponse detalle(UUID eventoId) {
+    public EventoDetalleEstatico cargarDetalleEstatico(UUID eventoId) {
         Evento evento = buscarEvento(eventoId);
         if (evento.getEstado() != EstadoEvento.PUBLICADO && evento.getEstado() != EstadoEvento.AGOTADO) {
             throw ApiException.notFound("EVENT_NOT_FOUND", "No existe un evento visible con id " + eventoId);
         }
         Lugar lugar = lugarRepository.findById(evento.getLugarId())
                 .orElseThrow(() -> ApiException.notFound("VENUE_NOT_FOUND", "No existe el lugar del evento"));
+        Map<UUID, Sector> sectores = sectorRepository.findByLugarIdOrderByNombreAsc(evento.getLugarId()).stream()
+                .collect(Collectors.toMap(Sector::getId, Function.identity(), (a, b) -> a, LinkedHashMap::new));
+        List<EventoDetalleEstatico.SectorEstatico> sectoresResponse = new ArrayList<>();
+        precioRepository.findByEventoId(eventoId).forEach(precio -> {
+            Sector sector = sectores.get(precio.getSectorId());
+            if (sector != null) {
+                sectoresResponse.add(new EventoDetalleEstatico.SectorEstatico(
+                        sector.getId(), sector.getNombre(), sector.getTipo(),
+                        precio.getPrecio(), sector.getCapacidad()));
+            }
+        });
+        List<String> participantes = participanteRepository.findByEventoIdOrderByNombreAsc(eventoId).stream()
+                .map(EventoParticipante::getNombre).toList();
+        return new EventoDetalleEstatico(
+                evento.getId(), evento.getNombre(), evento.getDescripcion(), evento.getTipo(),
+                evento.getLugarId(), lugar.getNombre(), lugar.getCiudad(), evento.getOrganizadorId(),
+                Fechas.argentina(evento.getFecha()), evento.getEstado(), evento.getLimitePorCliente(),
+                evento.isAltaDemanda(), participantes, sectoresResponse);
+    }
 
-        Map<UUID, Integer> disponibilidad;
+    private Map<UUID, Integer> obtenerDisponibilidad(UUID eventoId) {
         try {
-            disponibilidad = inventoryClient.obtenerDisponibilidad(eventoId);
+            return inventoryClient.obtenerDisponibilidad(eventoId);
         } catch (RuntimeException ex) {
             throw new ApiException(HttpStatus.SERVICE_UNAVAILABLE, "INVENTORY_UNAVAILABLE",
                     "No se pudo obtener la disponibilidad del evento", List.of());
         }
-
-        Map<UUID, Sector> sectores = sectorRepository.findByLugarIdOrderByNombreAsc(evento.getLugarId()).stream()
-                .collect(Collectors.toMap(Sector::getId, Function.identity(), (a, b) -> a, LinkedHashMap::new));
-        Map<UUID, BigDecimal> precios = precioRepository.findByEventoId(eventoId).stream()
-                .collect(Collectors.toMap(EventoSectorPrecio::getSectorId, EventoSectorPrecio::getPrecio));
-
-        List<SectorDetalleResponse> sectoresResponse = new ArrayList<>();
-        precios.forEach((sectorId, precio) -> {
-            Sector sector = sectores.get(sectorId);
-            if (sector != null) {
-                sectoresResponse.add(new SectorDetalleResponse(
-                        sector.getId(),
-                        sector.getNombre(),
-                        sector.getTipo(),
-                        precio,
-                        sector.getCapacidad(),
-                        disponibilidad.getOrDefault(sectorId, 0)));
-            }
-        });
-
-        return new EventoDetalleResponse(
-                evento.getId(),
-                evento.getNombre(),
-                evento.getDescripcion(),
-                evento.getTipo(),
-                evento.getLugarId(),
-                lugar.getNombre(),
-                lugar.getCiudad(),
-                evento.getOrganizadorId(),
-                ar.edu.unicen.ticketya.catalog.web.dto.Fechas.argentina(evento.getFecha()),
-                evento.getEstado(),
-                evento.getLimitePorCliente(),
-                evento.isAltaDemanda(),
-                participanteRepository.findByEventoIdOrderByNombreAsc(eventoId).stream()
-                        .map(EventoParticipante::getNombre).toList(),
-                sectoresResponse);
     }
+
+    private EventoDetalleResponse componerDetalle(EventoDetalleEstatico estatico, Map<UUID, Integer> disponibilidad) {
+        List<SectorDetalleResponse> sectores = estatico.sectores().stream()
+                .map(s -> new SectorDetalleResponse(s.sectorId(), s.nombre(), s.tipo(), s.precio(),
+                        s.capacidad(), disponibilidad.getOrDefault(s.sectorId(), 0)))
+                .toList();
+        return new EventoDetalleResponse(
+                estatico.id(), estatico.nombre(), estatico.descripcion(), estatico.tipo(),
+                estatico.lugarId(), estatico.lugarNombre(), estatico.ciudad(), estatico.organizadorId(),
+                estatico.fecha(), estatico.estado(), estatico.limitePorCliente(), estatico.altaDemanda(),
+                estatico.participantes(), sectores);
+    }
+
 
     @Transactional
     public CancelacionResponse cancelar(UUID eventoId) {
@@ -390,6 +403,7 @@ public class EventService {
         }
         evento.setCancelacionPendiente(pendiente);
         evento = eventoRepository.save(evento);
+        invalidarCachesEvento(eventoId);
         return new CancelacionResponse(evento.getId(), evento.getEstado(), evento.isCancelacionPendiente());
     }
 
@@ -416,6 +430,7 @@ public class EventService {
             evento.setEstado(EstadoEvento.PUBLICADO);
         }
         eventoRepository.save(evento);
+        invalidarCachesEvento(eventoId);
     }
 
     @Transactional
@@ -446,6 +461,7 @@ public class EventService {
         }
         if (!cerrados.isEmpty()) {
             eventoRepository.saveAll(cerrados);
+            cerrados.forEach(e -> invalidarCachesEvento(e.getId()));
         }
         return cerrados.size();
     }
@@ -488,6 +504,14 @@ public class EventService {
             }
         }
         return reintentadas;
+    }
+
+    public CatalogCacheService.CacheResult<PageResponse<EventoBusquedaResponse>> buscarCacheable(
+            TipoEvento tipo, UUID organizadorId, String participante, String ciudad,
+            OffsetDateTime fechaDesde, OffsetDateTime fechaHasta, String orden, int page, int size) {
+        String key = searchKey(tipo, organizadorId, participante, ciudad, fechaDesde, fechaHasta, orden, page, size);
+        return catalogCacheService.getOrLoad(CacheConfig.EVENT_SEARCH, key, PageResponse.class,
+                () -> buscar(tipo, organizadorId, participante, ciudad, fechaDesde, fechaHasta, orden, page, size));
     }
 
     @Transactional(readOnly = true)
@@ -642,5 +666,25 @@ public class EventService {
     private ApiException validacion(String field, String message) {
         return new ApiException(HttpStatus.BAD_REQUEST, "VALIDATION_ERROR",
                 "La solicitud tiene campos inválidos", List.of(Map.of("field", field, "message", message)));
+    }
+    private String searchKey(TipoEvento tipo, UUID organizadorId, String participante, String ciudad,
+                             OffsetDateTime fechaDesde, OffsetDateTime fechaHasta, String orden, int page, int size) {
+        StringJoiner j = new StringJoiner("|");
+        j.add("tipo=" + (tipo == null ? "" : tipo.name()));
+        j.add("org=" + (organizadorId == null ? "" : organizadorId));
+        j.add("part=" + normalizar(participante));
+        j.add("ciudad=" + normalizar(ciudad));
+        j.add("desde=" + Objects.toString(fechaDesde, ""));
+        j.add("hasta=" + Objects.toString(fechaHasta, ""));
+        j.add("orden=" + (orden == null ? "" : orden));
+        j.add("page=" + page);
+        j.add("size=" + size);
+        return j.toString();
+    }
+
+    private void invalidarCachesEvento(UUID eventoId) {
+        if (catalogCacheService != null) {
+            catalogCacheService.evictEventCaches(eventoId);
+        }
     }
 }

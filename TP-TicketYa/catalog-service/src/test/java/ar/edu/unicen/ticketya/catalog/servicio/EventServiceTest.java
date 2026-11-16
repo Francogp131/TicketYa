@@ -42,6 +42,7 @@ import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.function.Supplier;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -72,15 +73,21 @@ class EventServiceTest {
     private InventoryClient inventoryClient;
     @Mock
     private OrdersClient ordersClient;
+    @Mock
+    private CatalogCacheService catalogCacheService;
 
     private EventService eventService;
     private final Clock clock = Clock.fixed(Instant.parse("2026-11-03T12:00:00Z"), ZONA);
 
     @BeforeEach
     void setUp() {
+        lenient().when(catalogCacheService.getOrLoad(any(), any(), any(), any()))
+                .thenAnswer(inv -> new CatalogCacheService.CacheResult<>( ((Supplier<?>) inv.getArgument(3)).get(), "BYPASS"));
+        lenient().when(catalogCacheService.getOrLoad(any(), any(), any(Class.class), any()))
+                .thenAnswer(inv -> new CatalogCacheService.CacheResult<>( ((Supplier<?>) inv.getArgument(3)).get(), "BYPASS"));
         eventService = new EventService(eventoRepository, lugarRepository, sectorRepository,
                 asientoRepository, participanteRepository, precioRepository, inventoryClient,
-                ordersClient, clock);
+                ordersClient, clock, catalogCacheService);
     }
 
     @Test
