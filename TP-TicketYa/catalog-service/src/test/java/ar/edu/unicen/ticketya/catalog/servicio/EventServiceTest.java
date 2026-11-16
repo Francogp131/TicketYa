@@ -1,4 +1,4 @@
-package ar.edu.unicen.ticketya.catalog.servicio;
+﻿package ar.edu.unicen.ticketya.catalog.servicio;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -83,10 +83,8 @@ class EventServiceTest {
 
     @BeforeEach
     void setUp() {
-        lenient().when(catalogCacheService.getOrLoad(any(), any(), any(), any()))
-                .thenAnswer(inv -> new CatalogCacheService.CacheResult<>( ((Supplier<?>) inv.getArgument(3)).get(), "BYPASS"));
-        lenient().when(catalogCacheService.getOrLoad(any(), any(), any(Class.class), any()))
-                .thenAnswer(inv -> new CatalogCacheService.CacheResult<>( ((Supplier<?>) inv.getArgument(3)).get(), "BYPASS"));
+        lenient().when(catalogCacheService.getOrLoad(any(), any(), org.mockito.ArgumentMatchers.<Supplier<Object>>any()))
+                .thenAnswer(inv -> new CatalogCacheService.CacheResult<>(((Supplier<?>) inv.getArgument(2)).get(), "BYPASS"));
         eventService = new EventService(eventoRepository, lugarRepository, sectorRepository,
                 asientoRepository, participanteRepository, precioRepository, inventoryClient,
                 ordersClient, clock, catalogCacheService, outboxService);
@@ -203,7 +201,7 @@ class EventServiceTest {
         when(sectorRepository.findByLugarIdOrderByNombreAsc(evento.getLugarId())).thenReturn(List.of(sector));
         when(precioRepository.findByEventoId(evento.getId())).thenReturn(List.of(precio));
         when(asientoRepository.findBySectorIdOrderByFilaAscNumeroAsc(sector.getId())).thenReturn(List.of());
-        org.mockito.Mockito.doThrow(new RuntimeException("inventory caÃ­do"))
+        org.mockito.Mockito.doThrow(new RuntimeException("inventory caÃƒÂ­do"))
                 .when(inventoryClient).publicarInventario(any());
 
         assertThatThrownBy(() -> eventService.publicar(evento.getId(), evento.getOrganizadorId()))
@@ -235,12 +233,12 @@ class EventServiceTest {
         when(participanteRepository.findByEventoIdOrderByNombreAsc(evento.getId())).thenReturn(List.of());
 
         EventoResponse response = eventService.editarEvento(evento.getId(),
-                new EditarEventoRequest("Festival editado", "Nueva descripciÃ³n", null, null,
+                new EditarEventoRequest("Festival editado", "Nueva descripciÃƒÂ³n", null, null,
                         nuevaFecha, null, 6, null),
                 evento.getOrganizadorId());
 
         assertThat(response.nombre()).isEqualTo("Festival editado");
-        assertThat(response.descripcion()).isEqualTo("Nueva descripciÃ³n");
+        assertThat(response.descripcion()).isEqualTo("Nueva descripciÃƒÂ³n");
         assertThat(response.fecha()).isEqualTo(nuevaFecha);
         assertThat(response.limitePorCliente()).isEqualTo(6);
         assertThat(evento.getInventarioVersion()).isEqualTo(2L);
@@ -403,7 +401,7 @@ class EventServiceTest {
         evento.setEstado(EstadoEvento.PUBLICADO);
         when(eventoRepository.findById(evento.getId())).thenReturn(Optional.of(evento));
         when(eventoRepository.save(any(Evento.class))).thenAnswer(inv -> inv.getArgument(0));
-        doThrow(new RuntimeException("inventory caÃ­do"))
+        doThrow(new RuntimeException("inventory caÃƒÂ­do"))
                 .when(inventoryClient).actualizarEstado(evento.getId(), "CANCELADO");
 
         CancelacionResponse response = eventService.cancelar(evento.getId());
@@ -420,7 +418,7 @@ class EventServiceTest {
         evento.setEstado(EstadoEvento.PUBLICADO);
         when(eventoRepository.findById(evento.getId())).thenReturn(Optional.of(evento));
         when(eventoRepository.save(any(Evento.class))).thenAnswer(inv -> inv.getArgument(0));
-        doThrow(new RuntimeException("orders caÃ­do")).when(ordersClient).cancelarEvento(evento.getId());
+        doThrow(new RuntimeException("orders caÃƒÂ­do")).when(ordersClient).cancelarEvento(evento.getId());
 
         CancelacionResponse response = eventService.cancelar(evento.getId());
 
@@ -509,7 +507,7 @@ class EventServiceTest {
                 OffsetDateTime.parse("2026-11-01T21:00:00-03:00"), EstadoEvento.PUBLICADO);
         when(eventoRepository.findByEstadoInAndFechaBefore(any(), any(OffsetDateTime.class)))
                 .thenReturn(List.of(publicado));
-        doThrow(new RuntimeException("inventory caÃ­do"))
+        doThrow(new RuntimeException("inventory caÃƒÂ­do"))
                 .when(inventoryClient).actualizarEstado(publicado.getId(), "FINALIZADO");
 
         int finalizados = eventService.finalizarEventosVencidos();
@@ -574,7 +572,7 @@ class EventServiceTest {
         evento.setEstado(EstadoEvento.CANCELADO);
         evento.setCancelacionPendiente(true);
         when(eventoRepository.findByCancelacionPendienteTrue()).thenReturn(List.of(evento));
-        doThrow(new RuntimeException("inventory caÃ­do"))
+        doThrow(new RuntimeException("inventory caÃƒÂ­do"))
                 .when(inventoryClient).actualizarEstado(evento.getId(), "CANCELADO");
 
         int reintentadas = eventService.reintentarCancelacionesPendientes();
@@ -746,9 +744,9 @@ class EventServiceTest {
         when(lugarRepository.findById(evento.getLugarId()))
                 .thenReturn(Optional.of(lugar(evento.getLugarId(), "Estadio", "Tandil")));
         when(inventoryClient.obtenerDisponibilidad(evento.getId()))
-                .thenThrow(new RuntimeException("inventory caÃ­do"));
+                .thenThrow(new RuntimeException("inventory caÃƒÂ­do"));
 
-        assertThatThrownBy(() -> eventService.detalle(evento.getId()))
+        assertThatThrownBy(() -> eventService.detalleCacheable(evento.getId()).value())
                 .isInstanceOfSatisfying(ApiException.class, ex -> {
                     assertThat(ex.getStatus().value()).isEqualTo(503);
                     assertThat(ex.getCode()).isEqualTo("INVENTORY_UNAVAILABLE");

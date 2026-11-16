@@ -1,4 +1,4 @@
-package ar.edu.unicen.ticketya.catalog.web;
+﻿package ar.edu.unicen.ticketya.catalog.web;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -189,8 +189,8 @@ class VenueControllerTest {
     @Test
     void listarSectoresDevuelveLaListaDelLugar() throws Exception {
         UUID venueId = UUID.randomUUID();
-        when(venueService.listarSectoresCacheable(venueId)).thenReturn(new CatalogCacheService.CacheResult<>(List.of(new SectorResponse(UUID.randomUUID(), venueId, "Platea",
-                        TipoSector.NUMERADO, 6, 2, 3, 6))), "HIT");
+        when(venueService.listarSectoresCacheable(venueId)).thenReturn(new CatalogCacheService.CacheResult<List<SectorResponse>>(List.of(new SectorResponse(UUID.randomUUID(), venueId, "Platea",
+                        TipoSector.NUMERADO, 6, 2, 3, 6)), "HIT"));
 
         mockMvc.perform(get("/api/catalog/venues/{id}/sectors", venueId)).andExpect(status().isOk()).andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.header().string("X-Cache", "HIT")).andExpect(jsonPath("$[0].nombre").value("Platea")).andExpect(jsonPath("$[0].capacidad").value(6));
     }
