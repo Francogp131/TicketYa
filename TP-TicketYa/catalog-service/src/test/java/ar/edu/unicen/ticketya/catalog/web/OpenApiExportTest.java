@@ -42,6 +42,8 @@ class OpenApiExportTest {
     private VenueService venueService;
     @MockitoBean
     private EventService eventService;
+    @MockitoBean
+    private InternalToken internalToken;
 
     @Test
     void exportaElOpenApiDeCatalog() throws Exception {

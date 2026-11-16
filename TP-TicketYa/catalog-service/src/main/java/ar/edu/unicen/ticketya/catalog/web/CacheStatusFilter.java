@@ -19,7 +19,7 @@ public class CacheStatusFilter extends OncePerRequestFilter {
                                     FilterChain filterChain) throws ServletException, IOException {
         filterChain.doFilter(request, response);
         Object status = request.getAttribute(ATTRIBUTE);
-        if (status instanceof String value && !response.isCommitted()) {
+        if (status instanceof String value) {
             response.setHeader("X-Cache", value);
         }
     }
