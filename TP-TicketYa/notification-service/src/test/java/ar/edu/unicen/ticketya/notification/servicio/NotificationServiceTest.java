@@ -62,7 +62,7 @@ class NotificationServiceTest {
         when(repository.findByEventIdAndTipoAndDestinatarioId(any(), any(), any()))
                 .thenReturn(Optional.empty());
         when(repository.save(any(Notificacion.class))).thenAnswer(inv -> inv.getArgument(0));
-        doThrow(new RuntimeException("smtp caído")).when(sender).send(any(Notificacion.class));
+        doThrow(new RuntimeException("smtp caÃ­do")).when(sender).send(any(Notificacion.class));
 
         Notificacion resultado = service.crearYEnviar(notificacion);
 
@@ -112,7 +112,7 @@ class NotificationServiceTest {
         when(repository.findByEventIdAndTipoAndDestinatarioId(any(), any(), any()))
                 .thenReturn(Optional.empty());
         when(repository.save(any(Notificacion.class))).thenAnswer(inv -> inv.getArgument(0));
-        // sender real mock lanza por defecto? lo dejamos que el servicio capture excepción del sender mock real
+        // sender real mock lanza por defecto? lo dejamos que el servicio capture excepciÃ³n del sender mock real
         doThrow(new IllegalArgumentException("El destinatario no tiene email"))
                 .when(sender).send(any(Notificacion.class));
 

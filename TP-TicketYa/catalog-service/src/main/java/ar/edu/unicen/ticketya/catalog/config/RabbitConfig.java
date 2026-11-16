@@ -1,4 +1,4 @@
-﻿package ar.edu.unicen.ticketya.catalog.config;
+package ar.edu.unicen.ticketya.catalog.config;
 
 import ar.edu.unicen.ticketya.catalog.eventos.CatalogEvents;
 import org.springframework.amqp.core.TopicExchange;

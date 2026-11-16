@@ -1,4 +1,4 @@
-﻿package ar.edu.unicen.ticketya.catalog.eventos;
+package ar.edu.unicen.ticketya.catalog.eventos;
 
 import java.util.LinkedHashMap;
 import java.util.Map;

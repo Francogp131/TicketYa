@@ -1,4 +1,4 @@
-﻿package ar.edu.unicen.ticketya.catalog.web;
+package ar.edu.unicen.ticketya.catalog.web;
 
 import ar.edu.unicen.ticketya.catalog.web.ApiException;
 import java.util.Arrays;

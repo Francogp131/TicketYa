@@ -1,4 +1,4 @@
-﻿package ar.edu.unicen.ticketya.notification.web;
+package ar.edu.unicen.ticketya.notification.web;
 
 import java.util.Arrays;
 import java.util.UUID;

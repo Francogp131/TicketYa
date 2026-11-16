@@ -69,7 +69,7 @@ public class NotificationService {
             if (notificacion.getIntentos() >= maxIntentos) {
                 notificacion.setEstado(EstadoNotificacion.FALLIDA);
                 notificacion.setProximoReintento(null);
-                log.warn("Notificaci�n {} agot� intentos: {}", notificacion.getId(), mensaje);
+                log.warn("NotificaciÃ³n {} agotÃ³ intentos: {}", notificacion.getId(), mensaje);
             } else {
                 notificacion.setEstado(EstadoNotificacion.PENDIENTE);
                 long segundos = backoffBase.toSeconds() * notificacion.getIntentos();

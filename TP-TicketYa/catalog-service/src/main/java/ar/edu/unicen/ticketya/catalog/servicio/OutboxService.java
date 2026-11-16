@@ -1,4 +1,4 @@
-﻿package ar.edu.unicen.ticketya.catalog.servicio;
+package ar.edu.unicen.ticketya.catalog.servicio;
 
 import ar.edu.unicen.ticketya.catalog.dominio.OutboxEvent;
 import ar.edu.unicen.ticketya.catalog.eventos.EventEnvelope;

@@ -1,4 +1,4 @@
-﻿package ar.edu.unicen.ticketya.catalog.repositorio;
+package ar.edu.unicen.ticketya.catalog.repositorio;
 
 import ar.edu.unicen.ticketya.catalog.dominio.OutboxEvent;
 import java.time.OffsetDateTime;

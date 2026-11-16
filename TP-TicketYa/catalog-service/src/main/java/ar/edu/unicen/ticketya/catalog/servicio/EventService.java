@@ -1,4 +1,4 @@
-﻿package ar.edu.unicen.ticketya.catalog.servicio;
+package ar.edu.unicen.ticketya.catalog.servicio;
 
 import ar.edu.unicen.ticketya.catalog.dominio.Asiento;
 import ar.edu.unicen.ticketya.catalog.dominio.EstadoEvento;

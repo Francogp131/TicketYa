@@ -1,4 +1,4 @@
-﻿package ar.edu.unicen.ticketya.catalog.web;
+package ar.edu.unicen.ticketya.catalog.web;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;

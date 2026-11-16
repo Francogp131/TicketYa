@@ -1,4 +1,4 @@
-﻿package ar.edu.unicen.ticketya.catalog.web;
+package ar.edu.unicen.ticketya.catalog.web;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;

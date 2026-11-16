@@ -6,7 +6,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 /**
- * Canal simulado para desarrollo/pruebas. No env�a mensajes reales.
+ * Canal simulado para desarrollo/pruebas. No envÃ­a mensajes reales.
  */
 @Component
 public class MockNotificationSender implements NotificationSender {
@@ -18,7 +18,7 @@ public class MockNotificationSender implements NotificationSender {
         if (notificacion.getDestinatarioEmail() == null || notificacion.getDestinatarioEmail().isBlank()) {
             throw new IllegalArgumentException("El destinatario no tiene email");
         }
-        log.info("Mock env�o notificaci�n id={} tipo={} destinatario={} asunto={}",
+        log.info("Mock envÃ­o notificaciÃ³n id={} tipo={} destinatario={} asunto={}",
                 notificacion.getId(), notificacion.getTipo(), mask(notificacion.getDestinatarioEmail()),
                 notificacion.getAsunto());
     }

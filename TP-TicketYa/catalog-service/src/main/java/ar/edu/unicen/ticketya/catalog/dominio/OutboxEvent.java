@@ -1,4 +1,4 @@
-﻿package ar.edu.unicen.ticketya.catalog.dominio;
+package ar.edu.unicen.ticketya.catalog.dominio;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
