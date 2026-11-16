@@ -380,6 +380,22 @@ class EventServiceTest {
     }
 
     @Test
+    void asignarPrecioInvalidaElDetalleYLasBusquedas() {
+        Evento evento = evento(UUID.randomUUID(), UUID.randomUUID());
+        Sector sector = sector(evento.getLugarId(), "Platea");
+        when(eventoRepository.findById(evento.getId())).thenReturn(Optional.of(evento));
+        when(sectorRepository.findById(sector.getId())).thenReturn(Optional.of(sector));
+        when(precioRepository.findByEventoIdAndSectorId(evento.getId(), sector.getId()))
+                .thenReturn(Optional.empty());
+        when(precioRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        eventService.asignarPrecio(evento.getId(), sector.getId(),
+                new PrecioRequest(new BigDecimal("100")), evento.getOrganizadorId());
+
+        verify(catalogCacheService).evictEventCaches(evento.getId());
+    }
+
+    @Test
     void cancelarEventoPublicadoAvisaAOrdersEInventoryYQuedaCancelado() {
         Evento evento = evento(UUID.randomUUID(), UUID.randomUUID());
         evento.setEstado(EstadoEvento.PUBLICADO);

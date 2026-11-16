@@ -149,6 +149,7 @@ public class EventService {
                 .orElseGet(() -> new EventoSectorPrecio(eventoId, sectorId, request.precio()));
         precio.setPrecio(request.precio());
         precio = precioRepository.save(precio);
+        invalidarCachesEvento(eventoId);
         return new PrecioResponse(precio.getEventoId(), precio.getSectorId(), precio.getPrecio());
     }
 
