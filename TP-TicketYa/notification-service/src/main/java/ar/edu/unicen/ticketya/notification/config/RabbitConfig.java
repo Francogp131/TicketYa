@@ -23,6 +23,9 @@ public class RabbitConfig {
     public static final String EXCHANGE = "ticketya.events";
     public static final String DLX = "ticketya.events.dlx";
     public static final String ROUTING_KEY_ORDEN_PAGADA = "orden.pagada";
+    public static final String ROUTING_KEY_EVENTO_ACTUALIZADO = "evento.actualizado";
+    public static final String ROUTING_KEY_EVENTO_CANCELADO = "evento.cancelado";
+    public static final String ROUTING_KEY_EVENTO_PUBLICADO = "evento.publicado";
 
     @Bean
     public TopicExchange ticketyaEventsExchange() {
@@ -65,6 +68,85 @@ public class RabbitConfig {
             DirectExchange ticketyaEventsDlx,
             @Value("${notification.rabbit.dlq:notification.order.dlq}") String dlqName) {
         return BindingBuilder.bind(notificationOrderDlq)
+                .to(ticketyaEventsDlx)
+                .with(dlqName);
+    }
+
+    @Bean
+    public Queue notificationEventQueue(
+            @Value("${notification.rabbit.event-queue:notification.event}") String queueName,
+            @Value("${notification.rabbit.event-dlq:notification.event.dlq}") String dlqName) {
+        return QueueBuilder.durable(queueName)
+                .deadLetterExchange(DLX)
+                .deadLetterRoutingKey(dlqName)
+                .build();
+    }
+
+    @Bean
+    public Queue notificationEventDlq(
+            @Value("${notification.rabbit.event-dlq:notification.event.dlq}") String dlqName) {
+        return QueueBuilder.durable(dlqName).build();
+    }
+
+    @Bean
+    public Binding notificationEventActualizadoBinding(
+            @Qualifier("notificationEventQueue") Queue notificationEventQueue,
+            TopicExchange ticketyaEventsExchange) {
+        return BindingBuilder.bind(notificationEventQueue)
+                .to(ticketyaEventsExchange)
+                .with(ROUTING_KEY_EVENTO_ACTUALIZADO);
+    }
+
+    @Bean
+    public Binding notificationEventCanceladoBinding(
+            @Qualifier("notificationEventQueue") Queue notificationEventQueue,
+            TopicExchange ticketyaEventsExchange) {
+        return BindingBuilder.bind(notificationEventQueue)
+                .to(ticketyaEventsExchange)
+                .with(ROUTING_KEY_EVENTO_CANCELADO);
+    }
+
+    @Bean
+    public Binding notificationEventDlqBinding(
+            @Qualifier("notificationEventDlq") Queue notificationEventDlq,
+            DirectExchange ticketyaEventsDlx,
+            @Value("${notification.rabbit.event-dlq:notification.event.dlq}") String dlqName) {
+        return BindingBuilder.bind(notificationEventDlq)
+                .to(ticketyaEventsDlx)
+                .with(dlqName);
+    }
+
+    @Bean
+    public Queue notificationFavoriteQueue(
+            @Value("${notification.rabbit.favorite-queue:notification.favorite}") String queueName,
+            @Value("${notification.rabbit.favorite-dlq:notification.favorite.dlq}") String dlqName) {
+        return QueueBuilder.durable(queueName)
+                .deadLetterExchange(DLX)
+                .deadLetterRoutingKey(dlqName)
+                .build();
+    }
+
+    @Bean
+    public Queue notificationFavoriteDlq(
+            @Value("${notification.rabbit.favorite-dlq:notification.favorite.dlq}") String dlqName) {
+        return QueueBuilder.durable(dlqName).build();
+    }
+
+    @Bean
+    public Binding notificationFavoriteBinding(
+            @Qualifier("notificationFavoriteQueue") Queue notificationFavoriteQueue,
+            TopicExchange ticketyaEventsExchange) {
+        return BindingBuilder.bind(notificationFavoriteQueue)
+                .to(ticketyaEventsExchange)
+                .with(ROUTING_KEY_EVENTO_PUBLICADO);
+    }
+
+    @Bean
+    public Binding notificationFavoriteDlqBinding(
+            @Qualifier("notificationFavoriteDlq") Queue notificationFavoriteDlq,
+            DirectExchange ticketyaEventsDlx,
+            @Value("${notification.rabbit.favorite-dlq:notification.favorite.dlq}") String dlqName) {
+        return BindingBuilder.bind(notificationFavoriteDlq)
                 .to(ticketyaEventsDlx)
                 .with(dlqName);
     }

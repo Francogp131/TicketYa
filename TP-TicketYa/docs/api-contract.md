@@ -809,6 +809,21 @@ curl http://localhost:8084/internal/preferences/33333333-3333-4333-8333-33333333
   -H "X-Internal-Token: ticketya-internal-dev"
 ```
 
+### 6.3.1 Interno propuesto — `GET /internal/preferences?artista={artista}&ciudad={ciudad}` (X-Internal-Token)
+
+Lo consume notification-service (8.3) para encontrar clientes que tienen un artista favorito en la ciudad de un `evento.publicado`. Devuelve `200` con la lista de coincidencias y `[]` si no hay ninguna; `401 UNAUTHORIZED` sin token. Compara artistas sin distinguir mayúsculas y ciudad exacta (recortando espacios). No se expone por el gateway.
+
+```json
+[
+  {
+    "clienteId": "33333333-3333-4333-8333-333333333333",
+    "clienteEmail": "cliente@example.com"
+  }
+]
+```
+
+`clienteEmail` es opcional; notification-service usa su sender mock si no viene. **Pendiente de implementación en recommendation-service (P5).** Mientras no exista, notification-service degrada a lista vacía y registra un warning, sin bloquear la publicación del evento.
+
 ### 6.4 Recomendaciones — `GET /api/recommendations` (CLIENT)
 
 Devuelve eventos publicados y futuros ordenados por afinidad. Excluye lo ya comprado, lo cancelado y lo pasado. Cada ítem incluye los motivos y el puntaje usado para ordenar.

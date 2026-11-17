@@ -52,5 +52,13 @@ notification:
   rabbit:
     queue: ${NOTIFICATION_QUEUE:notification.order}
     dlq: ${NOTIFICATION_QUEUE_DLQ:notification.order.dlq}
+    event-queue: ${NOTIFICATION_EVENT_QUEUE:notification.event}
+    event-dlq: ${NOTIFICATION_EVENT_DLQ:notification.event.dlq}
+    favorite-queue: ${NOTIFICATION_FAVORITE_QUEUE:notification.favorite}
+    favorite-dlq: ${NOTIFICATION_FAVORITE_DLQ:notification.favorite.dlq}
+  preferences:
+    base-url: ${RECOMMENDATION_URL:http://localhost:8084}
+    connect-timeout: ${PREFERENCES_CONNECT_TIMEOUT:2s}
+    read-timeout: ${PREFERENCES_READ_TIMEOUT:3s}
   mock:
     email-domain: ${NOTIFICATION_MOCK_EMAIL_DOMAIN:ticketya.local}

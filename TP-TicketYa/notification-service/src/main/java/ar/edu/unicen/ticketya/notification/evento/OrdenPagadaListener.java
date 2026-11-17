@@ -1,13 +1,14 @@
 package ar.edu.unicen.ticketya.notification.evento;
 
 import ar.edu.unicen.ticketya.notification.dominio.Notificacion;
+import ar.edu.unicen.ticketya.notification.servicio.CompradorEventoService;
+import ar.edu.unicen.ticketya.notification.servicio.DestinatarioEmail;
 import ar.edu.unicen.ticketya.notification.servicio.NotificationService;
 import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.amqp.AmqpRejectAndDontRequeueException;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 /**
@@ -22,13 +23,15 @@ public class OrdenPagadaListener {
     private static final Logger log = LoggerFactory.getLogger(OrdenPagadaListener.class);
 
     private final NotificationService notificationService;
-    private final String mockEmailDomain;
+    private final CompradorEventoService compradorEventoService;
+    private final DestinatarioEmail destinatarioEmail;
 
     public OrdenPagadaListener(NotificationService notificationService,
-                               @Value("${notification.mock.email-domain:ticketya.local}")
-                               String mockEmailDomain) {
+                               CompradorEventoService compradorEventoService,
+                               DestinatarioEmail destinatarioEmail) {
         this.notificationService = notificationService;
-        this.mockEmailDomain = mockEmailDomain;
+        this.compradorEventoService = compradorEventoService;
+        this.destinatarioEmail = destinatarioEmail;
     }
 
     @RabbitListener(queues = "${notification.rabbit.queue:notification.order}")
@@ -53,12 +56,13 @@ public class OrdenPagadaListener {
         UUID eventId = uuid(evento.eventId(), "eventId");
         UUID clienteId = uuid(payload.clienteId(), "clienteId");
         uuid(payload.eventoId(), "eventoId");
+        compradorEventoService.registrar(payload);
 
         Notificacion notificacion = new Notificacion();
         notificacion.setEventId(eventId);
         notificacion.setTipo(OrdenPagadaEvent.TIPO);
         notificacion.setDestinatarioId(clienteId);
-        notificacion.setDestinatarioEmail(email(payload, clienteId));
+        notificacion.setDestinatarioEmail(destinatarioEmail.resolver(payload.clienteEmail(), clienteId));
         notificacion.setAsunto(asunto(payload));
         notificacion.setContenido(contenido(payload));
         notificacion.setCorrelationId(evento.correlationId());
@@ -66,13 +70,6 @@ public class OrdenPagadaListener {
         Notificacion resultado = notificationService.crearYEnviar(notificacion);
         log.info("Notificación de compra evento={} cliente={} estado={} intentos={}",
                 eventId, clienteId, resultado.getEstado(), resultado.getIntentos());
-    }
-
-    private String email(OrdenPagadaPayload payload, UUID clienteId) {
-        if (payload.clienteEmail() != null && !payload.clienteEmail().isBlank()) {
-            return payload.clienteEmail().trim();
-        }
-        return "cliente-" + clienteId + "@" + mockEmailDomain;
     }
 
     private String asunto(OrdenPagadaPayload payload) {

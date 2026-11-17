@@ -6,7 +6,7 @@ Servicio de notificaciones de TicketYa con **PostgreSQL** y **RabbitMQ**.
 - **Base:** `notification_db` (PostgreSQL 16, puerto 5436)
 - **Broker:** RabbitMQ 3.13 (puerto 5672, consola 15672)
 - **Responsable:** P1 — ver [`docs/equipo/entrega-2/p1-ivan.md`](../docs/equipo/entrega-2/p1-ivan.md)
-- **Estado:** avance Día 4 — tarea 8.2 (consumidor de `orden.pagada` con idempotencia, reintentos y DLQ). Los consumidores de reintegros/devoluciones y la consulta se agregan en 8.3–8.4.
+- **Estado:** avance Día 4 — tareas 8.2 y 8.3 (compra, cancelación, cambio y artista favorito). La consulta y la documentación final se agregan en 8.4.
 
 ## Alcance actual
 
@@ -24,6 +24,14 @@ Este esqueleto incluye Spring Boot 3.5, Java 21, Web, Validation, Actuator, spri
 - Errores transitorios (por ejemplo PostgreSQL caído) se reintentan con backoff (3 intentos) y luego se rechazan sin reencolar hacia `notification.order.dlq`; los mensajes inválidos se rechazan y también terminan en la DLQ.
 - El payload puede incluir `clienteEmail` de forma opcional. Si falta, el sender mock usa `cliente-<uuid>@ticketya.local` para poder registrar el envío en desarrollo; un sender real requiere el email.
 
+### Avisos de cancelación, cambio y artista favorito (tarea 8.3)
+
+- `orden.pagada` también alimenta la proyección local `comprador_evento` (evento, cliente, email y snapshot de nombre/fecha/ciudad).
+- `notification.event` recibe `evento.cancelado` y `evento.actualizado`; se avisa a cada comprador de la proyección con idempotencia por `eventId+tipo+destinatario` y el cambio incluye el dato anterior y el nuevo.
+- `notification.favorite` recibe `evento.publicado`; notification-service consulta `GET /internal/preferences?artista=&ciudad=` por cada artista y deduplica clientes.
+- Si recommendation-service no responde o el endpoint de búsqueda todavía no existe, se registra un warning y no se generan avisos de favoritos: la publicación del evento no se bloquea. El contrato propuesto está en `docs/api-contract.md` §6.3.1.
+- La proyección solo conoce compras consumidas desde este servicio; no reemplaza un historial previo de orders.
+
 ## Variables de entorno
 
 | Variable | Default | Uso |
@@ -40,6 +48,13 @@ Este esqueleto incluye Spring Boot 3.5, Java 21, Web, Validation, Actuator, spri
 | `NOTIFICATION_BACKOFF_SECONDS` | `30` | Base de backoff entre reintentos |
 | `NOTIFICATION_QUEUE` | `notification.order` | Cola de consumo de eventos de compra |
 | `NOTIFICATION_QUEUE_DLQ` | `notification.order.dlq` | Cola de mensajes rechazados |
+| `NOTIFICATION_EVENT_QUEUE` | `notification.event` | Cola de cancelaciones y cambios |
+| `NOTIFICATION_EVENT_DLQ` | `notification.event.dlq` | DLQ de cancelaciones y cambios |
+| `NOTIFICATION_FAVORITE_QUEUE` | `notification.favorite` | Cola de eventos publicados |
+| `NOTIFICATION_FAVORITE_DLQ` | `notification.favorite.dlq` | DLQ de eventos publicados |
+| `RECOMMENDATION_URL` | `http://localhost:8084` | Base URL para búsqueda de preferencias |
+| `PREFERENCES_CONNECT_TIMEOUT` | `2s` | Timeout de conexión a preferencias |
+| `PREFERENCES_READ_TIMEOUT` | `3s` | Timeout de lectura de preferencias |
 | `NOTIFICATION_CONSUMER_MAX_ATTEMPTS` | `3` | Reintentos del listener antes de la DLQ |
 | `NOTIFICATION_MOCK_EMAIL_DOMAIN` | `ticketya.local` | Dominio del email sintético del sender mock |
 
@@ -66,4 +81,8 @@ La respuesta debe incluir `"status":"UP"` y los componentes `db` y `rabbit` en `
 - `NotificationServiceTest`: envío exitoso/fallido, reintento, fallo definitivo e idempotencia por evento+tipo+destinatario.
 - `OrdenPagadaEventContractTest`: deserializa el fixture compartido `docs/ejemplos/orden-pagada.json`.
 - `OrdenPagadaListenerTest`: mapeo a notificación, email del payload/fallback mock y rechazo a DLQ de mensajes inválidos.
-- `RabbitConfigTest`: cola durable con DLX/DLQ y bindings de `notification.order`.
+- `RabbitConfigTest`: colas durables con DLX/DLQ y bindings de `notification.order`, `notification.event` y `notification.favorite`.
+- `CompradorEventoServiceTest`: proyección de compradores y snapshot del evento.
+- `EventoNotificacionListenerTest`: cancelación/cambio a todos los compradores, sin compradores y mensajes inválidos.
+- `EventoPublicadoListenerTest`: deduplicación por cliente entre artistas y no coincidencia.
+- `PreferenceClientTest`: búsqueda interna con token y degradación a lista vacía ante 5xx.

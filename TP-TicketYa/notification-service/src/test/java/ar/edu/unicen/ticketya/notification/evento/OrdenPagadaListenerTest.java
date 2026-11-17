@@ -8,6 +8,8 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import ar.edu.unicen.ticketya.notification.dominio.Notificacion;
+import ar.edu.unicen.ticketya.notification.servicio.CompradorEventoService;
+import ar.edu.unicen.ticketya.notification.servicio.DestinatarioEmail;
 import ar.edu.unicen.ticketya.notification.servicio.NotificationService;
 import java.time.Instant;
 import java.util.List;
@@ -26,11 +28,15 @@ class OrdenPagadaListenerTest {
     @Mock
     private NotificationService notificationService;
 
+    @Mock
+    private CompradorEventoService compradorEventoService;
+
     private OrdenPagadaListener listener;
 
     @BeforeEach
     void setUp() {
-        listener = new OrdenPagadaListener(notificationService, "ticketya.local");
+        listener = new OrdenPagadaListener(notificationService, compradorEventoService,
+                new DestinatarioEmail("ticketya.local"));
     }
 
     @Test
@@ -46,6 +52,7 @@ class OrdenPagadaListenerTest {
 
         ArgumentCaptor<Notificacion> captor = ArgumentCaptor.forClass(Notificacion.class);
         verify(notificationService).crearYEnviar(captor.capture());
+        verify(compradorEventoService).registrar(any(OrdenPagadaPayload.class));
         Notificacion notificacion = captor.getValue();
         assertThat(notificacion.getEventId()).isEqualTo(eventId);
         assertThat(notificacion.getTipo()).isEqualTo(OrdenPagadaEvent.TIPO);
