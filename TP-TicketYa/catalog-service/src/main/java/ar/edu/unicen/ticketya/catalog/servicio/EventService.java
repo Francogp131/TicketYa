@@ -21,13 +21,16 @@ import ar.edu.unicen.ticketya.catalog.web.dto.CancelacionResponse;
 import ar.edu.unicen.ticketya.catalog.web.dto.CrearEventoRequest;
 import ar.edu.unicen.ticketya.catalog.web.dto.EditarEventoRequest;
 import ar.edu.unicen.ticketya.catalog.web.dto.EventoBusquedaResponse;
+import ar.edu.unicen.ticketya.catalog.web.dto.EventoCandidatoResponse;
 import ar.edu.unicen.ticketya.catalog.web.dto.EventoDetalleResponse;
+import ar.edu.unicen.ticketya.catalog.web.dto.EventoReporteResponse;
 import ar.edu.unicen.ticketya.catalog.web.dto.EventoResponse;
 import ar.edu.unicen.ticketya.catalog.web.dto.Fechas;
 import ar.edu.unicen.ticketya.catalog.web.dto.PageResponse;
 import ar.edu.unicen.ticketya.catalog.web.dto.PrecioRequest;
 import ar.edu.unicen.ticketya.catalog.web.dto.PrecioResponse;
 import ar.edu.unicen.ticketya.catalog.web.dto.SectorDetalleResponse;
+import ar.edu.unicen.ticketya.catalog.web.dto.SectorReporteResponse;
 import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.OffsetDateTime;
@@ -599,6 +602,71 @@ public class EventService {
         int totalPaginas = (int) Math.ceil((double) total / size);
         return new PageResponse<>(List.copyOf(resultados.subList(desde, hasta)),
                 page, size, total, totalPaginas);
+    }
+
+    @Transactional(readOnly = true)
+    public EventoReporteResponse reporteEvento(UUID eventoId) {
+        Evento evento = buscarEvento(eventoId);
+        Lugar lugar = lugarRepository.findById(evento.getLugarId())
+                .orElseThrow(() -> ApiException.notFound("VENUE_NOT_FOUND", "No existe el lugar del evento"));
+        Map<UUID, BigDecimal> precios = precioRepository.findByEventoId(eventoId).stream()
+                .collect(Collectors.toMap(EventoSectorPrecio::getSectorId, EventoSectorPrecio::getPrecio));
+        List<SectorReporteResponse> sectores = sectorRepository
+                .findByLugarIdOrderByNombreAsc(evento.getLugarId()).stream()
+                .map(sector -> new SectorReporteResponse(sector.getId(), sector.getNombre(), sector.getTipo(),
+                        sector.getCapacidad(), precios.get(sector.getId())))
+                .toList();
+        List<String> participantes = participanteRepository.findByEventoIdOrderByNombreAsc(eventoId).stream()
+                .map(EventoParticipante::getNombre)
+                .toList();
+        return new EventoReporteResponse(evento.getId(), evento.getNombre(), evento.getOrganizadorId(),
+                evento.getLugarId(), lugar.getNombre(), lugar.getCiudad(), evento.getFecha(), evento.getEstado(),
+                participantes, sectores);
+    }
+
+    @Transactional(readOnly = true)
+    public List<EventoCandidatoResponse> candidatos(TipoEvento tipo, String artista, String ciudad,
+                                                    OffsetDateTime fechaDesde, OffsetDateTime fechaHasta, int size) {
+        if (size < 1 || size > TAMANIO_MAXIMO_PAGINA) {
+            throw validacion("size", "debe estar entre 1 y " + TAMANIO_MAXIMO_PAGINA);
+        }
+        if (fechaDesde != null && fechaHasta != null && fechaDesde.isAfter(fechaHasta)) {
+            throw ApiException.badRequest("INVALID_DATE_RANGE", "fechaDesde no puede ser posterior a fechaHasta");
+        }
+        String artistaNormalizado = normalizar(artista);
+        String ciudadNormalizada = normalizar(ciudad);
+        String artistaFiltro = artistaNormalizado == null ? "%" : "%" + escaparLike(artistaNormalizado) + "%";
+        String ciudadFiltro = ciudadNormalizada == null ? "%" : escaparLike(ciudadNormalizada);
+        OffsetDateTime desdeFiltro = fechaDesde == null ? OffsetDateTime.now(clock) : fechaDesde;
+        OffsetDateTime hastaFiltro = fechaHasta == null ? FECHA_MAXIMA : fechaHasta;
+
+        List<Evento> eventos = eventoRepository.buscarCandidatos(ESTADOS_VISIBLES, tipo != null,
+                tipo == null ? TipoEvento.OTRO : tipo, artistaNormalizado != null, artistaFiltro,
+                ciudadFiltro, desdeFiltro, hastaFiltro);
+        if (eventos.isEmpty()) {
+            return List.of();
+        }
+        Map<UUID, Lugar> lugares = lugarRepository
+                .findAllById(eventos.stream().map(Evento::getLugarId).collect(Collectors.toSet())).stream()
+                .collect(Collectors.toMap(Lugar::getId, Function.identity()));
+        Map<UUID, List<String>> artistas = participanteRepository
+                .findByEventoIdIn(eventos.stream().map(Evento::getId).toList()).stream()
+                .collect(Collectors.groupingBy(EventoParticipante::getEventoId,
+                        Collectors.mapping(EventoParticipante::getNombre, Collectors.toList())));
+
+        return eventos.stream()
+                .filter(evento -> lugares.containsKey(evento.getLugarId()))
+                .limit(size)
+                .map(evento -> new EventoCandidatoResponse(
+                        evento.getId().toString(),
+                        evento.getNombre(),
+                        evento.getTipo() == null ? null : evento.getTipo().name(),
+                        artistas.getOrDefault(evento.getId(), List.of()),
+                        lugares.get(evento.getLugarId()).getCiudad(),
+                        evento.getFecha().toInstant(),
+                        evento.getEstado() == null ? null : evento.getEstado().name(),
+                        evento.isAltaDemanda()))
+                .toList();
     }
 
     private Comparator<EventoBusquedaResponse> comparador(OrdenBusqueda orden) {

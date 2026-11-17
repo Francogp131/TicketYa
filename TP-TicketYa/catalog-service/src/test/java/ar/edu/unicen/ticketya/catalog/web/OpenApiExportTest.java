@@ -29,7 +29,8 @@ import org.springframework.test.web.servlet.MockMvc;
  * Exporta el OpenAPI generado por springdoc a openapi/catalog-openapi.json
  * (relativo a la raíz del repositorio, un nivel arriba de catalog-service).
  */
-@WebMvcTest(controllers = {VenueController.class, EventController.class, InternalEventController.class})
+@WebMvcTest(controllers = {VenueController.class, EventController.class, InternalEventController.class,
+        InternalCatalogController.class})
 @ImportAutoConfiguration({SpringDocConfiguration.class, SpringDocWebMvcConfiguration.class})
 @EnableConfigurationProperties(SpringDocConfigProperties.class)
 @Import(OpenApiConfig.class)
@@ -54,11 +55,15 @@ class OpenApiExportTest {
                 .getContentAsString(StandardCharsets.UTF_8);
 
         JsonNode documento = new ObjectMapper().readTree(json);
-        assertThat(documento.at("/paths").size()).isEqualTo(9);
+        assertThat(documento.at("/paths").size()).isEqualTo(11);
         assertThat(documento.at("/components/schemas/ProblemDetail").isMissingNode()).isFalse();
         assertThat(documento.at("/components/securitySchemes/X-User-Id").isMissingNode()).isFalse();
         assertThat(documento.at("/components/securitySchemes/X-User-Role").isMissingNode()).isFalse();
         assertThat(documento.at("/paths/~1internal~1events~1{eventoId}~1availability/patch")
+                .isMissingNode()).isFalse();
+        assertThat(documento.at("/paths/~1internal~1events~1{eventoId}~1report/get")
+                .isMissingNode()).isFalse();
+        assertThat(documento.at("/paths/~1internal~1recommendations~1candidates/get")
                 .isMissingNode()).isFalse();
         assertThat(documento.at("/paths/~1api~1catalog~1events/post/responses/400/content/"
                         + "application~1problem+json/schema/$ref").asText())

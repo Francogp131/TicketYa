@@ -396,6 +396,19 @@ class EventServiceTest {
     }
 
     @Test
+    void losCandidatosSoloConsideranEventosPublicadosOAgotados() {
+        when(eventoRepository.buscarCandidatos(any(), anyBoolean(), any(), anyBoolean(), any(), any(), any(), any()))
+                .thenReturn(List.of());
+
+        eventService.candidatos(null, null, null, null, null, 20);
+
+        ArgumentCaptor<java.util.Collection> estados = ArgumentCaptor.forClass(java.util.Collection.class);
+        verify(eventoRepository).buscarCandidatos(estados.capture(), eq(false), eq(TipoEvento.OTRO),
+                eq(false), eq("%"), eq("%"), any(), any());
+        assertThat(estados.getValue()).containsExactlyInAnyOrder(EstadoEvento.PUBLICADO, EstadoEvento.AGOTADO);
+    }
+
+    @Test
     void cancelarEventoPublicadoAvisaAOrdersEInventoryYQuedaCancelado() {
         Evento evento = evento(UUID.randomUUID(), UUID.randomUUID());
         evento.setEstado(EstadoEvento.PUBLICADO);

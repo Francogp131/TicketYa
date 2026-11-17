@@ -37,6 +37,29 @@ public interface EventoRepository extends JpaRepository<Evento, UUID> {
                         @Param("fechaDesde") OffsetDateTime fechaDesde,
                         @Param("fechaHasta") OffsetDateTime fechaHasta);
 
+    @Query("""
+            select e from Evento e, Lugar l
+            where e.lugarId = l.id
+              and e.estado in :estados
+              and (:filtrarTipo = false or e.tipo = :tipo)
+              and (:filtrarArtista = false or exists (
+                    select p.id from EventoParticipante p
+                    where p.eventoId = e.id
+                      and lower(p.nombre) like :artista escape '\\'))
+              and lower(l.ciudad) like :ciudad escape '\\'
+              and e.fecha >= :fechaDesde
+              and e.fecha <= :fechaHasta
+            order by e.fecha asc, e.id asc
+            """)
+    List<Evento> buscarCandidatos(@Param("estados") Collection<EstadoEvento> estados,
+                                  @Param("filtrarTipo") boolean filtrarTipo,
+                                  @Param("tipo") TipoEvento tipo,
+                                  @Param("filtrarArtista") boolean filtrarArtista,
+                                  @Param("artista") String artista,
+                                  @Param("ciudad") String ciudad,
+                                  @Param("fechaDesde") OffsetDateTime fechaDesde,
+                                  @Param("fechaHasta") OffsetDateTime fechaHasta);
+
     List<Evento> findByEstadoInAndFechaBefore(Collection<EstadoEvento> estados, OffsetDateTime fecha);
 
     List<Evento> findByCancelacionPendienteTrue();
