@@ -37,6 +37,10 @@ La cancelación avisa a orders con timeout corto (`ORDERS_CONNECT_TIMEOUT_MS`/`O
 
 El OpenAPI documenta la identidad (`X-User-Id`, `X-User-Role`), los ejemplos de request y un esquema común `ProblemDetail` para todos los errores 4xx/5xx, con ejemplos de `VALIDATION_ERROR`, `EVENT_NOT_FOUND`, `EVENT_NOT_EDITABLE`, `INVENTORY_UNAVAILABLE` y `ORDERS_UNAVAILABLE` según el caso.
 
+## Auditoría (tarea 9.2)
+
+Publicar, editar y cancelar un evento registran una fila en `audit_log` con evento, acción (`PUBLICAR_EVENTO`, `EDITAR_EVENTO`, `CANCELAR_EVENTO`), usuario y rol, resultado (`EXITOSO`/`RECHAZADO`), detalle y `X-Correlation-Id`. La escritura corre fuera de la transacción de negocio: si la bitácora falla se registra un warning y la operación no se revierte ni responde error. Los intentos sin identidad no se auditan porque se rechazan antes de resolver el usuario.
+
 ## Modelo
 
 Tablas Flyway en [`src/main/resources/db/migration`](src/main/resources/db/migration):
@@ -46,6 +50,7 @@ Tablas Flyway en [`src/main/resources/db/migration`](src/main/resources/db/migra
 - `asiento` — se genera al crear un sector numerado (`filas × asientosPorFila`).
 - `evento` — estado `BORRADOR/PUBLICADO/AGOTADO/CANCELADO/FINALIZADO`, organizador, límite por cliente, `alta_demanda`, `inventario_version` y `cancelacion_pendiente` para el reintento del aviso a orders.
 - `evento_participante` y `evento_sector_precio` — participantes y precio por sector.
+- `audit_log` — bitácora de publicación, edición y cancelación con usuario, rol, resultado, detalle y correlación (`V7`).
 
 Las migraciones `V3` y `V4` agregan la cancelación pendiente y refuerzan en la base las reglas de `tipo` de evento y capacidad de sectores numerados. `V5` agrega `alta_demanda` e `inventario_version`, con backfill en `1` para eventos ya publicados o agotados. El ER validado está en [`docs/modelo-datos.md`](../docs/modelo-datos.md).
 

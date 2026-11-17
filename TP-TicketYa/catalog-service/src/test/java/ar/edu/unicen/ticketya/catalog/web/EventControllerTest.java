@@ -13,6 +13,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import ar.edu.unicen.ticketya.catalog.dominio.EstadoEvento;
 import ar.edu.unicen.ticketya.catalog.dominio.TipoEvento;
+import ar.edu.unicen.ticketya.catalog.servicio.AuditService;
 import ar.edu.unicen.ticketya.catalog.servicio.CatalogCacheService;
 import ar.edu.unicen.ticketya.catalog.servicio.EventService;
 import ar.edu.unicen.ticketya.catalog.web.dto.CancelacionResponse;
@@ -47,6 +48,9 @@ class EventControllerTest {
     @MockitoBean
     private EventService eventService;
 
+    @MockitoBean
+    private AuditService auditService;
+
     @Test
     void cancelarSinIdentidadDevuelve401() throws Exception {
         mockMvc.perform(post("/api/catalog/events/{id}/cancel", UUID.randomUUID()))
@@ -71,11 +75,16 @@ class EventControllerTest {
 
         mockMvc.perform(post("/api/catalog/events/{id}/cancel", eventoId)
                         .header("X-User-Id", ADMIN)
-                        .header("X-User-Role", "ADMIN"))
+                        .header("X-User-Role", "ADMIN")
+                        .header("X-Correlation-Id", "corr-cancela"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.eventoId").value(eventoId.toString()))
                 .andExpect(jsonPath("$.estado").value("CANCELADO"))
                 .andExpect(jsonPath("$.cancelacionPendiente").value(true));
+
+        verify(auditService).registrar(eq(eventoId), eq("CANCELAR_EVENTO"),
+                eq(UUID.fromString(ADMIN)), eq("ADMIN"), eq("EXITOSO"),
+                eq("estado=CANCELADO; cancelacionPendiente=true"), eq("corr-cancela"));
     }
 
     @Test
@@ -232,10 +241,15 @@ class EventControllerTest {
         mockMvc.perform(put("/api/catalog/events/{id}", eventoId)
                         .header("X-User-Id", organizadorId.toString())
                         .header("X-User-Role", "ORGANIZER")
+                        .header("X-Correlation-Id", "corr-edit-rechazada")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"nombre\":\"Nuevo\"}"))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.code").value("EVENT_NOT_EDITABLE"));
+
+        verify(auditService).registrar(eq(eventoId), eq("EDITAR_EVENTO"), eq(organizadorId),
+                eq("ORGANIZER"), eq("RECHAZADO"),
+                eq("EVENT_NOT_EDITABLE: No se puede editar el evento"), eq("corr-edit-rechazada"));
     }
 
     @Test
@@ -270,10 +284,14 @@ class EventControllerTest {
 
         mockMvc.perform(post("/api/catalog/events/{id}/publish", eventoId)
                         .header("X-User-Id", organizadorId.toString())
-                        .header("X-User-Role", "ORGANIZER"))
+                        .header("X-User-Role", "ORGANIZER")
+                        .header("X-Correlation-Id", "corr-publica"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(eventoId.toString()))
                 .andExpect(jsonPath("$.estado").value("PUBLICADO"));
+
+        verify(auditService).registrar(eq(eventoId), eq("PUBLICAR_EVENTO"), eq(organizadorId),
+                eq("ORGANIZER"), eq("EXITOSO"), eq("estado=PUBLICADO"), eq("corr-publica"));
     }
 
     @Test

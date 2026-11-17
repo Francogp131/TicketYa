@@ -77,7 +77,7 @@
 ## 9. Observabilidad, Docker y CI
 
 - [ ] 9.1 (P4) Configurar logging JSON con Logstash Encoder y MDC en los siete servicios, con filtros que registren mÃ©todo, ruta, usuario, rol, estado, duraciÃ³n y correlaciÃ³n; verificar que una solicitud deje la misma correlaciÃ³n en gateway y servicio.
-- [ ] 9.2 (P1) Crear `audit_log` en catalog-service y registrar publicaciÃ³n, ediciÃ³n y cancelaciÃ³n de eventos con usuario, resultado, detalle y correlaciÃ³n; verificar una operaciÃ³n exitosa y una rechazada.
+- [x] 9.2 (P1) Crear `audit_log` en catalog-service y registrar publicaciÃ³n, ediciÃ³n y cancelaciÃ³n de eventos con usuario, resultado, detalle y correlaciÃ³n; verificar una operaciÃ³n exitosa y una rechazada. (V7__audit_log.sql, AuditService tolerante a fallos, X-Correlation-Id; AuditServiceTest + EventControllerTest)
 - [ ] 9.3 (P3) Crear `audit_log` en orders-service y registrar compra, devoluciÃ³n, cancelaciÃ³n e ingreso QR; verificar que la bitÃ¡cora y el log compartan la correlaciÃ³n de una compra completa.
 - [ ] 9.4 (P4) Agregar Loki, Promtail y Grafana al compose con datasource provisionado, retenciÃ³n de 7 dÃ­as y consulta por `X-Correlation-Id`; verificar una bÃºsqueda real por correlaciÃ³n en Grafana.
 - [ ] 9.5 (P4) Crear un Dockerfile multi-stage por servicio, con usuario no root, healthcheck y variables de entorno; verificar `docker build` de los siete servicios y el arranque individual.

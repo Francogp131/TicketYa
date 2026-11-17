@@ -1,6 +1,7 @@
 package ar.edu.unicen.ticketya.catalog.web;
 
 import ar.edu.unicen.ticketya.catalog.dominio.TipoEvento;
+import ar.edu.unicen.ticketya.catalog.servicio.AuditService;
 import ar.edu.unicen.ticketya.catalog.servicio.CatalogCacheService;
 import ar.edu.unicen.ticketya.catalog.servicio.EventService;
 import ar.edu.unicen.ticketya.catalog.web.dto.CancelacionResponse;
@@ -20,7 +21,11 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import java.net.URI;
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
+import java.util.function.Function;
+import java.util.function.Supplier;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -39,9 +44,11 @@ import org.springframework.web.bind.annotation.RestController;
 public class EventController {
 
     private final EventService eventService;
+    private final AuditService auditService;
 
-    public EventController(EventService eventService) {
+    public EventController(EventService eventService, AuditService auditService) {
         this.eventService = eventService;
+        this.auditService = auditService;
     }
 
     @PostMapping
@@ -77,10 +84,13 @@ public class EventController {
             @PathVariable UUID eventoId,
             @Valid @RequestBody EditarEventoRequest request,
             @RequestHeader(value = "X-User-Id", required = false) String userId,
-            @RequestHeader(value = "X-User-Role", required = false) String userRole) {
+            @RequestHeader(value = "X-User-Role", required = false) String userRole,
+            @RequestHeader(value = "X-Correlation-Id", required = false) String correlationId) {
         RequestIdentity identity = RequestIdentity.require(userId, userRole);
         identity.requireRole("ORGANIZER");
-        return eventService.editarEvento(eventoId, request, identity.userId());
+        return auditar("EDITAR_EVENTO", eventoId, identity, correlationId,
+                () -> eventService.editarEvento(eventoId, request, identity.userId()),
+                response -> detalleEdicion(request, response));
     }
 
     @PutMapping("/{eventoId}/prices/{sectorId}")
@@ -115,10 +125,13 @@ public class EventController {
     public EventoResponse publicar(
             @PathVariable UUID eventoId,
             @RequestHeader(value = "X-User-Id", required = false) String userId,
-            @RequestHeader(value = "X-User-Role", required = false) String userRole) {
+            @RequestHeader(value = "X-User-Role", required = false) String userRole,
+            @RequestHeader(value = "X-Correlation-Id", required = false) String correlationId) {
         RequestIdentity identity = RequestIdentity.require(userId, userRole);
         identity.requireRole("ORGANIZER");
-        return eventService.publicar(eventoId, identity.userId());
+        return auditar("PUBLICAR_EVENTO", eventoId, identity, correlationId,
+                () -> eventService.publicar(eventoId, identity.userId()),
+                response -> "estado=" + response.estado());
     }
 
     @PostMapping("/{eventoId}/cancel")
@@ -132,10 +145,14 @@ public class EventController {
     public CancelacionResponse cancelar(
             @PathVariable UUID eventoId,
             @RequestHeader(value = "X-User-Id", required = false) String userId,
-            @RequestHeader(value = "X-User-Role", required = false) String userRole) {
+            @RequestHeader(value = "X-User-Role", required = false) String userRole,
+            @RequestHeader(value = "X-Correlation-Id", required = false) String correlationId) {
         RequestIdentity identity = RequestIdentity.require(userId, userRole);
         identity.requireRole("ADMIN");
-        return eventService.cancelar(eventoId);
+        return auditar("CANCELAR_EVENTO", eventoId, identity, correlationId,
+                () -> eventService.cancelar(eventoId),
+                response -> "estado=" + response.estado()
+                        + "; cancelacionPendiente=" + response.cancelacionPendiente());
     }
 
     @GetMapping
@@ -176,5 +193,53 @@ public class EventController {
         CatalogCacheService.CacheResult<EventoDetalleResponse> result = eventService.detalleCacheable(eventoId);
         CacheStatusFilter.mark(request, result.header());
         return result.value();
+    }
+
+    private <T> T auditar(String accion, UUID eventoId, RequestIdentity identity, String correlationId,
+                          Supplier<T> operacion, Function<T, String> detalleExito) {
+        try {
+            T resultado = operacion.get();
+            auditService.registrar(eventoId, accion, identity.userId(), identity.role(), "EXITOSO",
+                    detalleExito.apply(resultado), correlationId);
+            return resultado;
+        } catch (ApiException ex) {
+            auditService.registrar(eventoId, accion, identity.userId(), identity.role(), "RECHAZADO",
+                    ex.getCode() + ": " + ex.getMessage(), correlationId);
+            throw ex;
+        } catch (RuntimeException ex) {
+            auditService.registrar(eventoId, accion, identity.userId(), identity.role(), "RECHAZADO",
+                    "INTERNAL_ERROR: " + ex.getClass().getSimpleName(), correlationId);
+            throw ex;
+        }
+    }
+
+    private String detalleEdicion(EditarEventoRequest request, EventoResponse response) {
+        List<String> campos = new ArrayList<>();
+        if (request.nombre() != null) {
+            campos.add("nombre");
+        }
+        if (request.descripcion() != null) {
+            campos.add("descripcion");
+        }
+        if (request.tipo() != null) {
+            campos.add("tipo");
+        }
+        if (request.lugarId() != null) {
+            campos.add("lugarId");
+        }
+        if (request.fecha() != null) {
+            campos.add("fecha");
+        }
+        if (request.participantes() != null) {
+            campos.add("participantes");
+        }
+        if (request.limitePorCliente() != null) {
+            campos.add("limitePorCliente");
+        }
+        if (request.altaDemanda() != null) {
+            campos.add("altaDemanda");
+        }
+        String cambios = campos.isEmpty() ? "sin cambios" : "campos=" + String.join(",", campos);
+        return cambios + "; estado=" + response.estado();
     }
 }

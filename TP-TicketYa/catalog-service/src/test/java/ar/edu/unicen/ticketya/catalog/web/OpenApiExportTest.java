@@ -5,6 +5,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import ar.edu.unicen.ticketya.catalog.config.OpenApiConfig;
+import ar.edu.unicen.ticketya.catalog.servicio.AuditService;
 import ar.edu.unicen.ticketya.catalog.servicio.EventService;
 import ar.edu.unicen.ticketya.catalog.servicio.VenueService;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -45,6 +46,8 @@ class OpenApiExportTest {
     private EventService eventService;
     @MockitoBean
     private InternalToken internalToken;
+    @MockitoBean
+    private AuditService auditService;
 
     @Test
     void exportaElOpenApiDeCatalog() throws Exception {
