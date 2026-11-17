@@ -21,6 +21,15 @@ spring:
     username: ${RABBITMQ_USER:ticketya}
     password: ${RABBITMQ_PASSWORD:ticketya}
     connection-timeout: 5s
+    listener:
+      simple:
+        default-requeue-rejected: false
+        retry:
+          enabled: true
+          max-attempts: ${NOTIFICATION_CONSUMER_MAX_ATTEMPTS:3}
+          initial-interval: 1s
+          multiplier: 2
+          max-interval: 5s
 
 management:
   endpoints:
@@ -40,3 +49,8 @@ notification:
     max-attempts: ${NOTIFICATION_MAX_ATTEMPTS:3}
     backoff-seconds: ${NOTIFICATION_BACKOFF_SECONDS:30}
   internal-token: ${INTERNAL_TOKEN:ticketya-internal-dev}
+  rabbit:
+    queue: ${NOTIFICATION_QUEUE:notification.order}
+    dlq: ${NOTIFICATION_QUEUE_DLQ:notification.order.dlq}
+  mock:
+    email-domain: ${NOTIFICATION_MOCK_EMAIL_DOMAIN:ticketya.local}
