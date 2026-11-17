@@ -13,6 +13,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import ar.edu.unicen.ticketya.catalog.config.CacheConfig;
 import ar.edu.unicen.ticketya.catalog.dominio.EstadoEvento;
 import ar.edu.unicen.ticketya.catalog.dominio.Evento;
 import ar.edu.unicen.ticketya.catalog.dominio.EventoSectorPrecio;
@@ -34,12 +35,14 @@ import ar.edu.unicen.ticketya.catalog.web.dto.EventoBusquedaResponse;
 import ar.edu.unicen.ticketya.catalog.web.dto.EventoResponse;
 import ar.edu.unicen.ticketya.catalog.web.dto.PageResponse;
 import ar.edu.unicen.ticketya.catalog.web.dto.PrecioRequest;
+import ar.edu.unicen.ticketya.catalog.web.dto.SectorDetalleResponse;
 import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Supplier;
@@ -763,6 +766,27 @@ class EventServiceTest {
                     assertThat(ex.getStatus().value()).isEqualTo(400);
                     assertThat(ex.getCode()).isEqualTo("INVALID_SORT");
                 });
+    }
+
+    @Test
+    void laDisponibilidadSeConsultaSiempreAunqueElDetalleEstaticoEsteCacheado() {
+        UUID eventoId = UUID.randomUUID();
+        UUID sectorId = UUID.randomUUID();
+        EventoDetalleEstatico estatico = new EventoDetalleEstatico(eventoId, "Recital", null,
+                TipoEvento.RECITAL, UUID.randomUUID(), "Estadio", "Tandil", UUID.randomUUID(),
+                OffsetDateTime.parse("2027-01-15T21:00:00-03:00"), EstadoEvento.PUBLICADO, 4, false,
+                List.of("Artista"),
+                List.of(new EventoDetalleEstatico.SectorEstatico(sectorId, "Platea", TipoSector.NUMERADO,
+                        new BigDecimal("100"), 50)));
+        org.mockito.Mockito.doReturn(new CatalogCacheService.CacheResult<>(estatico, "HIT"))
+                .when(catalogCacheService).getOrLoad(eq(CacheConfig.EVENT_DETAIL_STATIC), eq(eventoId), any());
+        when(inventoryClient.obtenerDisponibilidad(eventoId)).thenReturn(Map.of(sectorId, 7));
+
+        eventService.detalleCacheable(eventoId);
+        var detalle = eventService.detalleCacheable(eventoId).value();
+
+        verify(inventoryClient, times(2)).obtenerDisponibilidad(eventoId);
+        assertThat(detalle.sectores()).extracting(SectorDetalleResponse::disponibles).containsExactly(7);
     }
 
     @Test

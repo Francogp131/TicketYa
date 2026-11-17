@@ -2,9 +2,12 @@ package ar.edu.unicen.ticketya.catalog.servicio;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import ar.edu.unicen.ticketya.catalog.config.CacheConfig;
+import java.time.Duration;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -14,6 +17,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.support.SimpleValueWrapper;
+import org.springframework.data.redis.cache.RedisCache;
+import org.springframework.data.redis.cache.RedisCacheManager;
+import org.springframework.data.redis.connection.RedisConnectionFactory;
 
 @ExtendWith(MockitoExtension.class)
 class CatalogCacheServiceTest {
@@ -107,5 +113,19 @@ class CatalogCacheServiceTest {
 
         assertThat(result.value()).isEqualTo("base");
         assertThat(result.header()).isEqualTo("MISS");
+    }
+
+    @Test
+    void configuraTtlsDistintosPorTipoDeCache() {
+        RedisCacheManager manager = new CacheConfig().cacheManager(mock(RedisConnectionFactory.class),
+                Duration.ofMinutes(10), Duration.ofMinutes(2), Duration.ofSeconds(30));
+        manager.afterPropertiesSet();
+
+        assertThat(((RedisCache) manager.getCache(CacheConfig.VENUES)).getCacheConfiguration().getTtl())
+                .isEqualTo(Duration.ofMinutes(10));
+        assertThat(((RedisCache) manager.getCache(CacheConfig.EVENT_DETAIL_STATIC)).getCacheConfiguration()
+                .getTtl()).isEqualTo(Duration.ofMinutes(2));
+        assertThat(((RedisCache) manager.getCache(CacheConfig.EVENT_SEARCH)).getCacheConfiguration().getTtl())
+                .isEqualTo(Duration.ofSeconds(30));
     }
 }
