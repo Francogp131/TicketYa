@@ -125,6 +125,8 @@ Parámetros: `page` (desde 0, default 0), `size` (default 20, máximo 100). Un `
 | GET | `/api/recommendations/preferences` | CLIENT | 200 | recommendation |
 | PUT | `/api/recommendations/preferences` | CLIENT | 200 | recommendation |
 | GET | `/api/recommendations` | CLIENT | 200 | recommendation |
+| GET | `/api/notifications` | CLIENT | 200 | notification |
+| GET | `/api/notifications/{notificacionId}` | CLIENT (dueño) | 200 | notification |
 
 “Autenticado” significa `CLIENT`, `ORGANIZER` o `ADMIN`; el dueño del recurso se valida dentro del servicio.
 Los endpoints `/internal/**` no se listan porque no se exponen por el gateway.
@@ -886,7 +888,43 @@ El historial es idempotente por `(eventId, clienteId, eventoId)`. Un evento dupl
 
 El contrato canónico del sobre y de todos los payloads está en [`eventos.md`](eventos.md), con el fixture [`ejemplos/orden-pagada.json`](ejemplos/orden-pagada.json). orders debe publicar `eventoTipo`, `artistas` y `ciudad` desde el snapshot de la orden (ADR-017 y migración 6.1); no se acepta que recommendation los consulte a catalog al consumir.
 
-## 7. Flujo de compra de punta a punta
+## 7. notification-service
+
+### 7.1 Listar mis notificaciones — `GET /api/notifications` (CLIENT)
+
+Devuelve solo las notificaciones del cliente autenticado (`X-User-Id`), ordenadas por `createdAt` descendente. Parámetros: `page` (desde 0, default 0), `size` (default 20, máximo 100) y `estado` opcional (`PENDIENTE`, `ENVIADA` o `FALLIDA`).
+
+```json
+{
+  "content": [
+    {
+      "id": "a0000000-0000-4000-8000-000000000001",
+      "eventoId": "d0000000-0000-4000-8000-000000000001",
+      "tipo": "orden.pagada",
+      "asunto": "Compra confirmada",
+      "contenido": "Tu compra para Festival de Rock Tandil 2027 quedó confirmada.",
+      "estado": "ENVIADA",
+      "intentos": 1,
+      "proximoReintento": null,
+      "createdAt": "2026-11-15T12:00:00-03:00",
+      "enviadaAt": "2026-11-15T12:00:01-03:00"
+    }
+  ],
+  "page": 0,
+  "size": 20,
+  "totalElements": 1,
+  "totalPages": 1
+}
+```
+
+- `401 UNAUTHORIZED` sin identidad y `403 FORBIDDEN` para roles distintos de `CLIENT`.
+- Un `estado` desconocido responde `400 VALIDATION_ERROR`.
+
+### 7.2 Detalle de notificación — `GET /api/notifications/{notificacionId}` (CLIENT dueño)
+
+**200** con el mismo objeto de 7.1. Una notificación de otro cliente responde `403 NOTIFICATION_FORBIDDEN`; una inexistente, `404 NOTIFICATION_NOT_FOUND`.
+
+## 8. Flujo de compra de punta a punta
 
 ```bash
 GATEWAY=http://localhost:8080
@@ -923,7 +961,7 @@ curl -X POST "$GATEWAY/api/orders/tickets/$ENTRADA/returns" \
   -d '{"motivo":"No puedo asistir"}'
 ```
 
-## 8. Catálogo de errores
+## 9. Catálogo de errores
 
 | HTTP | `code` | Cuándo |
 |---|---|---|
@@ -942,6 +980,7 @@ curl -X POST "$GATEWAY/api/orders/tickets/$ENTRADA/returns" \
 | 403 | `ORDER_NOT_OWNER` | La orden es de otro cliente |
 | 403 | `NOT_TICKET_OWNER` | La entrada es de otro cliente |
 | 403 | `NOT_PREFERENCE_OWNER` | Las preferencias son de otro cliente |
+| 403 | `NOTIFICATION_FORBIDDEN` | La notificación es de otro cliente |
 | 404 | `VENUE_NOT_FOUND` | Lugar inexistente |
 | 404 | `SECTOR_NOT_FOUND` | Sector inexistente |
 | 404 | `EVENT_NOT_FOUND` | Evento inexistente o no visible |
@@ -949,6 +988,7 @@ curl -X POST "$GATEWAY/api/orders/tickets/$ENTRADA/returns" \
 | 404 | `ORDER_NOT_FOUND` | Orden inexistente |
 | 404 | `TICKET_NOT_FOUND` | Entrada inexistente |
 | 404 | `RETURN_NOT_FOUND` | Devolución inexistente |
+| 404 | `NOTIFICATION_NOT_FOUND` | Notificación inexistente |
 | 404 | `NOT_FOUND` | Ruta inexistente |
 | 405 | `METHOD_NOT_ALLOWED` | Método HTTP no permitido |
 | 409 | `EVENT_NOT_EDITABLE` | Evento ya publicado o en estado no editable |
@@ -972,7 +1012,7 @@ curl -X POST "$GATEWAY/api/orders/tickets/$ENTRADA/returns" \
 | 503 | `INVENTORY_UNAVAILABLE` | No se pudo obtener disponibilidad en el detalle |
 | 500 | `INTERNAL_ERROR` | Error inesperado; no expone stacktrace |
 
-## 9. Reglas de cambio
+## 10. Reglas de cambio
 
 1. Un endpoint nuevo o un cambio de payload empieza por el spec de OpenSpec y este documento.
 2. El PR actualiza el OpenAPI y el README del servicio en el mismo commit.

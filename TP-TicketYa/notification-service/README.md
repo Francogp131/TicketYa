@@ -6,7 +6,7 @@ Servicio de notificaciones de TicketYa con **PostgreSQL** y **RabbitMQ**.
 - **Base:** `notification_db` (PostgreSQL 16, puerto 5436)
 - **Broker:** RabbitMQ 3.13 (puerto 5672, consola 15672)
 - **Responsable:** P1 — ver [`docs/equipo/entrega-2/p1-ivan.md`](../docs/equipo/entrega-2/p1-ivan.md)
-- **Estado:** avance Día 4 — tareas 8.2 y 8.3 (compra, cancelación, cambio y artista favorito). La consulta y la documentación final se agregan en 8.4.
+- **Estado:** avance Día 4 — tareas 8.2, 8.3 y 8.4 (compra, cancelación, cambio, artista favorito y consulta de notificaciones propias).
 
 ## Alcance actual
 
@@ -15,7 +15,7 @@ Este esqueleto incluye Spring Boot 3.5, Java 21, Web, Validation, Actuator, spri
 - `GET /actuator/health` reporta el estado de PostgreSQL (`db`) y RabbitMQ (`rabbit`).
 - Swagger UI: <http://localhost:8085/swagger-ui.html> — OpenAPI: <http://localhost:8085/v3/api-docs>
 - Los errores de futuros endpoints usan RFC 7807 con `code` y `errors[]`.
-- Migraciones Flyway: `V1__init.sql` y `V2__notificacion.sql` (tabla `notificacion`, estados, idempotencia por `event_id+tipo+destinatario_id`).
+- Migraciones Flyway: `V1__init.sql`, `V2__notificacion.sql` (tabla `notificacion`, estados, idempotencia por `event_id+tipo+destinatario_id`) y `V3__comprador_evento.sql` (proyección de compradores para avisos de evento).
 
 ### Consumo de `orden.pagada` (tarea 8.2)
 
@@ -31,6 +31,13 @@ Este esqueleto incluye Spring Boot 3.5, Java 21, Web, Validation, Actuator, spri
 - `notification.favorite` recibe `evento.publicado`; notification-service consulta `GET /internal/preferences?artista=&ciudad=` por cada artista y deduplica clientes.
 - Si recommendation-service no responde o el endpoint de búsqueda todavía no existe, se registra un warning y no se generan avisos de favoritos: la publicación del evento no se bloquea. El contrato propuesto está en `docs/api-contract.md` §6.3.1.
 - La proyección solo conoce compras consumidas desde este servicio; no reemplaza un historial previo de orders.
+
+### Consulta de notificaciones propias (tarea 8.4)
+
+- `GET /api/notifications?page=0&size=20&estado=PENDIENTE` devuelve solo las notificaciones del `X-User-Id`, ordenadas por fecha de creación descendente, con estado, intentos y fechas de envío.
+- `GET /api/notifications/{id}` devuelve una notificación propia; la de otro cliente responde `403 NOTIFICATION_FORBIDDEN` y una inexistente `404 NOTIFICATION_NOT_FOUND`.
+- Solo el rol `CLIENT` puede consultar; sin identidad responde `401` y con otro rol `403`. `size` se recorta a 100 y el filtro de estado inválido responde `400 VALIDATION_ERROR`.
+- El contrato está en `docs/api-contract.md` §7 y la descripción de la API se publica en `/v3/api-docs`.
 
 ## Variables de entorno
 
@@ -86,3 +93,5 @@ La respuesta debe incluir `"status":"UP"` y los componentes `db` y `rabbit` en `
 - `EventoNotificacionListenerTest`: cancelación/cambio a todos los compradores, sin compradores y mensajes inválidos.
 - `EventoPublicadoListenerTest`: deduplicación por cliente entre artistas y no coincidencia.
 - `PreferenceClientTest`: búsqueda interna con token y degradación a lista vacía ante 5xx.
+- `ConsultaNotificacionServiceTest`: solo propias, orden por fecha descendente, filtro por estado, recorte de tamaño y 403/404 del detalle.
+- `NotificacionControllerTest`: 401, 403 por rol o notificación ajena, 200 con estado/intentos/paginación y 400 por estado inválido.

@@ -72,7 +72,7 @@
 - [x] 8.1 (P1) Crear la tabla `notificacion`, la interfaz `NotificationSender` y el sender mock de email/push; verificar que un envÃ­o exitoso quede `ENVIADA` y que un fallo quede `PENDIENTE` con intentos y prÃ³ximo reintento.
 - [x] 8.2 (P1) Consumir `orden.pagada` y generar la notificaciÃ³n de compra de forma idempotente, con reintentos y DLQ; verificar que la compra no se bloquee si el consumidor falla y que un evento duplicado no duplique el aviso.
 - [x] 8.3 (P1) Consumir `evento.cancelado` y `evento.actualizado` para notificar a todos los compradores, y `evento.publicado` para notificar a clientes con artista favorito en su ciudad consultando preferencias; verificar coincidencia, no coincidencia y evento sin compradores. _(Compradores desde la proyección local alimentada por `orden.pagada`; la búsqueda de preferencias usa `GET /internal/preferences?artista=&ciudad=` documentado en `docs/api-contract.md` §6.3.1 y queda pendiente de implementación en recommendation-service. Tests unitarios verdes con stub y degradación a lista vacía si no responde.)_
-- [ ] 8.4 (P1) Implementar `GET /api/notifications` con solo las notificaciones propias, estados, intentos y paginaciÃ³n; actualizar OpenAPI, README y contrato y verificar 200, 403 y orden por fecha.
+- [x] 8.4 (P1) Implementar `GET /api/notifications` con solo las notificaciones propias, estados, intentos y paginación; actualizar OpenAPI, README y contrato y verificar 200, 403 y orden por fecha. _(Incluye `GET /api/notifications/{id}` para responder `403 NOTIFICATION_FORBIDDEN` ante una notificación ajena, como pide el spec. Tests: `ConsultaNotificacionServiceTest` y `NotificacionControllerTest`.)_
 
 ## 9. Observabilidad, Docker y CI
 
